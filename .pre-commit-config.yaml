@@ -1,0 +1,40 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.10
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        language: node
+        entry: npx prettier --write
+        types_or: [ts, tsx, javascript, jsx, json, css, markdown]
+        files: ^frontend/
+        additional_dependencies:
+          - prettier@3.3.0
+          - prettier-plugin-tailwindcss@0.6.0
+
+      - id: eslint
+        name: eslint
+        language: node
+        entry: npx eslint --fix
+        types_or: [ts, tsx]
+        files: ^frontend/src/
+        additional_dependencies:
+          - eslint@8.57.0
+          - eslint-config-next@14.2.0
