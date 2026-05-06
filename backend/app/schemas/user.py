@@ -5,13 +5,21 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.user import UserRole
 
+_USERNAME_PATTERN = r"^[a-zA-Z0-9_]+$"
+_EMAIL_PATTERN = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
 
 class UserCreate(BaseModel):
-    username: str = Field(min_length=3, max_length=64)
-    email: str = Field(max_length=256)
+    username: str = Field(min_length=3, max_length=20, pattern=_USERNAME_PATTERN)
+    email: str = Field(max_length=256, pattern=_EMAIL_PATTERN)
     password: str = Field(min_length=8)
     display_name: str = Field(min_length=1, max_length=128)
     language: str = Field(default="ro", max_length=8)
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 
 class UserUpdate(BaseModel):
