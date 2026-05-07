@@ -275,7 +275,9 @@ async def test_list_status_filter_solved(client: AsyncClient, db_session: AsyncS
 
 
 @pytest.mark.asyncio
-async def test_list_user_status_none_when_anon(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_list_user_status_none_when_anon(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     author = await _make_user(db_session, "anon-test", UserRole.teacher)
     await _make_problem(db_session, author.id, slug="anon-prob")
 
@@ -395,7 +397,9 @@ async def test_create_problem_admin(client: AsyncClient, db_session: AsyncSessio
 
 
 @pytest.mark.asyncio
-async def test_create_problem_student_forbidden(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_create_problem_student_forbidden(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     await _make_user(db_session, "student-create", UserRole.student)
     await _login(client, "student-create")
 
@@ -429,7 +433,9 @@ async def test_create_problem_invalid_slug(client: AsyncClient, db_session: Asyn
 
 
 @pytest.mark.asyncio
-async def test_create_problem_invalid_difficulty(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_create_problem_invalid_difficulty(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     await _make_user(db_session, "teacher-diff", UserRole.teacher)
     await _login(client, "teacher-diff")
 
@@ -461,7 +467,9 @@ async def test_update_problem_admin(client: AsyncClient, db_session: AsyncSessio
 
 
 @pytest.mark.asyncio
-async def test_update_problem_non_author_forbidden(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_update_problem_non_author_forbidden(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     owner = await _make_user(db_session, "owner", UserRole.teacher)
     await _make_user(db_session, "intruder", UserRole.teacher)
     await _make_problem(db_session, owner.id, slug="owners-problem")
@@ -504,7 +512,9 @@ async def test_delete_problem_admin(client: AsyncClient, db_session: AsyncSessio
 
 
 @pytest.mark.asyncio
-async def test_delete_problem_teacher_forbidden(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_delete_problem_teacher_forbidden(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     teacher = await _make_user(db_session, "teacher-del", UserRole.teacher)
     await _make_problem(db_session, teacher.id, slug="cant-delete")
     await _login(client, "teacher-del")
@@ -551,7 +561,9 @@ async def test_upload_test_case_admin(client: AsyncClient, db_session: AsyncSess
 
 
 @pytest.mark.asyncio
-async def test_upload_test_case_non_author_forbidden(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_upload_test_case_non_author_forbidden(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     owner = await _make_user(db_session, "tc-real-owner", UserRole.teacher)
     await _make_user(db_session, "tc-intruder", UserRole.teacher)
     p = await _make_problem(db_session, owner.id, slug="tc-protected")
@@ -563,7 +575,9 @@ async def test_upload_test_case_non_author_forbidden(client: AsyncClient, db_ses
 
 
 @pytest.mark.asyncio
-async def test_upload_test_case_requires_auth(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_upload_test_case_requires_auth(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     p = await _make_problem(db_session, None, slug="tc-noauth")
 
     up = _upload_files()
@@ -588,11 +602,15 @@ async def test_upload_test_case_overwrite(client: AsyncClient, db_session: Async
     await _login(client, "tc-overwrite")
 
     up1 = _upload_files(ordinal=1, in_content=b"first\n")
-    r1 = await client.post(f"/api/problems/{p.slug}/test-cases", data=up1["data"], files=up1["files"])
+    r1 = await client.post(
+        f"/api/problems/{p.slug}/test-cases", data=up1["data"], files=up1["files"]
+    )
     assert r1.status_code == 201
 
     up2 = _upload_files(ordinal=1, in_content=b"second\n")
-    r2 = await client.post(f"/api/problems/{p.slug}/test-cases", data=up2["data"], files=up2["files"])
+    r2 = await client.post(
+        f"/api/problems/{p.slug}/test-cases", data=up2["data"], files=up2["files"]
+    )
     # same ordinal → update, not create
     assert r2.status_code == 201
     assert r2.json()["id"] == r1.json()["id"]
@@ -622,7 +640,9 @@ async def test_download_sample_anonymous(client: AsyncClient, db_session: AsyncS
 
 
 @pytest.mark.asyncio
-async def test_download_non_sample_anonymous_forbidden(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_download_non_sample_anonymous_forbidden(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     p = await _make_problem(db_session, None, slug="dl-hidden")
     await _make_test_case(db_session, p.id, ordinal=1, is_sample=False)
 
@@ -631,7 +651,9 @@ async def test_download_non_sample_anonymous_forbidden(client: AsyncClient, db_s
 
 
 @pytest.mark.asyncio
-async def test_download_non_sample_author_allowed(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_download_non_sample_author_allowed(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     teacher = await _make_user(db_session, "dl-author", UserRole.teacher)
     p = await _make_problem(db_session, teacher.id, slug="dl-auth-prob")
     await _make_test_case(db_session, p.id, ordinal=1, is_sample=False, input_bytes=b"secret\n")
@@ -643,7 +665,9 @@ async def test_download_non_sample_author_allowed(client: AsyncClient, db_sessio
 
 
 @pytest.mark.asyncio
-async def test_download_non_sample_admin_allowed(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_download_non_sample_admin_allowed(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     teacher = await _make_user(db_session, "dl-owner2", UserRole.teacher)
     await _make_user(db_session, "dl-admin", UserRole.admin)
     p = await _make_problem(db_session, teacher.id, slug="dl-admin-prob")
@@ -669,7 +693,9 @@ async def test_download_test_case_not_found(client: AsyncClient, db_session: Asy
 
 
 @pytest.mark.asyncio
-async def test_download_private_problem_anonymous(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_download_private_problem_anonymous(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     p = await _make_problem(db_session, None, slug="dl-private", visibility=Visibility.private)
     await _make_test_case(db_session, p.id, ordinal=1, is_sample=True)
 

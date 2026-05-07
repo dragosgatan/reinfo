@@ -51,15 +51,11 @@ class Problem(Base, TimestampMixin):
         nullable=False,
         server_default=text("'draft'"),
     )
-    time_limit_ms: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("1000")
-    )
+    time_limit_ms: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1000"))
     memory_limit_kb: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default=text("65536")
     )
-    score_total: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("100")
-    )
+    score_total: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("100"))
     comparison_mode: Mapped[ComparisonMode] = mapped_column(
         Enum(ComparisonMode, name="comparisonmode"),
         nullable=False,
@@ -74,9 +70,7 @@ class Problem(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="TestCase.ordinal",
     )
-    submissions: Mapped[list["Submission"]] = relationship(
-        "Submission", back_populates="problem"
-    )
+    submissions: Mapped[list["Submission"]] = relationship("Submission", back_populates="problem")
 
 
 class TestCase(Base):

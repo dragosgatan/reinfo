@@ -105,7 +105,9 @@ async def list_problems(
 ) -> ProblemListResponse:
     """Lista problemelor cu paginare, filtrare și sortare."""
     if status is not None and current_user is None:
-        raise HTTPException(status_code=401, detail="Autentificare necesară pentru filtrarea după status")
+        raise HTTPException(
+            status_code=401, detail="Autentificare necesară pentru filtrarea după status"
+        )
 
     solve_sq = _solve_subquery()
     user_sq = _user_status_subquery(current_user.id) if current_user else None
@@ -188,19 +190,21 @@ async def get_problem(
 ) -> ProblemDetail:
     """Detalii complete ale problemei, inclusiv cazurile de test eșantion."""
     problem = await session.scalar(
-        select(Problem)
-        .where(Problem.slug == slug)
-        .options(selectinload(Problem.test_cases))
+        select(Problem).where(Problem.slug == slug).options(selectinload(Problem.test_cases))
     )
     if problem is None:
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
 
     _assert_can_view(problem, current_user)
 
-    solve_count = await session.scalar(
-        select(func.count(Submission.user_id.distinct()))
-        .where(Submission.problem_id == problem.id, Submission.verdict == Verdict.AC)
-    ) or 0
+    solve_count = (
+        await session.scalar(
+            select(func.count(Submission.user_id.distinct())).where(
+                Submission.problem_id == problem.id, Submission.verdict == Verdict.AC
+            )
+        )
+        or 0
+    )
 
     sample_tcs = [TestCaseSummary.model_validate(tc) for tc in problem.test_cases if tc.is_sample]
 
@@ -359,7 +363,9 @@ async def download_input(
     try:
         content = await read_test_case(tc.input_path)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Fișierul de intrare nu a fost găsit pe disc") from None
+        raise HTTPException(
+            status_code=404, detail="Fișierul de intrare nu a fost găsit pe disc"
+        ) from None
 
     return Response(
         content=content,

@@ -1,4 +1,5 @@
 """Tests for /api/auth/* endpoints."""
+
 import uuid
 from datetime import UTC, datetime
 
@@ -24,7 +25,9 @@ async def _register(client: AsyncClient, overrides: dict | None = None) -> dict:
     return r
 
 
-async def _login(client: AsyncClient, username: str = "testuser", password: str = "secret123") -> dict:
+async def _login(
+    client: AsyncClient, username: str = "testuser", password: str = "secret123"
+) -> dict:
     return await client.post("/api/auth/login", json={"username": username, "password": password})
 
 

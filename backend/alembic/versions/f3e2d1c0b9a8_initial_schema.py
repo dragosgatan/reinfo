@@ -5,6 +5,7 @@ Revises:
 Create Date: 2026-05-06 12:00:00.000000
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -23,12 +24,9 @@ def upgrade() -> None:
     op.execute("CREATE TYPE userrole AS ENUM ('student', 'teacher', 'admin')")
     op.execute("CREATE TYPE visibility AS ENUM ('public', 'draft', 'private')")
     op.execute(
-        "CREATE TYPE comparisonmode AS ENUM "
-        "('exact', 'whitespace_insensitive', 'float_epsilon')"
+        "CREATE TYPE comparisonmode AS ENUM ('exact', 'whitespace_insensitive', 'float_epsilon')"
     )
-    op.execute(
-        "CREATE TYPE verdict AS ENUM ('pending', 'AC', 'WA', 'PARTIAL', 'CE', 'RE')"
-    )
+    op.execute("CREATE TYPE verdict AS ENUM ('pending', 'AC', 'WA', 'PARTIAL', 'CE', 'RE')")
 
     # --- users ---
     op.create_table(
@@ -58,9 +56,7 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.Column(
-            "language", sa.String(8), server_default="ro", nullable=False
-        ),
+        sa.Column("language", sa.String(8), server_default="ro", nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("username"),
         sa.UniqueConstraint("email"),
@@ -122,15 +118,9 @@ def upgrade() -> None:
             nullable=False,
             server_default="draft",
         ),
-        sa.Column(
-            "time_limit_ms", sa.Integer(), nullable=False, server_default="1000"
-        ),
-        sa.Column(
-            "memory_limit_kb", sa.Integer(), nullable=False, server_default="65536"
-        ),
-        sa.Column(
-            "score_total", sa.Integer(), nullable=False, server_default="100"
-        ),
+        sa.Column("time_limit_ms", sa.Integer(), nullable=False, server_default="1000"),
+        sa.Column("memory_limit_kb", sa.Integer(), nullable=False, server_default="65536"),
+        sa.Column("score_total", sa.Integer(), nullable=False, server_default="100"),
         sa.Column(
             "comparison_mode",
             postgresql.ENUM(name="comparisonmode", create_type=False),
@@ -138,9 +128,7 @@ def upgrade() -> None:
             server_default="exact",
         ),
         sa.Column("float_epsilon", sa.Float(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["author_id"], ["users.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["author_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("slug"),
     )
@@ -155,15 +143,9 @@ def upgrade() -> None:
         sa.Column("input_path", sa.String(512), nullable=False),
         sa.Column("output_path", sa.String(512), nullable=False),
         sa.Column("score", sa.Integer(), nullable=False, server_default="10"),
-        sa.Column(
-            "is_sample", sa.Boolean(), nullable=False, server_default="false"
-        ),
-        sa.Column(
-            "is_hidden", sa.Boolean(), nullable=False, server_default="true"
-        ),
-        sa.ForeignKeyConstraint(
-            ["problem_id"], ["problems.id"], ondelete="CASCADE"
-        ),
+        sa.Column("is_sample", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column("is_hidden", sa.Boolean(), nullable=False, server_default="true"),
+        sa.ForeignKeyConstraint(["problem_id"], ["problems.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_test_cases_problem_id", "test_cases", ["problem_id"])
@@ -193,9 +175,7 @@ def upgrade() -> None:
         ),
         sa.Column("judged_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["problem_id"], ["problems.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["problem_id"], ["problems.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_submissions_user_id", "submissions", ["user_id"])
@@ -215,12 +195,8 @@ def upgrade() -> None:
         ),
         sa.Column("score", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("message", sa.Text(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["submission_id"], ["submissions.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["test_case_id"], ["test_cases.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["submission_id"], ["submissions.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["test_case_id"], ["test_cases.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(

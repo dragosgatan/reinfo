@@ -37,9 +37,7 @@ class User(Base, TimestampMixin):
     last_active_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("now()"), nullable=False
     )
-    language: Mapped[str] = mapped_column(
-        String(8), server_default=text("'ro'"), nullable=False
-    )
+    language: Mapped[str] = mapped_column(String(8), server_default=text("'ro'"), nullable=False)
 
     sessions: Mapped[list["Session"]] = relationship(
         "Session", back_populates="user", cascade="all, delete-orphan"
