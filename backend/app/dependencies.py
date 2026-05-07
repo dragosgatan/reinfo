@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import Cookie, Depends, HTTPException, status
 from sqlalchemy import select
@@ -22,7 +22,7 @@ async def get_current_user(
     db_session = await session.scalar(
         select(DbSession).where(
             DbSession.token == reinfo_session,
-            DbSession.expires_at > datetime.now(timezone.utc),
+            DbSession.expires_at > datetime.now(UTC),
         )
     )
     if db_session is None:
@@ -32,9 +32,27 @@ async def get_current_user(
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilizator inexistent")
 
-    user.last_active_at = datetime.now(timezone.utc)
+    user.last_active_at = datetime.now(UTC)
     await session.commit()
     return user
+
+
+async def get_optional_user(
+    reinfo_session: str | None = Cookie(default=None),
+    session: AsyncSession = Depends(get_session),
+) -> User | None:
+    """Like get_current_user but returns None for unauthenticated requests."""
+    if not reinfo_session:
+        return None
+    db_session = await session.scalar(
+        select(DbSession).where(
+            DbSession.token == reinfo_session,
+            DbSession.expires_at > datetime.now(UTC),
+        )
+    )
+    if db_session is None:
+        return None
+    return await session.get(User, db_session.user_id)
 
 
 def require_role(*roles: UserRole) -> User:

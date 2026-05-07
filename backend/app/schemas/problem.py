@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -71,3 +72,78 @@ class ProblemSummary(BaseModel):
     visibility: Visibility
     score_total: int
     created_at: datetime
+
+
+class UserProblemStatus(StrEnum):
+    solved = "solved"
+    attempted = "attempted"
+    unsolved = "unsolved"
+
+
+class TestCaseSummary(BaseModel):
+    """Minimal test case info included in problem detail (sample tests only)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    ordinal: int
+    score: int
+    is_sample: bool
+
+
+class TestCaseRead(BaseModel):
+    """Full test case representation returned after upload."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    ordinal: int
+    score: int
+    is_sample: bool
+    is_hidden: bool
+    input_path: str
+    output_path: str
+
+
+class ProblemListItem(BaseModel):
+    """One row in the paginated problem list."""
+
+    id: uuid.UUID
+    slug: str
+    title: str
+    difficulty: int
+    tags: list[str]
+    solve_count: int
+    user_status: UserProblemStatus | None
+
+
+class ProblemListResponse(BaseModel):
+    items: list[ProblemListItem]
+    total: int
+    page: int
+    per_page: int
+    pages: int
+
+
+class ProblemDetail(BaseModel):
+    """Full problem detail including sample test cases and solve count."""
+
+    id: uuid.UUID
+    slug: str
+    title: str
+    statement_md: str
+    input_format: str
+    output_format: str
+    difficulty: int
+    tags: list[str]
+    author_id: uuid.UUID | None
+    created_at: datetime
+    updated_at: datetime
+    visibility: Visibility
+    time_limit_ms: int
+    memory_limit_kb: int
+    score_total: int
+    comparison_mode: ComparisonMode
+    float_epsilon: float | None
+    solve_count: int
+    sample_test_cases: list[TestCaseSummary]

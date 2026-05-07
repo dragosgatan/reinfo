@@ -1,5 +1,7 @@
 import os
 from collections.abc import AsyncGenerator
+from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -79,3 +81,12 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with _session_factory() as session:
         yield session
+
+
+@pytest.fixture(autouse=True)
+def tmp_storage(tmp_path: Path) -> AsyncGenerator[None, None]:
+    """Redirect file storage to a per-test temporary directory."""
+    from app.config import settings
+
+    with patch.object(settings, "data_dir", str(tmp_path)):
+        yield

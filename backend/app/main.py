@@ -5,7 +5,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.limiter import limiter
-from app.routers import auth
+from app.routers import auth, problems
 
 app = FastAPI(
     title="ReInfo API",
@@ -28,6 +28,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(problems.router)
 
 
 @app.get("/api/health", tags=["system"])

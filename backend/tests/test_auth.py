@@ -10,10 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import Session as DbSession
 from app.models.user import User
 
-# ---------------------------------------------------------------------------
-# helpers
-# ---------------------------------------------------------------------------
-
 _USER: dict = {
     "username": "testuser",
     "email": "test@example.com",
@@ -30,11 +26,6 @@ async def _register(client: AsyncClient, overrides: dict | None = None) -> dict:
 
 async def _login(client: AsyncClient, username: str = "testuser", password: str = "secret123") -> dict:
     return await client.post("/api/auth/login", json={"username": username, "password": password})
-
-
-# ---------------------------------------------------------------------------
-# register
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
@@ -94,11 +85,6 @@ async def test_register_short_password(client: AsyncClient) -> None:
     assert r.status_code == 422
 
 
-# ---------------------------------------------------------------------------
-# login
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.asyncio
 async def test_login_success(client: AsyncClient) -> None:
     await _register(client)
@@ -133,11 +119,6 @@ async def test_login_creates_session_row(client: AsyncClient, db_session: AsyncS
     assert row.expires_at > datetime.now(timezone.utc)
 
 
-# ---------------------------------------------------------------------------
-# logout
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.asyncio
 async def test_logout_success(client: AsyncClient, db_session: AsyncSession) -> None:
     await _register(client)
@@ -158,11 +139,6 @@ async def test_logout_success(client: AsyncClient, db_session: AsyncSession) -> 
 async def test_logout_without_session_is_idempotent(client: AsyncClient) -> None:
     r = await client.post("/api/auth/logout")
     assert r.status_code == 200
-
-
-# ---------------------------------------------------------------------------
-# me
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
