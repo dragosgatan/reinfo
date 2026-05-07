@@ -76,3 +76,43 @@ async def delete_test_case(input_path: str, output_path: str) -> None:
         _assert_inside_data_root(resolved)
         if resolved.exists():
             resolved.unlink()
+
+
+def _submission_path(user_id: uuid.UUID, submission_id: uuid.UUID, filename: str) -> Path:
+    return _data_root() / "submissions" / str(user_id) / str(submission_id) / filename
+
+
+async def save_submission_output(
+    user_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    file_bytes: bytes,
+) -> str:
+    """Write the uploaded output file for a submission.
+
+    Returns the absolute path string.
+    """
+    path = _submission_path(user_id, submission_id, "output.out")
+    _assert_inside_data_root(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    async with aiofiles.open(path, "wb") as fh:
+        await fh.write(file_bytes)
+    return str(path)
+
+
+async def save_submission_code(
+    user_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    language: str,
+    file_bytes: bytes,
+) -> str:
+    """Write the optional source code file for a submission.
+
+    Returns the absolute path string.
+    """
+    safe_lang = "".join(c for c in language if c.isalnum() or c in "_+#")[:16] or "txt"
+    path = _submission_path(user_id, submission_id, f"source.{safe_lang}")
+    _assert_inside_data_root(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    async with aiofiles.open(path, "wb") as fh:
+        await fh.write(file_bytes)
+    return str(path)
