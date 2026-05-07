@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from enum import Enum as PyEnum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, text
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Verdict(str, PyEnum):
+class Verdict(StrEnum):
     pending = "pending"
     AC = "AC"
     WA = "WA"

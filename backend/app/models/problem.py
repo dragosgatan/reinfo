@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from enum import Enum as PyEnum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text, text
@@ -14,13 +14,13 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Visibility(str, PyEnum):
+class Visibility(StrEnum):
     public = "public"
     draft = "draft"
     private = "private"
 
 
-class ComparisonMode(str, PyEnum):
+class ComparisonMode(StrEnum):
     exact = "exact"
     whitespace_insensitive = "whitespace_insensitive"
     float_epsilon = "float_epsilon"

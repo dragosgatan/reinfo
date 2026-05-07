@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
@@ -69,12 +69,12 @@ async def login(
     db_session = DbSession(
         user_id=user.id,
         token=token,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=SESSION_EXPIRY_DAYS),
+        expires_at=datetime.now(UTC) + timedelta(days=SESSION_EXPIRY_DAYS),
         user_agent=request.headers.get("user-agent"),
         ip_address=request.client.host if request.client else None,
     )
     session.add(db_session)
-    user.last_active_at = datetime.now(timezone.utc)
+    user.last_active_at = datetime.now(UTC)
     await session.commit()
     await session.refresh(user)
 

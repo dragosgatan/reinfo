@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from enum import Enum as PyEnum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, text
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models.submission import Submission
 
 
-class UserRole(str, PyEnum):
+class UserRole(StrEnum):
     student = "student"
     teacher = "teacher"
     admin = "admin"

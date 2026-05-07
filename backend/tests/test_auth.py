@@ -1,6 +1,6 @@
 """Tests for /api/auth/* endpoints."""
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from httpx import AsyncClient
@@ -116,7 +116,7 @@ async def test_login_creates_session_row(client: AsyncClient, db_session: AsyncS
     token = r.cookies["reinfo_session"]
     row = await db_session.scalar(select(DbSession).where(DbSession.token == token))
     assert row is not None
-    assert row.expires_at > datetime.now(timezone.utc)
+    assert row.expires_at > datetime.now(UTC)
 
 
 @pytest.mark.asyncio
@@ -173,7 +173,7 @@ async def test_me_expired_session(client: AsyncClient, db_session: AsyncSession)
     expired = DbSession(
         user_id=user_id,
         token="expired-session-token-xyz",
-        expires_at=datetime(2020, 1, 1, tzinfo=timezone.utc),
+        expires_at=datetime(2020, 1, 1, tzinfo=UTC),
     )
     db_session.add(expired)
     await db_session.commit()
@@ -189,7 +189,7 @@ async def test_me_updates_last_active_at(client: AsyncClient, db_session: AsyncS
     await _register(client)
     await _login(client)
 
-    before = datetime.now(timezone.utc)
+    before = datetime.now(UTC)
     r = await client.get("/api/auth/me")
     assert r.status_code == 200
 
