@@ -8,12 +8,13 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.problem import ComparisonMode, Problem, TestCase, Visibility
-from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
 from app.security import hash_password
 from app.storage import save_test_case
 
 _PASSWORD = "testpassword1"
+
+
 async def _make_user(
     db: AsyncSession,
     username: str,
@@ -30,9 +31,13 @@ async def _make_user(
     await db.commit()
     await db.refresh(user)
     return user
+
+
 async def _login(client: AsyncClient, username: str) -> None:
     r = await client.post("/api/auth/login", json={"username": username, "password": _PASSWORD})
     assert r.status_code == 200, r.text
+
+
 async def _make_problem(
     db: AsyncSession,
     author_id: uuid.UUID | None = None,
@@ -58,6 +63,8 @@ async def _make_problem(
     await db.commit()
     await db.refresh(p)
     return p
+
+
 async def _make_test_case(
     db: AsyncSession,
     problem_id: uuid.UUID,
@@ -80,8 +87,12 @@ async def _make_test_case(
     await db.commit()
     await db.refresh(tc)
     return tc
+
+
 def _output_file(content: bytes = b"42\n") -> dict:
     return {"output_file": ("answer.out", BytesIO(content), "text/plain")}
+
+
 @pytest.mark.asyncio
 async def test_submit_ac(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "submitter1")
@@ -98,6 +109,8 @@ async def test_submit_ac(client: AsyncClient, db_session: AsyncSession) -> None:
     assert "results" in body
     assert len(body["results"]) == 1
     assert body["results"][0]["verdict"] == "AC"
+
+
 @pytest.mark.asyncio
 async def test_submit_wa(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "submitter2")
@@ -110,6 +123,8 @@ async def test_submit_wa(client: AsyncClient, db_session: AsyncSession) -> None:
     body = r.json()
     assert body["verdict"] == "WA"
     assert body["score"] == 0
+
+
 @pytest.mark.asyncio
 async def test_submit_partial(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "submitter3")
@@ -123,28 +138,38 @@ async def test_submit_partial(client: AsyncClient, db_session: AsyncSession) -> 
     body = r.json()
     assert body["verdict"] == "PARTIAL"
     assert body["score"] == 10
+
+
 @pytest.mark.asyncio
 async def test_submit_requires_auth(client: AsyncClient, db_session: AsyncSession) -> None:
     problem = await _make_problem(db_session, None, slug="sub-noauth")
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
     assert r.status_code == 401
+
+
 @pytest.mark.asyncio
 async def test_submit_problem_not_found(client: AsyncClient, db_session: AsyncSession) -> None:
     await _make_user(db_session, "sub-404")
     await _login(client, "sub-404")
     r = await client.post("/api/problems/nonexistent-prob/submit", files=_output_file())
     assert r.status_code == 404
+
+
 @pytest.mark.asyncio
 async def test_submit_private_problem_forbidden(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     owner = await _make_user(db_session, "sub-owner", UserRole.teacher)
-    other = await _make_user(db_session, "sub-other")
-    problem = await _make_problem(db_session, owner.id, slug="sub-private", visibility=Visibility.private)
+    await _make_user(db_session, "sub-other")
+    problem = await _make_problem(
+        db_session, owner.id, slug="sub-private", visibility=Visibility.private
+    )
     await _login(client, "sub-other")
 
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
     assert r.status_code == 403
+
+
 @pytest.mark.asyncio
 async def test_submit_output_too_large(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "sub-large")
@@ -154,6 +179,8 @@ async def test_submit_output_too_large(client: AsyncClient, db_session: AsyncSes
     big = b"x" * (10 * 1024 * 1024 + 1)
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(big))
     assert r.status_code == 413
+
+
 @pytest.mark.asyncio
 async def test_submit_with_source_code(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "submitter-code")
@@ -163,13 +190,15 @@ async def test_submit_with_source_code(client: AsyncClient, db_session: AsyncSes
 
     files = {
         "output_file": ("answer.out", BytesIO(b"42\n"), "text/plain"),
-        "source_code": ("sol.cpp", BytesIO(b'#include<bits/stdc++.h>'), "text/plain"),
+        "source_code": ("sol.cpp", BytesIO(b"#include<bits/stdc++.h>"), "text/plain"),
     }
     data = {"language": "cpp"}
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=files, data=data)
     assert r.status_code == 201
     body = r.json()
     assert body["language"] == "cpp"
+
+
 @pytest.mark.asyncio
 async def test_submit_returns_submission_id(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "submitter-id")
@@ -179,6 +208,8 @@ async def test_submit_returns_submission_id(client: AsyncClient, db_session: Asy
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
     assert r.status_code == 201
     assert "id" in r.json()
+
+
 @pytest.mark.asyncio
 async def test_get_submission_owner(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "get-sub-owner")
@@ -191,10 +222,12 @@ async def test_get_submission_owner(client: AsyncClient, db_session: AsyncSessio
     r2 = await client.get(f"/api/submissions/{sub_id}")
     assert r2.status_code == 200
     assert r2.json()["id"] == sub_id
+
+
 @pytest.mark.asyncio
 async def test_get_submission_problem_author(client: AsyncClient, db_session: AsyncSession) -> None:
     teacher = await _make_user(db_session, "sub-teacher", UserRole.teacher)
-    student = await _make_user(db_session, "sub-student")
+    await _make_user(db_session, "sub-student")
     problem = await _make_problem(db_session, teacher.id, slug="sub-auth-prob")
 
     await _login(client, "sub-student")
@@ -205,6 +238,8 @@ async def test_get_submission_problem_author(client: AsyncClient, db_session: As
     await _login(client, "sub-teacher")
     r2 = await client.get(f"/api/submissions/{sub_id}")
     assert r2.status_code == 200
+
+
 @pytest.mark.asyncio
 async def test_get_submission_admin(client: AsyncClient, db_session: AsyncSession) -> None:
     student = await _make_user(db_session, "sub-stu")
@@ -219,6 +254,8 @@ async def test_get_submission_admin(client: AsyncClient, db_session: AsyncSessio
     await _login(client, "sub-adm")
     r2 = await client.get(f"/api/submissions/{sub_id}")
     assert r2.status_code == 200
+
+
 @pytest.mark.asyncio
 async def test_get_submission_other_user_forbidden(
     client: AsyncClient, db_session: AsyncSession
@@ -235,6 +272,8 @@ async def test_get_submission_other_user_forbidden(
     await _login(client, "sub-intruder")
     r2 = await client.get(f"/api/submissions/{sub_id}")
     assert r2.status_code == 403
+
+
 @pytest.mark.asyncio
 async def test_get_submission_anonymous_forbidden(
     client: AsyncClient, db_session: AsyncSession
@@ -249,14 +288,20 @@ async def test_get_submission_anonymous_forbidden(
 
     r2 = await client.get(f"/api/submissions/{sub_id}")
     assert r2.status_code == 403
+
+
 @pytest.mark.asyncio
 async def test_get_submission_not_found(client: AsyncClient) -> None:
     r = await client.get(f"/api/submissions/{uuid.uuid4()}")
     assert r.status_code == 404
+
+
 @pytest.mark.asyncio
 async def test_list_submissions_requires_auth(client: AsyncClient) -> None:
     r = await client.get("/api/submissions")
     assert r.status_code == 401
+
+
 @pytest.mark.asyncio
 async def test_list_submissions_own(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "list-own")
@@ -272,6 +317,8 @@ async def test_list_submissions_own(client: AsyncClient, db_session: AsyncSessio
     assert body["total"] == 3
     assert len(body["items"]) == 3
     assert body["items"][0]["problem_slug"] == "list-own-prob"
+
+
 @pytest.mark.asyncio
 async def test_list_submissions_other_user_forbidden(
     client: AsyncClient, db_session: AsyncSession
@@ -282,6 +329,8 @@ async def test_list_submissions_other_user_forbidden(
 
     r = await client.get(f"/api/submissions?user_id={other.id}")
     assert r.status_code == 403
+
+
 @pytest.mark.asyncio
 async def test_list_submissions_admin_filter_by_user(
     client: AsyncClient, db_session: AsyncSession
@@ -298,6 +347,8 @@ async def test_list_submissions_admin_filter_by_user(
     r = await client.get(f"/api/submissions?user_id={student.id}")
     assert r.status_code == 200
     assert r.json()["total"] == 1
+
+
 @pytest.mark.asyncio
 async def test_list_submissions_filter_verdict(
     client: AsyncClient, db_session: AsyncSession
@@ -314,6 +365,8 @@ async def test_list_submissions_filter_verdict(
     assert r.status_code == 200
     assert r.json()["total"] == 1
     assert r.json()["items"][0]["verdict"] == "AC"
+
+
 @pytest.mark.asyncio
 async def test_list_submissions_filter_problem_slug(
     client: AsyncClient, db_session: AsyncSession
@@ -330,6 +383,8 @@ async def test_list_submissions_filter_problem_slug(
     assert r.status_code == 200
     assert r.json()["total"] == 1
     assert r.json()["items"][0]["problem_slug"] == p1.slug
+
+
 @pytest.mark.asyncio
 async def test_list_submissions_pagination(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "list-page")
@@ -344,6 +399,8 @@ async def test_list_submissions_pagination(client: AsyncClient, db_session: Asyn
     assert body["total"] == 5
     assert len(body["items"]) == 2
     assert body["pages"] == 3
+
+
 @pytest.mark.asyncio
 async def test_user_submissions_public(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "user-subs")
@@ -357,10 +414,14 @@ async def test_user_submissions_public(client: AsyncClient, db_session: AsyncSes
     body = r.json()
     assert body["total"] == 1
     assert body["items"][0]["problem_slug"] == "user-subs-prob"
+
+
 @pytest.mark.asyncio
 async def test_user_submissions_not_found(client: AsyncClient) -> None:
     r = await client.get("/api/users/nonexistent-user-xyz/submissions")
     assert r.status_code == 404
+
+
 @pytest.mark.asyncio
 async def test_user_submissions_empty(client: AsyncClient, db_session: AsyncSession) -> None:
     await _make_user(db_session, "user-empty-subs")
@@ -369,6 +430,8 @@ async def test_user_submissions_empty(client: AsyncClient, db_session: AsyncSess
     body = r.json()
     assert body["total"] == 0
     assert body["items"] == []
+
+
 @pytest.mark.asyncio
 async def test_user_submissions_pagination(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "user-page-subs")

@@ -46,7 +46,7 @@ def _compare_float_epsilon(
     if len(exp_vals) != len(act_vals):
         return False, f"Număr diferit: așteptat {len(exp_vals)}, primit {len(act_vals)}"
 
-    for i, (e, a) in enumerate(zip(exp_vals, act_vals)):
+    for i, (e, a) in enumerate(zip(exp_vals, act_vals, strict=False)):
         if abs(e - a) > epsilon * max(1.0, abs(e)):
             return False, f"Valoarea #{i}: |{e} - {a}| > {epsilon}"
 

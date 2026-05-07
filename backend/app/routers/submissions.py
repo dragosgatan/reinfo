@@ -35,9 +35,7 @@ def _can_view_submission(sub: Submission, user: User | None, problem: Problem) -
         return True
     if user.role == UserRole.admin:
         return True
-    if problem.author_id is not None and problem.author_id == user.id:
-        return True
-    return False
+    return problem.author_id is not None and problem.author_id == user.id
 
 
 @router.post("/api/problems/{slug}/submit", response_model=SubmissionRead, status_code=201)
@@ -54,9 +52,12 @@ async def submit(
     if problem is None:
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
 
-    if problem.visibility != Visibility.public:
-        if current_user.role != UserRole.admin and problem.author_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Acces interzis")
+    if (
+        problem.visibility != Visibility.public
+        and current_user.role != UserRole.admin
+        and problem.author_id != current_user.id
+    ):
+        raise HTTPException(status_code=403, detail="Acces interzis")
 
     output_bytes = await output_file.read()
     if len(output_bytes) > _MAX_OUTPUT_BYTES:
@@ -69,9 +70,7 @@ async def submit(
     if source_code is not None:
         code_bytes = await source_code.read()
         if len(code_bytes) > _MAX_CODE_BYTES:
-            raise HTTPException(
-                status_code=413, detail="Codul sursă este prea mare (max 512 KB)"
-            )
+            raise HTTPException(status_code=413, detail="Codul sursă este prea mare (max 512 KB)")
         code_path = await save_submission_code(
             current_user.id, submission_id, language or "txt", code_bytes
         )
@@ -148,21 +147,15 @@ async def list_submissions(
     if contest_id is not None:
         filters.append(Submission.contest_id == contest_id)
     if date_from is not None:
-        filters.append(
-            Submission.created_at >= datetime.combine(date_from, time.min, tzinfo=UTC)
-        )
+        filters.append(Submission.created_at >= datetime.combine(date_from, time.min, tzinfo=UTC))
     if date_to is not None:
-        filters.append(
-            Submission.created_at <= datetime.combine(date_to, time.max, tzinfo=UTC)
-        )
+        filters.append(Submission.created_at <= datetime.combine(date_to, time.max, tzinfo=UTC))
     if problem_slug is not None:
         filters.append(Problem.slug == problem_slug)
 
     base = select(Submission).join(Problem, Submission.problem_id == Problem.id).where(*filters)
 
-    total = await session.scalar(
-        select(func.count()).select_from(base.subquery())
-    ) or 0
+    total = await session.scalar(select(func.count()).select_from(base.subquery())) or 0
 
     rows = (
         await session.execute(
@@ -192,7 +185,9 @@ async def list_submissions(
     ]
 
     pages = math.ceil(total / per_page) if total > 0 else 0
-    return SubmissionListResponse(items=items, total=total, page=page, per_page=per_page, pages=pages)
+    return SubmissionListResponse(
+        items=items, total=total, page=page, per_page=per_page, pages=pages
+    )
 
 
 @router.get("/api/users/{username}/submissions", response_model=SubmissionListResponse)
@@ -207,9 +202,12 @@ async def get_user_submissions(
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
 
-    total = await session.scalar(
-        select(func.count(Submission.id)).where(Submission.user_id == target.id)
-    ) or 0
+    total = (
+        await session.scalar(
+            select(func.count(Submission.id)).where(Submission.user_id == target.id)
+        )
+        or 0
+    )
 
     rows = (
         await session.execute(
@@ -239,4 +237,6 @@ async def get_user_submissions(
     ]
 
     pages = math.ceil(total / per_page) if total > 0 else 0
-    return SubmissionListResponse(items=items, total=total, page=page, per_page=per_page, pages=pages)
+    return SubmissionListResponse(
+        items=items, total=total, page=page, per_page=per_page, pages=pages
+    )

@@ -17,6 +17,8 @@ from app.models.submission import Submission, SubmissionResult, Verdict
 from app.models.user import User
 from app.security import hash_password
 from app.storage import save_submission_output, save_test_case
+
+
 class TestCompareExact:
     def test_equal(self):
         ok, msg = _compare_exact(b"hello\n", b"hello\n")
@@ -37,6 +39,8 @@ class TestCompareExact:
     def test_empty_bytes_equal(self):
         ok, _ = _compare_exact(b"", b"")
         assert ok
+
+
 class TestCompareWhitespaceInsensitive:
     def test_equal(self):
         ok, _ = _compare_whitespace_insensitive(b"hello\n", b"hello\n")
@@ -69,6 +73,8 @@ class TestCompareWhitespaceInsensitive:
     def test_different_line_count(self):
         ok, _ = _compare_whitespace_insensitive(b"a\nb\n", b"a\n")
         assert not ok
+
+
 class TestCompareFloatEpsilon:
     def test_exact_equal(self):
         ok, _ = _compare_float_epsilon(b"1.0 2.0", b"1.0 2.0", 1e-9)
@@ -114,6 +120,8 @@ class TestCompareFloatEpsilon:
     def test_empty_both(self):
         ok, _ = _compare_float_epsilon(b"", b"", 1e-9)
         assert ok
+
+
 async def _make_user(db: AsyncSession) -> User:
     user = User(
         username="judgetest",
@@ -125,6 +133,8 @@ async def _make_user(db: AsyncSession) -> User:
     await db.commit()
     await db.refresh(user)
     return user
+
+
 async def _make_problem(
     db: AsyncSession,
     author_id: uuid.UUID,
@@ -150,6 +160,8 @@ async def _make_problem(
     await db.commit()
     await db.refresh(p)
     return p
+
+
 async def _make_test_case(
     db: AsyncSession,
     problem_id: uuid.UUID,
@@ -173,6 +185,8 @@ async def _make_test_case(
     await db.commit()
     await db.refresh(tc)
     return tc
+
+
 async def _make_submission(
     db: AsyncSession,
     user_id: uuid.UUID,
@@ -193,6 +207,8 @@ async def _make_submission(
     await db.commit()
     await db.refresh(sub)
     return sub
+
+
 @pytest.mark.asyncio
 async def test_judge_exact_ac(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
@@ -207,6 +223,8 @@ async def test_judge_exact_ac(db_session: AsyncSession) -> None:
     assert sub.verdict == Verdict.AC
     assert sub.score == 30
     assert sub.judged_at is not None
+
+
 @pytest.mark.asyncio
 async def test_judge_exact_wa(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
@@ -219,6 +237,8 @@ async def test_judge_exact_wa(db_session: AsyncSession) -> None:
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.WA
     assert sub.score == 0
+
+
 @pytest.mark.asyncio
 async def test_judge_partial_scoring(db_session: AsyncSession) -> None:
     """PARTIAL verdict when submitted output matches some but not all test cases."""
@@ -236,15 +256,21 @@ async def test_judge_partial_scoring(db_session: AsyncSession) -> None:
     assert sub.score == 40  # tc1 + tc3
 
     results = (
-        await db_session.execute(
-            __import__("sqlalchemy", fromlist=["select"])
-            .select(SubmissionResult)
-            .where(SubmissionResult.submission_id == sub.id)
+        (
+            await db_session.execute(
+                __import__("sqlalchemy", fromlist=["select"])
+                .select(SubmissionResult)
+                .where(SubmissionResult.submission_id == sub.id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     verdicts = {r.verdict for r in results}
     assert Verdict.AC in verdicts
     assert Verdict.WA in verdicts
+
+
 @pytest.mark.asyncio
 async def test_judge_whitespace_insensitive(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
@@ -259,6 +285,8 @@ async def test_judge_whitespace_insensitive(db_session: AsyncSession) -> None:
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.AC
+
+
 @pytest.mark.asyncio
 async def test_judge_float_epsilon_ac(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
@@ -275,6 +303,8 @@ async def test_judge_float_epsilon_ac(db_session: AsyncSession) -> None:
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.AC
+
+
 @pytest.mark.asyncio
 async def test_judge_float_epsilon_wa(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
@@ -292,6 +322,8 @@ async def test_judge_float_epsilon_wa(db_session: AsyncSession) -> None:
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.WA
     assert sub.score == 0
+
+
 @pytest.mark.asyncio
 async def test_judge_missing_output_file(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
@@ -314,6 +346,8 @@ async def test_judge_missing_output_file(db_session: AsyncSession) -> None:
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.WA
     assert sub.score == 0
+
+
 @pytest.mark.asyncio
 async def test_judge_skips_sample_test_cases(db_session: AsyncSession) -> None:
     """Sample test cases must not affect the verdict."""
@@ -328,6 +362,8 @@ async def test_judge_skips_sample_test_cases(db_session: AsyncSession) -> None:
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.AC
+
+
 @pytest.mark.asyncio
 async def test_judge_no_test_cases(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
