@@ -127,10 +127,14 @@ async def stream_submission_events(
     async def event_generator() -> AsyncGenerator[str, None]:
         while True:
             current_sub = await session.scalar(
-                select(Submission).where(Submission.id == submission_id)
+                select(Submission)
+                .where(Submission.id == submission_id)
+                .execution_options(populate_existing=True)
             )
             job = await session.scalar(
-                select(JudgingJob).where(JudgingJob.submission_id == submission_id)
+                select(JudgingJob)
+                .where(JudgingJob.submission_id == submission_id)
+                .execution_options(populate_existing=True)
             )
             await session.commit()
 
