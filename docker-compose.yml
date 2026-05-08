@@ -34,6 +34,22 @@ services:
       db:
         condition: service_healthy
 
+  worker:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://reinfo:reinfo@db:5432/reinfo
+      SECRET_KEY: dev-secret-key-change-in-prod
+      ENVIRONMENT: development
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
   frontend:
     build:
       context: ./frontend

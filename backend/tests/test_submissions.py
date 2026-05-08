@@ -11,6 +11,7 @@ from app.models.problem import ComparisonMode, Problem, TestCase, Visibility
 from app.models.user import User, UserRole
 from app.security import hash_password
 from app.storage import save_test_case
+from app.worker import process_one_job
 
 _PASSWORD = "testpassword1"
 
@@ -93,6 +94,13 @@ def _output_file(content: bytes = b"42\n") -> dict:
     return {"output_file": ("answer.out", BytesIO(content), "text/plain")}
 
 
+async def _judge(client: AsyncClient, db: AsyncSession, sub_id: str) -> dict:
+    """Run the worker for the pending job and return the refreshed submission."""
+    await process_one_job(db)
+    r = await client.get(f"/api/submissions/{sub_id}")
+    return r.json()
+
+
 @pytest.mark.asyncio
 async def test_submit_ac(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "submitter1")
@@ -102,7 +110,9 @@ async def test_submit_ac(client: AsyncClient, db_session: AsyncSession) -> None:
 
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"42\n"))
     assert r.status_code == 201
-    body = r.json()
+    assert r.json()["verdict"] == "pending"
+
+    body = await _judge(client, db_session, r.json()["id"])
     assert body["verdict"] == "AC"
     assert body["score"] == 10
     assert body["judged_at"] is not None
@@ -120,7 +130,9 @@ async def test_submit_wa(client: AsyncClient, db_session: AsyncSession) -> None:
 
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"99\n"))
     assert r.status_code == 201
-    body = r.json()
+    assert r.json()["verdict"] == "pending"
+
+    body = await _judge(client, db_session, r.json()["id"])
     assert body["verdict"] == "WA"
     assert body["score"] == 0
 
@@ -135,7 +147,9 @@ async def test_submit_partial(client: AsyncClient, db_session: AsyncSession) -> 
 
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"42\n"))
     assert r.status_code == 201
-    body = r.json()
+    assert r.json()["verdict"] == "pending"
+
+    body = await _judge(client, db_session, r.json()["id"])
     assert body["verdict"] == "PARTIAL"
     assert body["score"] == 10
 
@@ -195,8 +209,7 @@ async def test_submit_with_source_code(client: AsyncClient, db_session: AsyncSes
     data = {"language": "cpp"}
     r = await client.post(f"/api/problems/{problem.slug}/submit", files=files, data=data)
     assert r.status_code == 201
-    body = r.json()
-    assert body["language"] == "cpp"
+    assert r.json()["language"] == "cpp"
 
 
 @pytest.mark.asyncio
@@ -358,8 +371,11 @@ async def test_list_submissions_filter_verdict(
     await _make_test_case(db_session, problem.id, 1, b"42\n")
     await _login(client, "list-verdict")
 
-    await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"42\n"))
-    await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"99\n"))
+    r1 = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"42\n"))
+    await process_one_job(db_session)
+    r2 = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"99\n"))
+    await process_one_job(db_session)
+    _ = r1, r2
 
     r = await client.get("/api/submissions?verdict=AC")
     assert r.status_code == 200

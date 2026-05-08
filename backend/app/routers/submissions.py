@@ -1,17 +1,21 @@
 """Submission creation and query endpoints."""
 
+import asyncio
+import json
 import math
 import uuid
+from collections.abc import AsyncGenerator
 from datetime import UTC, date, datetime, time
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db import get_session
 from app.dependencies import get_current_user, get_optional_user
-from app.judging import judge_submission
+from app.models.judging_job import JobStatus, JudgingJob
 from app.models.problem import Problem, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
@@ -47,7 +51,7 @@ async def submit(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SubmissionRead:
-    """Trimite output-ul pentru o problemă. Judecarea este sincronă."""
+    """Trimite output-ul pentru o problemă. Judecarea este asincronă (job queue)."""
     problem = await session.scalar(select(Problem).where(Problem.slug == slug))
     if problem is None:
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
@@ -86,9 +90,8 @@ async def submit(
         score=0,
     )
     session.add(submission)
+    session.add(JudgingJob(submission_id=submission_id))
     await session.commit()
-
-    await judge_submission(submission_id, session)
 
     sub = await session.scalar(
         select(Submission)
@@ -96,6 +99,57 @@ async def submit(
         .options(selectinload(Submission.results))
     )
     return SubmissionRead.model_validate(sub)
+
+
+@router.get("/api/submissions/{submission_id}/stream")
+async def stream_submission_events(
+    submission_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    current_user: User | None = Depends(get_optional_user),
+) -> StreamingResponse:
+    """SSE stream of judging progress for a submission.
+
+    Emits a JSON event every ~500 ms until the job reaches a terminal state.
+    Each event: data: {"submission_id", "verdict", "score", "job_status"}
+    """
+    sub = await session.scalar(
+        select(Submission)
+        .where(Submission.id == submission_id)
+        .options(selectinload(Submission.problem))
+    )
+    if sub is None:
+        raise HTTPException(status_code=404, detail="Submisia nu a fost găsită")
+    if not _can_view_submission(sub, current_user, sub.problem):
+        raise HTTPException(status_code=403, detail="Acces interzis")
+
+    _TERMINAL = {JobStatus.done, JobStatus.failed}
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        while True:
+            current_sub = await session.scalar(
+                select(Submission).where(Submission.id == submission_id)
+            )
+            job = await session.scalar(
+                select(JudgingJob).where(JudgingJob.submission_id == submission_id)
+            )
+            await session.commit()
+
+            payload = json.dumps(
+                {
+                    "submission_id": str(submission_id),
+                    "verdict": current_sub.verdict.value if current_sub else None,
+                    "score": current_sub.score if current_sub else 0,
+                    "job_status": job.status.value if job else None,
+                }
+            )
+            yield f"data: {payload}\n\n"
+
+            if job is None or job.status in _TERMINAL:
+                break
+
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.get("/api/submissions/{submission_id}", response_model=SubmissionRead)
