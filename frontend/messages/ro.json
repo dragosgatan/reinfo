@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "problems": "Probleme",
+    "contests": "Concursuri",
+    "learning": "Învățare",
+    "leaderboard": "Clasament",
+    "search": "Caută...",
+    "searchPlaceholder": "Caută probleme, utilizatori..."
+  },
+  "auth": {
+    "login": "Autentificare",
+    "register": "Înregistrare",
+    "logout": "Deconectare",
+    "profile": "Profil",
+    "settings": "Setări",
+    "loggingIn": "Se autentifică...",
+    "registering": "Se înregistrează..."
+  },
+  "home": {
+    "title": "Programare competitivă pentru toți",
+    "subtitle": "Platforma modernă pentru elevi și profesori din România. Rezolvă probleme, participă la concursuri și înveți algoritmi.",
+    "startLearning": "Începe să înveți",
+    "browseProblems": "Explorează probleme",
+    "featuredProblems": "Probleme recomandate",
+    "recentContests": "Concursuri recente",
+    "stats": {
+      "problems": "Probleme",
+      "users": "Utilizatori",
+      "submissions": "Submisii",
+      "contests": "Concursuri"
+    }
+  },
+  "problems": {
+    "title": "Probleme",
+    "description": "Rezolvă probleme clasice și descarcă fișierele de test.",
+    "search": "Caută o problemă...",
+    "difficulty": "Dificultate",
+    "difficultyLevels": {
+      "easy": "Ușor",
+      "medium": "Mediu",
+      "hard": "Greu"
+    },
+    "tags": "Etichete",
+    "author": "Autor",
+    "source": "Sursă",
+    "points": "Puncte",
+    "submissions": "Submisii",
+    "noProblems": "Nu au fost găsite probleme.",
+    "statement": "Enunț",
+    "examples": "Exemple",
+    "downloads": "Descărcări",
+    "downloadInput": "Descarcă input",
+    "uploadOutput": "Încarcă output",
+    "submitSolution": "Trimite soluție",
+    "mySubmissions": "Submisiile mele"
+  },
+  "contests": {
+    "title": "Concursuri",
+    "upcoming": "Viitoare",
+    "ongoing": "În desfășurare",
+    "past": "Trecute",
+    "register": "Înregistrează-te",
+    "viewResults": "Vezi rezultate"
+  },
+  "learning": {
+    "title": "Materiale de învățare",
+    "categories": {
+      "basics": "Noțiuni de bază",
+      "dataStructures": "Structuri de date",
+      "graphs": "Grafuri",
+      "dp": "Programare dinamică",
+      "math": "Matematică"
+    }
+  },
+  "leaderboard": {
+    "title": "Clasament",
+    "rank": "Loc",
+    "user": "Utilizator",
+    "score": "Scor",
+    "solved": "Rezolvate"
+  },
+  "profile": {
+    "editProfile": "Editează profil",
+    "solvedProblems": "Probleme rezolvate",
+    "submissions": "Submisii",
+    "joinedAt": "Înregistrat la",
+    "activity": "Activitate"
+  },
+  "login": {
+    "title": "Autentificare",
+    "subtitle": "Intră în contul tău ReInfo",
+    "email": "Email",
+    "password": "Parolă",
+    "submit": "Autentificare",
+    "noAccount": "Nu ai cont?",
+    "register": "Înregistrează-te",
+    "forgotPassword": "Ai uitat parola?"
+  },
+  "register": {
+    "title": "Înregistrare",
+    "subtitle": "Creează-ți contul ReInfo",
+    "username": "Nume utilizator",
+    "email": "Email",
+    "password": "Parolă",
+    "confirmPassword": "Confirmă parola",
+    "submit": "Înregistrare",
+    "hasAccount": "Ai deja cont?",
+    "login": "Autentifică-te",
+    "terms": "Prin înregistrare, accepți termenii și condițiile."
+  },
+  "common": {
+    "loading": "Se încarcă...",
+    "error": "A apărut o eroare.",
+    "retry": "Încearcă din nou",
+    "cancel": "Anulează",
+    "save": "Salvează",
+    "delete": "Șterge",
+    "edit": "Editează",
+    "back": "Înapoi",
+    "next": "Următor",
+    "previous": "Anterior",
+    "noResults": "Niciun rezultat.",
+    "viewAll": "Vezi toate",
+    "language": "Limbă",
+    "theme": "Temă",
+    "lightMode": "Modul clar",
+    "darkMode": "Modul întunecat"
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "problems": "Problems",
+    "contests": "Contests",
+    "learning": "Learning",
+    "leaderboard": "Leaderboard",
+    "search": "Search...",
+    "searchPlaceholder": "Search problems, users..."
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Register",
+    "logout": "Sign Out",
+    "profile": "Profile",
+    "settings": "Settings",
+    "loggingIn": "Signing in...",
+    "registering": "Registering..."
+  },
+  "home": {
+    "title": "Competitive programming for everyone",
+    "subtitle": "The modern platform for Romanian students and teachers. Solve problems, compete in contests, and learn algorithms.",
+    "startLearning": "Start learning",
+    "browseProblems": "Browse problems",
+    "featuredProblems": "Featured problems",
+    "recentContests": "Recent contests",
+    "stats": {
+      "problems": "Problems",
+      "users": "Users",
+      "submissions": "Submissions",
+      "contests": "Contests"
+    }
+  },
+  "problems": {
+    "title": "Problems",
+    "description": "Solve classic problems and download test files.",
+    "search": "Search a problem...",
+    "difficulty": "Difficulty",
+    "difficultyLevels": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "tags": "Tags",
+    "author": "Author",
+    "source": "Source",
+    "points": "Points",
+    "submissions": "Submissions",
+    "noProblems": "No problems found.",
+    "statement": "Statement",
+    "examples": "Examples",
+    "downloads": "Downloads",
+    "downloadInput": "Download input",
+    "uploadOutput": "Upload output",
+    "submitSolution": "Submit solution",
+    "mySubmissions": "My submissions"
+  },
+  "contests": {
+    "title": "Contests",
+    "upcoming": "Upcoming",
+    "ongoing": "Ongoing",
+    "past": "Past",
+    "register": "Register",
+    "viewResults": "View results"
+  },
+  "learning": {
+    "title": "Learning materials",
+    "categories": {
+      "basics": "Basics",
+      "dataStructures": "Data structures",
+      "graphs": "Graphs",
+      "dp": "Dynamic programming",
+      "math": "Mathematics"
+    }
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "rank": "Rank",
+    "user": "User",
+    "score": "Score",
+    "solved": "Solved"
+  },
+  "profile": {
+    "editProfile": "Edit profile",
+    "solvedProblems": "Problems solved",
+    "submissions": "Submissions",
+    "joinedAt": "Joined",
+    "activity": "Activity"
+  },
+  "login": {
+    "title": "Sign In",
+    "subtitle": "Enter your ReInfo account",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign In",
+    "noAccount": "Don't have an account?",
+    "register": "Register",
+    "forgotPassword": "Forgot your password?"
+  },
+  "register": {
+    "title": "Register",
+    "subtitle": "Create your ReInfo account",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "submit": "Register",
+    "hasAccount": "Already have an account?",
+    "login": "Sign in",
+    "terms": "By registering, you agree to our terms and conditions."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred.",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "noResults": "No results.",
+    "viewAll": "View all",
+    "language": "Language",
+    "theme": "Theme",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode"
+  }
+}
