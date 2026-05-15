@@ -37,17 +37,38 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6">
-      <section className="flex flex-col gap-4 border-b border-border py-10 sm:flex-row sm:items-end sm:justify-between md:py-14">
-        <div className="max-w-lg">
+      <section className="relative overflow-hidden flex flex-col gap-4 border-b border-border py-10 sm:flex-row sm:items-end sm:justify-between md:py-14">
+        <div className="pointer-events-none absolute inset-0" aria-hidden>
+          {[
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg",       top: "12%",  right: "8%",  size: 38, opacity: 0.22 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-original.svg",           top: "55%",  right: "20%", size: 30, opacity: 0.09 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original-wordmark.svg",      top: "20%",  right: "30%", size: 32, opacity: 0.09 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg", bottom: "10%", right: "10%", size: 32, opacity: 0.09 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/c/c-original.svg",                 top: "8%",   right: "48%", size: 28, opacity: 0.09 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg",           bottom: "12%", right: "42%", size: 32, opacity: 0.09 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg",       top: "42%",  right: "55%", size: 28, opacity: 0.09 },
+          ].map(({ url, size, opacity, ...pos }, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={i}
+              src={url}
+              alt=""
+              className="absolute select-none grayscale dark:invert"
+              style={{ ...pos, width: size, height: size, opacity }}
+            />
+          ))}
+        </div>
+
+        <div className="relative max-w-lg">
           <p className="mb-2 font-mono text-xs text-muted-foreground">
-            {"// programare competitivă · România"}
+            {t("tagline")}
           </p>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t("title")}</h1>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
             {t("subtitle")}
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="relative flex shrink-0 gap-2">
           <Button asChild size="sm">
             <Link href="/invatare">
               {t("startLearning")}
