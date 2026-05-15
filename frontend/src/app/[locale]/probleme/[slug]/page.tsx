@@ -4,7 +4,6 @@ import { Download, Upload, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "@/i18n/navigation";
 
@@ -25,7 +24,7 @@ export default async function ProblemPage({ params }: Props) {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <Link
         href="/probleme"
-        className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="h-3.5 w-3.5" />
         {t("title")}
@@ -41,7 +40,7 @@ export default async function ProblemPage({ params }: Props) {
               <Badge variant="success">{t("difficultyLevels.easy")}</Badge>
               <Badge variant="muted">vectori</Badge>
               <Badge variant="muted">sortare</Badge>
-              <span className="text-xs text-muted-foreground">100 puncte</span>
+              <span className="font-mono text-xs text-muted-foreground">100 pct</span>
             </div>
           </div>
 
@@ -58,7 +57,7 @@ export default async function ProblemPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_240px]">
         <div>
           <Tabs defaultValue="statement">
             <TabsList>
@@ -74,7 +73,7 @@ export default async function ProblemPage({ params }: Props) {
               <Separator />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <h3 className="font-semibold mb-1 text-xs uppercase tracking-wider text-muted-foreground">
+                  <h3 className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     Date de intrare
                   </h3>
                   <p>
@@ -82,7 +81,7 @@ export default async function ProblemPage({ params }: Props) {
                   </p>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1 text-xs uppercase tracking-wider text-muted-foreground">
+                  <h3 className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     Date de ieșire
                   </h3>
                   <p>Se va afișa suma elementelor vectorului.</p>
@@ -93,18 +92,18 @@ export default async function ProblemPage({ params }: Props) {
             <TabsContent value="examples" className="mt-4 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     Input
                   </p>
-                  <pre className="rounded-md border border-border bg-muted px-4 py-3 font-mono text-sm">
+                  <pre className="overflow-x-auto rounded border border-border bg-muted px-4 py-3 font-mono text-sm leading-relaxed scrollbar-thin">
                     {`5\n1 2 3 4 5`}
                   </pre>
                 </div>
                 <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     Output
                   </p>
-                  <pre className="rounded-md border border-border bg-muted px-4 py-3 font-mono text-sm">
+                  <pre className="overflow-x-auto rounded border border-border bg-muted px-4 py-3 font-mono text-sm leading-relaxed scrollbar-thin">
                     {`15`}
                   </pre>
                 </div>
@@ -120,36 +119,39 @@ export default async function ProblemPage({ params }: Props) {
         </div>
 
         <aside className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">{t("downloads")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <div className="rounded border border-border p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("submitSolution")}
+            </p>
+            <div className="mb-4 space-y-2">
+              <div className="flex items-start gap-2.5 text-xs text-muted-foreground">
+                <span className="font-mono font-semibold text-primary shrink-0">01.</span>
+                Descarcă fișierul de intrare
+              </div>
+              <div className="flex items-start gap-2.5 text-xs text-muted-foreground">
+                <span className="font-mono font-semibold text-primary shrink-0">02.</span>
+                Rulează soluția local
+              </div>
+              <div className="flex items-start gap-2.5 text-xs text-muted-foreground">
+                <span className="font-mono font-semibold text-primary shrink-0">03.</span>
+                Încarcă fișierul de ieșire
+              </div>
+            </div>
+            <div className="space-y-2">
               <Button variant="outline" size="sm" className="w-full justify-start gap-2">
-                <Download className="h-4 w-4 text-muted-foreground" />
-                problema.in
+                <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-mono text-xs">problema.in</span>
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start gap-2">
-                <Download className="h-4 w-4 text-muted-foreground" />
-                problema.ok
+                <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-mono text-xs">problema.ok</span>
               </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">{t("submitSolution")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Descarcă fișierul de intrare, rulează soluția local și încarcă outputul.
-              </p>
-              <Button size="sm" className="w-full gap-2">
-                <Upload className="h-4 w-4" />
-                {t("uploadOutput")}
-              </Button>
-            </CardContent>
-          </Card>
+            </div>
+            <Button size="sm" className="mt-3 w-full gap-2">
+              <Upload className="h-3.5 w-3.5" />
+              {t("uploadOutput")}
+            </Button>
+          </div>
         </aside>
       </div>
     </div>

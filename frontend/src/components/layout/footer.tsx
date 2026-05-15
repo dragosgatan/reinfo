@@ -11,7 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <Link href="/" className="font-bold">
-              <span className="text-primary">Re</span>Info
+              <span className="text-foreground/50">Re</span>Info
             </Link>
             <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
               Platformă modernă de programare competitivă pentru elevi din România.

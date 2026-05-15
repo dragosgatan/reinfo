@@ -54,9 +54,11 @@ export default function LoginPage() {
   const isSubmitting = form.formState.isSubmitting;
 
   return (
-    <div className="mx-auto max-w-sm px-4 py-16 sm:px-0">
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+    <div className="flex min-h-[calc(100vh-48px)] items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+      <div className="mb-6">
+        <p className="mb-3 font-mono text-xs text-muted-foreground">{"// autentificare"}</p>
+        <h1 className="text-xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
@@ -108,11 +110,12 @@ export default function LoginPage() {
         {t("noAccount")}{" "}
         <Link
           href="/register"
-          className="font-medium text-foreground hover:text-primary transition-colors"
+          className="font-medium text-foreground transition-colors hover:text-primary"
         >
           {t("register")}
         </Link>
       </p>
+      </div>
     </div>
   );
 }

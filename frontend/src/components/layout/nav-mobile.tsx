@@ -32,7 +32,7 @@ export function NavMobile() {
       </Button>
 
       {open && (
-        <div className="absolute inset-x-0 top-14 z-50 border-b border-border bg-background px-4 py-3 shadow-sm">
+        <div className="absolute inset-x-0 top-12 z-50 border-b border-border bg-background px-4 py-3 shadow-sm">
           <nav className="flex flex-col gap-1">
             {navItems.map(({ href, key }) => (
               <Link
@@ -42,7 +42,7 @@ export function NavMobile() {
                 className={cn(
                   "rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   pathname === href || pathname.startsWith(href + "/")
-                    ? "bg-accent/10 text-accent-foreground"
+                    ? "text-primary font-medium"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >

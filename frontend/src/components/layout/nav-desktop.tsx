@@ -16,21 +16,24 @@ export function NavDesktop() {
   const pathname = usePathname();
 
   return (
-    <nav className="hidden md:flex items-center gap-0.5" aria-label="Principal">
-      {navItems.map(({ href, key }) => (
-        <Link
-          key={href}
-          href={href}
-          className={cn(
-            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-            pathname === href || pathname.startsWith(href + "/")
-              ? "text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {t(key)}
-        </Link>
-      ))}
+    <nav className="hidden md:flex items-center ml-3" aria-label="Principal">
+      {navItems.map(({ href, key }) => {
+        const isActive = pathname === href || pathname.startsWith(href + "/");
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              "px-3 py-2 text-sm transition-colors",
+              isActive
+                ? "text-primary font-medium"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t(key)}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

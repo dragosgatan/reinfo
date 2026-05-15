@@ -3,10 +3,9 @@ import type { Metadata } from "next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import { formatDate } from "@/lib/utils";
-import { CalendarDays, CheckCircle2, Send } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 interface Props {
   params: Promise<{ username: string; locale: string }>;
@@ -34,46 +33,31 @@ export default async function ProfilePage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start">
-        <Avatar className="h-16 w-16 text-lg">
-          <AvatarFallback>{initials}</AvatarFallback>
+      <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
+        <Avatar className="h-12 w-12 shrink-0">
+          <AvatarFallback className="font-mono text-sm">{initials}</AvatarFallback>
         </Avatar>
 
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{username}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Utilizator ReInfo</p>
-          <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-            <CalendarDays className="h-3.5 w-3.5" />
-            {t("joinedAt")} {formatDate(joinedAt)}
+          <h1 className="text-xl font-bold tracking-tight">{username}</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" />
+              {t("joinedAt")} {formatDate(joinedAt)}
+            </span>
+            <span>
+              <span className="font-mono font-semibold text-foreground">42</span>{" "}
+              {t("solvedProblems").toLowerCase()}
+            </span>
+            <span>
+              <span className="font-mono font-semibold text-foreground">128</span>{" "}
+              {t("submissions").toLowerCase()}
+            </span>
+            <span>
+              <span className="font-mono font-semibold text-foreground">3 200</span> puncte
+            </span>
           </div>
         </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3 mb-8">
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-success" />
-              42
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">{t("solvedProblems")}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Send className="h-5 w-5 text-primary" />
-              128
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">{t("submissions")}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-2xl font-bold tracking-tight">3 200</p>
-            <p className="text-xs text-muted-foreground mt-1">Puncte totale</p>
-          </CardContent>
-        </Card>
       </div>
 
       <Tabs defaultValue="submissions">
@@ -83,30 +67,30 @@ export default async function ProfilePage({ params }: Props) {
         </TabsList>
 
         <TabsContent value="submissions" className="mt-4">
-          <div className="rounded-lg border border-border overflow-hidden">
-            <div className="divide-y divide-border">
-              {mockSubmissions.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="flex items-center gap-4 px-4 py-3 text-sm hover:bg-muted/40 transition-colors"
+          <div className="overflow-hidden rounded border border-border divide-y divide-border">
+            {mockSubmissions.map((sub) => (
+              <div
+                key={sub.id}
+                className="flex items-center gap-4 px-4 py-2.5 text-sm transition-colors hover:bg-muted/30"
+              >
+                <Link
+                  href={`/probleme/${sub.problemSlug}`}
+                  className="flex-1 transition-colors hover:text-primary"
                 >
-                  <Link
-                    href={`/probleme/${sub.problemSlug}`}
-                    className="flex-1 font-medium hover:text-primary transition-colors"
-                  >
-                    {sub.problemTitle}
-                  </Link>
-                  <Badge
-                    variant={sub.score === 100 ? "success" : sub.score >= 60 ? "warning" : "destructive"}
-                  >
-                    {sub.score} pct
-                  </Badge>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
-                    {formatDate(sub.submittedAt)}
-                  </span>
-                </div>
-              ))}
-            </div>
+                  {sub.problemTitle}
+                </Link>
+                <Badge
+                  variant={
+                    sub.score === 100 ? "success" : sub.score >= 60 ? "warning" : "destructive"
+                  }
+                >
+                  {sub.score} pct
+                </Badge>
+                <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
+                  {formatDate(sub.submittedAt)}
+                </span>
+              </div>
+            ))}
           </div>
         </TabsContent>
 
