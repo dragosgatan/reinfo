@@ -11,7 +11,7 @@ export function Header() {
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-12 max-w-7xl items-center gap-4 px-4 sm:px-6">
         <Link href="/" className="shrink-0 text-[15px] font-bold tracking-tight">
-          <span className="text-foreground/50">Re</span>Info
+          ReInfo
         </Link>
 
         <NavDesktop />
