@@ -292,7 +292,7 @@ export function SubmissionPanel({
       )}
     >
       <MonacoEditor
-        height={fullscreen ? "100%" : "300px"}
+        height={fullscreen ? "100%" : "420px"}
         language={MONACO_LANGUAGE_MAP[language] ?? "plaintext"}
         value={code}
         onChange={(v) => {
@@ -303,6 +303,7 @@ export function SubmissionPanel({
         onMount={handleEditorMount}
         options={{
           minimap: { enabled: false },
+          automaticLayout: true,
           fontSize,
           lineNumbers: "on",
           scrollBeyondLastLine: false,

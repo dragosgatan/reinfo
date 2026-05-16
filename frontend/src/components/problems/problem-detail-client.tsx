@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, MemoryStick, Copy, Check, AlertCircle, Pencil } from "lucide-react";
+import { Clock, MemoryStick, Copy, Check, AlertCircle, Pencil, Expand, Shrink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -103,6 +103,7 @@ function ProblemDetailLayout({
   const { user } = useAuth();
   const canEdit = user?.role === "teacher" || user?.role === "admin";
   const memoryMb = Math.round(problem.memory_limit_kb / 1024);
+  const [editorFocused, setEditorFocused] = useState(false);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -141,11 +142,32 @@ function ProblemDetailLayout({
                 Editează
               </Link>
             )}
+            <button
+              onClick={() => setEditorFocused((v) => !v)}
+              className={cn(
+                "hidden lg:flex items-center gap-1.5 rounded border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                editorFocused
+                  ? "border-foreground/40 bg-foreground text-background hover:bg-foreground/90"
+                  : "border-border bg-muted text-foreground hover:bg-muted/80 hover:border-foreground/20",
+              )}
+              aria-label={editorFocused ? "Focalizează enunțul" : "Focalizează editorul"}
+            >
+              {editorFocused ? (
+                <><Shrink className="h-3.5 w-3.5" /> Editor</>
+              ) : (
+                <><Expand className="h-3.5 w-3.5" /> Editor</>
+              )}
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className={cn(
+        "grid gap-6",
+        editorFocused
+          ? "lg:grid-cols-[360px_1fr]"
+          : "lg:grid-cols-[1fr_360px]",
+      )}>
         <div className="min-w-0">
           <Tabs defaultValue="statement">
             <TabsList className="mb-4">
