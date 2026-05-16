@@ -15,6 +15,7 @@ class ContestCreate(BaseModel):
     description_md: str | None = None
     start_time: datetime
     end_time: datetime
+    scoring_mode: ScoringMode = ScoringMode.sum
 
     @model_validator(mode="after")
     def _end_after_start(self) -> "ContestCreate":
@@ -28,6 +29,7 @@ class ContestUpdate(BaseModel):
     description_md: str | None = None
     start_time: datetime | None = None
     end_time: datetime | None = None
+    scoring_mode: ScoringMode | None = None
 
 
 class ContestProblemEntry(BaseModel):

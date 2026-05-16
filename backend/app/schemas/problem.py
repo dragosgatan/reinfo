@@ -125,6 +125,11 @@ class ProblemListResponse(BaseModel):
     pages: int
 
 
+class OriginContest(BaseModel):
+    slug: str
+    title: str
+
+
 class ProblemDetail(BaseModel):
     """Full problem detail including sample test cases and solve count."""
 
@@ -147,3 +152,4 @@ class ProblemDetail(BaseModel):
     float_epsilon: float | None
     solve_count: int
     sample_test_cases: list[TestCaseSummary]
+    origin_contest: OriginContest | None = None

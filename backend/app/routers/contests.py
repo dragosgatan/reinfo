@@ -6,19 +6,28 @@ import unicodedata
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    Form,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db import get_session
+from app.db import async_session_factory, get_session
 from app.dependencies import get_current_user, get_optional_user, require_role
-from app.models.contest import Contest, ContestParticipant, ContestProblem
+from app.models.contest import Contest, ContestParticipant, ContestProblem, ScoringMode
 from app.models.judging_job import JudgingJob
 from app.models.problem import Problem, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
 from app.piston import SUPPORTED_LANGUAGES
+from app.realtime import hub
 from app.schemas.contest import (
     ContestCreate,
     ContestDetail,
@@ -196,6 +205,7 @@ async def create_contest(
         description_md=data.description_md,
         start_time=data.start_time,
         end_time=data.end_time,
+        scoring_mode=data.scoring_mode,
         created_by=current_user.id,
     )
     session.add(contest)
@@ -429,17 +439,21 @@ async def contest_submit(
     return SubmissionRead.model_validate(sub)
 
 
-@router.get("/{slug}/leaderboard", response_model=LeaderboardResponse)
-async def get_leaderboard(
-    slug: str,
-    session: AsyncSession = Depends(get_session),
-) -> LeaderboardResponse:
-    """Clasamentul concursului (cache 5 secunde)."""
-    now_ts = time.monotonic()
-    cached = _lb_cache.get(slug)
-    if cached and (now_ts - cached[0]) < _LB_TTL:
-        return cached[1]
+def _is_staff(user: User | None) -> bool:
+    return user is not None and user.role in (UserRole.teacher, UserRole.admin)
 
+
+def _is_frozen(contest: Contest, now: datetime, viewer: User | None) -> bool:
+    """Test-mode contests hide the leaderboard from non-staff until the end."""
+    if contest.scoring_mode != ScoringMode.test:
+        return False
+    if now >= contest.end_time:
+        return False
+    return not _is_staff(viewer)
+
+
+async def _build_leaderboard(slug: str, session: AsyncSession) -> LeaderboardResponse | None:
+    """Compute the full leaderboard for `slug`. Returns None if the contest is missing."""
     contest = await session.scalar(
         select(Contest)
         .where(Contest.slug == slug)
@@ -449,20 +463,18 @@ async def get_leaderboard(
         )
     )
     if contest is None:
-        raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+        return None
 
     problem_slugs = [cp.problem.slug for cp in contest.contest_problems]
     problem_id_to_slug = {cp.problem_id: cp.problem.slug for cp in contest.contest_problems}
     participant_ids = [p.user_id for p in contest.participants]
 
     if not participant_ids or not problem_slugs:
-        response = LeaderboardResponse(
+        return LeaderboardResponse(
             contest_slug=slug,
             entries=[],
             generated_at=datetime.now(UTC),
         )
-        _lb_cache[slug] = (now_ts, response)
-        return response
 
     rows = (
         await session.execute(
@@ -494,7 +506,7 @@ async def get_leaderboard(
             if last_sub[uid] is None or row.last_at > last_sub[uid]:
                 last_sub[uid] = row.last_at
 
-    entries = []
+    entries: list[LeaderboardEntry] = []
     for uid in participant_ids:
         user = participant_map.get(uid)
         if user is None:
@@ -519,10 +531,110 @@ async def get_leaderboard(
     for i, entry in enumerate(entries, start=1):
         entry.rank = i
 
-    response = LeaderboardResponse(
+    return LeaderboardResponse(
         contest_slug=slug,
         entries=entries,
         generated_at=datetime.now(UTC),
     )
+
+
+@router.get("/{slug}/leaderboard", response_model=LeaderboardResponse)
+async def get_leaderboard(
+    slug: str,
+    session: AsyncSession = Depends(get_session),
+    viewer: User | None = Depends(get_optional_user),
+) -> LeaderboardResponse:
+    """Clasamentul concursului. Pentru concursurile de tip `test`,
+    ascuns participanților obișnuiți până la finalul concursului.
+    Răspuns cache-uit 5 secunde pentru a evita încărcarea bazei."""
+    contest = await session.scalar(select(Contest).where(Contest.slug == slug))
+    if contest is None:
+        raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+
+    now = datetime.now(UTC)
+    if _is_frozen(contest, now, viewer):
+        raise HTTPException(status_code=403, detail="Clasamentul este ascuns până la final")
+
+    now_ts = time.monotonic()
+    cached = _lb_cache.get(slug)
+    if cached and (now_ts - cached[0]) < _LB_TTL:
+        return cached[1]
+
+    response = await _build_leaderboard(slug, session)
+    if response is None:
+        raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
     _lb_cache[slug] = (now_ts, response)
     return response
+
+
+@router.websocket("/{slug}/leaderboard/ws")
+async def leaderboard_ws(
+    websocket: WebSocket,
+    slug: str,
+) -> None:
+    """Push live leaderboard snapshots over WebSocket.
+
+    Sends one full snapshot on connect, then a new snapshot every time the
+    judging pipeline publishes a NOTIFY for this contest. Test-mode contests
+    are gated the same way as the REST endpoint.
+    """
+    await websocket.accept()
+
+    viewer: User | None = None
+    cookie_token = websocket.cookies.get("reinfo_session")
+    async with async_session_factory() as session:
+        if cookie_token:
+            from app.models.user import Session as DbSession
+
+            db_session = await session.scalar(
+                select(DbSession).where(
+                    DbSession.token == cookie_token,
+                    DbSession.expires_at > datetime.now(UTC),
+                )
+            )
+            if db_session is not None:
+                viewer = await session.get(User, db_session.user_id)
+
+        contest = await session.scalar(select(Contest).where(Contest.slug == slug))
+        if contest is None:
+            await websocket.send_json({"type": "error", "code": "not_found"})
+            await websocket.close(code=4404)
+            return
+
+        if _is_frozen(contest, datetime.now(UTC), viewer):
+            await websocket.send_json({"type": "frozen", "end_time": contest.end_time.isoformat()})
+            await websocket.close(code=4403)
+            return
+
+        snapshot = await _build_leaderboard(slug, session)
+        if snapshot is not None:
+            await websocket.send_json(
+                {"type": "snapshot", "data": snapshot.model_dump(mode="json")}
+            )
+
+    await hub.connect(slug, websocket)
+    try:
+        while True:
+            # We don't expect client → server messages, but reading keeps the
+            # socket healthy and lets us notice the disconnect promptly.
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        await hub.disconnect(slug, websocket)
+
+
+async def dispatch_leaderboard_update(slug: str) -> None:
+    """Called by the NOTIFY listener: rebuild and broadcast a fresh snapshot."""
+    # Invalidate the REST cache so the next HTTP fetch matches what WS clients see.
+    _lb_cache.pop(slug, None)
+    try:
+        async with async_session_factory() as session:
+            snapshot = await _build_leaderboard(slug, session)
+    except Exception:
+        return
+    if snapshot is None:
+        return
+    await hub.broadcast(slug, {"type": "snapshot", "data": snapshot.model_dump(mode="json")})

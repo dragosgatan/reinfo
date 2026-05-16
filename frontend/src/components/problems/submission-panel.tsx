@@ -272,6 +272,7 @@ export function SubmissionPanel({
         monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter,
         () => { submitCallbackRef.current(); },
       );
+      monacoInstance.editor.remeasureFonts();
     },
     [],
   );
@@ -312,6 +313,7 @@ export function SubmissionPanel({
           minimap: { enabled: false },
           automaticLayout: true,
           fontSize,
+          fontFamily: "'JetBrains Mono', monospace",
           lineNumbers: "on",
           scrollBeyondLastLine: false,
           wordWrap: "on",

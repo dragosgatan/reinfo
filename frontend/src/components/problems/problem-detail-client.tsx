@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, MemoryStick, Copy, Check, AlertCircle, Pencil } from "lucide-react";
+import { Clock, MemoryStick, Copy, Check, AlertCircle, Pencil, Trophy } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -131,6 +131,15 @@ function ProblemDetailLayout({
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {problem.origin_contest && (
+              <Link
+                href={`/concursuri/${problem.origin_contest.slug}` as Parameters<typeof Link>[0]["href"]}
+                className="flex items-center gap-1 rounded border border-border px-2 py-1 transition-colors hover:border-foreground/30 hover:text-foreground"
+              >
+                <Trophy className="h-3 w-3" />
+                {problem.origin_contest.title}
+              </Link>
+            )}
             <span className="font-mono">{problem.score_total} pct</span>
             <span>{problem.solve_count} {t("solves")}</span>
             {canEdit && (

@@ -7,6 +7,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from sqlalchemy import String, and_, case, cast, exists, func, or_, select
+from sqlalchemy import delete as sa_delete
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +20,7 @@ from app.models.problem import Problem, TestCase, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
 from app.schemas.problem import (
+    OriginContest,
     ProblemCreate,
     ProblemDetail,
     ProblemListItem,
@@ -29,7 +31,7 @@ from app.schemas.problem import (
     TestCaseSummary,
     UserProblemStatus,
 )
-from app.storage import read_test_case, save_test_case
+from app.storage import delete_test_case, read_test_case, save_test_case
 
 router = APIRouter(prefix="/api/problems", tags=["problems"])
 
@@ -102,7 +104,7 @@ async def list_problems(
     difficulty_min: int | None = Query(None, ge=1, le=10),
     difficulty_max: int | None = Query(None, ge=1, le=10),
     status: Literal["solved", "attempted", "unsolved"] | None = Query(None),
-    sort: Literal["newest", "easiest", "hardest", "most_solved"] = Query("newest"),
+    sort: Literal["newest", "oldest", "easiest", "hardest", "most_solved"] = Query("oldest"),
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ProblemListResponse:
@@ -140,7 +142,9 @@ async def list_problems(
                 and_(Problem.visibility == Visibility.contest, _ended_contest),
             )
         )
-    elif current_user.role != UserRole.admin:
+    elif current_user.role == UserRole.admin:
+        stmt = stmt.where(Problem.visibility != Visibility.private)
+    else:
         stmt = stmt.where(
             or_(
                 Problem.visibility == Visibility.public,
@@ -167,6 +171,8 @@ async def list_problems(
     # sort
     if sort == "newest":
         stmt = stmt.order_by(Problem.created_at.desc())
+    elif sort == "oldest":
+        stmt = stmt.order_by(Problem.created_at.asc())
     elif sort == "easiest":
         stmt = stmt.order_by(Problem.difficulty.asc(), Problem.created_at.desc())
     elif sort == "hardest":
@@ -214,7 +220,8 @@ async def get_problem(
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
 
     contest_ended = False
-    if problem.visibility == Visibility.contest and problem.origin_contest_id:
+    origin: Contest | None = None
+    if problem.origin_contest_id:
         origin = await session.get(Contest, problem.origin_contest_id)
         if origin is not None and origin.end_time < datetime.now(UTC):
             contest_ended = True
@@ -237,6 +244,7 @@ async def get_problem(
         **pr.model_dump(),
         solve_count=solve_count,
         sample_test_cases=sample_tcs,
+        origin_contest=OriginContest(slug=origin.slug, title=origin.title) if origin else None,
     )
 
 
@@ -301,6 +309,47 @@ async def delete_problem(
 
     await session.commit()
     return {"message": "Problema a fost ascunsă"}
+
+
+@router.get("/{slug}/test-cases", response_model=list[TestCaseRead])
+async def list_test_cases(
+    slug: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> list[TestCaseRead]:
+    """Lista cazurilor de test ale problemei. Autorul sau administratorul."""
+    problem = await _get_problem_or_404(slug, session)
+    _assert_can_edit(problem, current_user)
+    tcs = (
+        await session.scalars(
+            select(TestCase).where(TestCase.problem_id == problem.id).order_by(TestCase.ordinal)
+        )
+    ).all()
+    return [TestCaseRead.model_validate(tc) for tc in tcs]
+
+
+@router.delete("/{slug}/test-cases/{ordinal}", status_code=200)
+async def delete_test_case_endpoint(
+    slug: str,
+    ordinal: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
+    """Șterge un caz de test (fișiere + rândul din DB). Autorul sau administratorul."""
+    problem = await _get_problem_or_404(slug, session)
+    _assert_can_edit(problem, current_user)
+    tc = await session.scalar(
+        select(TestCase).where(
+            TestCase.problem_id == problem.id,
+            TestCase.ordinal == ordinal,
+        )
+    )
+    if tc is None:
+        raise HTTPException(status_code=404, detail="Cazul de test nu a fost găsit")
+    await delete_test_case(tc.input_path, tc.output_path)
+    await session.execute(sa_delete(TestCase).where(TestCase.id == tc.id))
+    await session.commit()
+    return {"message": "Cazul de test a fost șters"}
 
 
 @router.post("/{slug}/test-cases", response_model=TestCaseRead, status_code=201)

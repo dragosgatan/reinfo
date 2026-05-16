@@ -186,12 +186,14 @@ function SubmissionDetail({ submission }: { submission: Submission }) {
             readOnly: true,
             minimap: { enabled: false },
             fontSize: 13,
+            fontFamily: "'JetBrains Mono', monospace",
             lineNumbers: "on",
             scrollBeyondLastLine: false,
             wordWrap: "off",
             tabSize: 2,
             padding: { top: 8, bottom: 8 },
           }}
+          onMount={(_editor, monaco) => monaco.editor.remeasureFonts()}
         />
       </div>
     </div>

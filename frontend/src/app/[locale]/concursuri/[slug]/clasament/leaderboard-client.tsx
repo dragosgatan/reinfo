@@ -2,6 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { useMemo, useRef, useState } from "react";
+import { Pause, Play, Radio } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,9 +12,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
-import { LeaderboardResponseSchema, ContestDetailSchema } from "@/lib/types";
+import { ContestDetailSchema } from "@/lib/types";
+import { useLiveLeaderboard } from "@/lib/use-live-leaderboard";
+import { useFlipRows } from "@/lib/use-flip";
+import { CountdownTimer } from "@/components/contests/countdown-timer";
+import { cn } from "@/lib/utils";
 
 const ORDINAL_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 
@@ -20,21 +27,62 @@ interface Props {
   slug: string;
 }
 
+function cellTone(score: number, total: number): string {
+  if (total <= 0 || score <= 0) return "text-muted-foreground";
+  if (score >= total) return "text-emerald-600 dark:text-emerald-400 font-medium";
+  return "text-amber-600 dark:text-amber-400 font-medium";
+}
+
 export default function LeaderboardClient({ slug }: Props) {
   const t = useTranslations("contests");
+  const [liveEnabled, setLiveEnabled] = useState(true);
 
   const { data: contest } = useQuery({
     queryKey: ["contest", slug],
     queryFn: () => api.get(`/api/contests/${slug}`, ContestDetailSchema),
   });
 
-  const { data: lb, isLoading } = useQuery({
-    queryKey: ["leaderboard", slug],
-    queryFn: () => api.get(`/api/contests/${slug}/leaderboard`, LeaderboardResponseSchema),
-    refetchInterval: contest?.status === "ongoing" ? 10_000 : false,
+  const isOngoing = contest?.status === "ongoing";
+
+  const { data: lb, status: liveStatus } = useLiveLeaderboard({
+    slug,
+    enabled: isOngoing ? liveEnabled : false,
   });
 
-  const problemSlugs = contest?.problems.map((p) => p.problem_slug) ?? [];
+  // For past contests we don't need live updates; one-shot fetch via react-query.
+  const { data: lbStatic } = useQuery({
+    queryKey: ["leaderboard-static", slug],
+    queryFn: async () => {
+      const r = await fetch(`/api/contests/${slug}/leaderboard`, {
+        credentials: "include",
+      });
+      if (r.status === 403) return "frozen" as const;
+      if (!r.ok) throw new Error("failed");
+      return (await r.json()) as import("@/lib/types").LeaderboardResponse;
+    },
+    enabled: !isOngoing,
+  });
+
+  const board = isOngoing ? lb : lbStatic === "frozen" ? null : lbStatic ?? null;
+  const frozen = liveStatus === "frozen" || lbStatic === "frozen";
+
+  const problemEntries = useMemo(
+    () => contest?.problems ?? [],
+    [contest?.problems],
+  );
+  const problemTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const p of problemEntries) totals[p.problem_slug] = p.score_total;
+    return totals;
+  }, [problemEntries]);
+
+  const rowRefs = useRef(new Map<string, HTMLTableRowElement | null>());
+  const orderedKeys = useMemo(
+    () => (board?.entries ?? []).map((e) => e.user_id),
+    [board?.entries],
+  );
+
+  useFlipRows(orderedKeys, (k) => rowRefs.current.get(k) ?? null);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -47,13 +95,52 @@ export default function LeaderboardClient({ slug }: Props) {
         </Link>
       </div>
 
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">
-        {t("leaderboard")}
-      </h1>
+      <div className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("leaderboard")}
+          </h1>
+          {contest && isOngoing && (
+            <div className="mt-1">
+              <CountdownTimer
+                targetDate={contest.end_time}
+                label={t("endsIn")}
+              />
+            </div>
+          )}
+        </div>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Se încarcă...</p>
-      ) : !lb || lb.entries.length === 0 ? (
+        {isOngoing && !frozen && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLiveEnabled((v) => !v)}
+            className="gap-2"
+          >
+            {liveEnabled ? (
+              <>
+                <Pause className="h-3.5 w-3.5" />
+                {t("pauseLive")}
+              </>
+            ) : (
+              <>
+                <Play className="h-3.5 w-3.5" />
+                {t("resumeLive")}
+              </>
+            )}
+            <LiveDot status={liveStatus} />
+          </Button>
+        )}
+      </div>
+
+      {frozen ? (
+        <div className="rounded-md border border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+          <Radio className="mx-auto mb-2 h-4 w-4" />
+          {t("frozenUntilEnd")}
+        </div>
+      ) : !board ? (
+        <p className="text-sm text-muted-foreground">{t("loadingLeaderboard")}</p>
+      ) : board.entries.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noEntries")}</p>
       ) : (
         <div className="overflow-x-auto">
@@ -62,8 +149,12 @@ export default function LeaderboardClient({ slug }: Props) {
               <TableRow>
                 <TableHead className="w-12">{t("rank")}</TableHead>
                 <TableHead>{t("participant")}</TableHead>
-                {problemSlugs.map((ps, i) => (
-                  <TableHead key={ps} className="text-center w-16">
+                {problemEntries.map((p, i) => (
+                  <TableHead
+                    key={p.problem_slug}
+                    className="w-16 text-center"
+                    title={p.problem_title}
+                  >
                     {ORDINAL_LABELS[i] ?? String(i + 1)}
                   </TableHead>
                 ))}
@@ -71,8 +162,16 @@ export default function LeaderboardClient({ slug }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {lb.entries.map((entry) => (
-                <TableRow key={entry.user_id}>
+              {board.entries.map((entry) => (
+                <TableRow
+                  key={entry.user_id}
+                  ref={(el) => {
+                    rowRefs.current.set(entry.user_id, el);
+                  }}
+                  className={cn(
+                    entry.rank === 1 && "bg-amber-50/40 dark:bg-amber-950/20",
+                  )}
+                >
                   <TableCell className="font-mono text-muted-foreground">
                     {entry.rank}
                   </TableCell>
@@ -84,14 +183,22 @@ export default function LeaderboardClient({ slug }: Props) {
                       {entry.display_name}
                     </Link>
                   </TableCell>
-                  {problemSlugs.map((ps) => (
-                    <TableCell key={ps} className="text-center font-mono text-sm">
-                      {entry.problem_scores[ps] != null
-                        ? entry.problem_scores[ps]
-                        : "—"}
-                    </TableCell>
-                  ))}
-                  <TableCell className="text-right font-semibold">
+                  {problemEntries.map((p) => {
+                    const score = entry.problem_scores[p.problem_slug] ?? 0;
+                    const total = problemTotals[p.problem_slug] ?? 0;
+                    return (
+                      <TableCell
+                        key={p.problem_slug}
+                        className={cn(
+                          "text-center font-mono text-sm",
+                          cellTone(score, total),
+                        )}
+                      >
+                        {score > 0 ? score : "—"}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-right font-semibold tabular-nums">
                     {entry.total_score}
                   </TableCell>
                 </TableRow>
@@ -100,12 +207,25 @@ export default function LeaderboardClient({ slug }: Props) {
           </Table>
         </div>
       )}
-
-      {contest?.status === "ongoing" && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Clasament actualizat automat la fiecare 10 secunde.
-        </p>
-      )}
     </div>
+  );
+}
+
+function LiveDot({ status }: { status: ReturnType<typeof useLiveLeaderboard>["status"] }) {
+  const color =
+    status === "live"
+      ? "bg-emerald-500"
+      : status === "polling"
+        ? "bg-amber-500"
+        : status === "connecting"
+          ? "bg-muted-foreground"
+          : "bg-muted-foreground/50";
+  return (
+    <span className="relative inline-flex h-2 w-2">
+      {status === "live" && (
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+      )}
+      <span className={cn("relative inline-flex h-2 w-2 rounded-full", color)} />
+    </span>
   );
 }

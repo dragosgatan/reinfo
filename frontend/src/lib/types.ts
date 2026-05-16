@@ -28,6 +28,18 @@ export const TestCaseSummarySchema = z.object({
 });
 export type TestCaseSummary = z.infer<typeof TestCaseSummarySchema>;
 
+export const TestCaseReadSchema = z.object({
+  id: z.string().uuid(),
+  ordinal: z.number().int(),
+  score: z.number().int(),
+  is_sample: z.boolean(),
+  is_hidden: z.boolean(),
+  input_path: z.string(),
+  output_path: z.string(),
+});
+export const TestCaseListSchema = z.array(TestCaseReadSchema);
+export type TestCaseRead = z.infer<typeof TestCaseReadSchema>;
+
 export const ProblemDetailSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -48,6 +60,7 @@ export const ProblemDetailSchema = z.object({
   float_epsilon: z.number().nullable(),
   solve_count: z.number().int(),
   sample_test_cases: z.array(TestCaseSummarySchema),
+  origin_contest: z.object({ slug: z.string(), title: z.string() }).nullable(),
 });
 export type ProblemDetail = z.infer<typeof ProblemDetailSchema>;
 
@@ -146,7 +159,7 @@ export const ContestSummarySchema = z.object({
   title: z.string(),
   start_time: z.string(),
   end_time: z.string(),
-  scoring_mode: z.enum(["sum"]),
+  scoring_mode: z.enum(["sum", "test"]),
   participant_count: z.number().int(),
   problem_count: z.number().int(),
   status: ContestStatusSchema,

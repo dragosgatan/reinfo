@@ -28,6 +28,7 @@ import type { ProblemListItem } from "@/lib/types";
 const PER_PAGE = 20;
 
 const SORT_OPTIONS = [
+  { value: "oldest", label: "Cele mai vechi" },
   { value: "newest", label: "Cele mai noi" },
   { value: "easiest", label: "Cele mai ușoare" },
   { value: "hardest", label: "Cele mai grele" },
@@ -55,7 +56,7 @@ export default function ProblemeClient() {
   const diffMax = params.get("diff_max") ?? "";
   const activeTags = params.getAll("tags");
   const status = params.get("status") ?? "";
-  const sort = (params.get("sort") ?? "newest") as string;
+  const sort = (params.get("sort") ?? "oldest") as string;
   const page = Number(params.get("page") ?? "1");
 
   const setParam = useCallback(

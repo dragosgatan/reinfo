@@ -1,3 +1,8 @@
+import asyncio
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager, suppress
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -5,7 +10,25 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.limiter import limiter
+from app.realtime import run_listener
 from app.routers import auth, contests, problems, submissions
+from app.routers.contests import dispatch_leaderboard_update
+
+log = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    stop_event = asyncio.Event()
+    listener_task = asyncio.create_task(run_listener(dispatch_leaderboard_update, stop_event))
+    try:
+        yield
+    finally:
+        stop_event.set()
+        listener_task.cancel()
+        with suppress(asyncio.CancelledError, Exception):
+            await listener_task
+
 
 app = FastAPI(
     title="ReInfo API",
@@ -14,6 +37,7 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 
 app.state.limiter = limiter

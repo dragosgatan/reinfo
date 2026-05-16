@@ -8,10 +8,11 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.contest import Contest, ContestProblem
+from app.models.contest import Contest, ContestProblem, ScoringMode
 from app.models.problem import ComparisonMode, Problem, Visibility
 from app.models.user import User, UserRole
 from app.piston import ExecutionResult
+from app.realtime import hub
 from app.security import hash_password
 from app.storage import save_test_case
 from app.worker import process_one_job
@@ -91,10 +92,12 @@ async def _make_contest(
     slug: str = "test-contest",
     start_offset_minutes: int = -10,
     end_offset_minutes: int = 60,
+    scoring_mode: ScoringMode = ScoringMode.sum,
 ) -> Contest:
     now = datetime.now(UTC)
     contest = Contest(
         slug=slug,
+        scoring_mode=scoring_mode,
         title="Test Contest",
         start_time=now + timedelta(minutes=start_offset_minutes),
         end_time=now + timedelta(minutes=end_offset_minutes),
@@ -468,3 +471,116 @@ async def test_leaderboard_ranking(client: AsyncClient, db_session: AsyncSession
     assert entries[1]["username"] == "ranker2"
     assert entries[1]["total_score"] == 100
     assert entries[1]["rank"] == 2
+
+
+@pytest.mark.asyncio
+async def test_test_mode_leaderboard_hidden_from_students(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """For test-type contests, the leaderboard is 403 for non-staff during the contest."""
+    teacher = await _make_user(db_session, "teacher_test1", UserRole.teacher)
+    await _make_user(db_session, "student_test1")
+    await _make_contest(db_session, teacher.id, slug="frozen-c", scoring_mode=ScoringMode.test)
+
+    await _login(client, "student_test1")
+    r = await client.get("/api/contests/frozen-c/leaderboard")
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_test_mode_leaderboard_visible_to_staff(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Staff can always see the leaderboard, even during a test-type contest."""
+    teacher = await _make_user(db_session, "teacher_test2", UserRole.teacher)
+    await _make_contest(db_session, teacher.id, slug="staff-c", scoring_mode=ScoringMode.test)
+
+    await _login(client, "teacher_test2")
+    r = await client.get("/api/contests/staff-c/leaderboard")
+    assert r.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_test_mode_leaderboard_visible_after_end(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Once the contest has ended, the freeze lifts for everyone."""
+    teacher = await _make_user(db_session, "teacher_test3", UserRole.teacher)
+    await _make_user(db_session, "student_test3")
+    await _make_contest(
+        db_session,
+        teacher.id,
+        slug="ended-test-c",
+        scoring_mode=ScoringMode.test,
+        start_offset_minutes=-120,
+        end_offset_minutes=-30,
+    )
+
+    await _login(client, "student_test3")
+    r = await client.get("/api/contests/ended-test-c/leaderboard")
+    assert r.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_hub_broadcasts_to_subscribed_sockets_only() -> None:
+    """The hub fans payloads to all sockets subscribed to a slug, and only those."""
+    received_a: list[dict] = []
+    received_b: list[dict] = []
+    received_other: list[dict] = []
+
+    class FakeSocket:
+        def __init__(self, sink: list[dict]) -> None:
+            self.sink = sink
+
+        async def send_json(self, payload: dict) -> None:
+            self.sink.append(payload)
+
+    a = FakeSocket(received_a)
+    b = FakeSocket(received_b)
+    other = FakeSocket(received_other)
+
+    await hub.connect("alpha", a)  # type: ignore[arg-type]
+    await hub.connect("alpha", b)  # type: ignore[arg-type]
+    await hub.connect("beta", other)  # type: ignore[arg-type]
+    try:
+        await hub.broadcast("alpha", {"type": "snapshot", "data": {"v": 1}})
+    finally:
+        await hub.disconnect("alpha", a)  # type: ignore[arg-type]
+        await hub.disconnect("alpha", b)  # type: ignore[arg-type]
+        await hub.disconnect("beta", other)  # type: ignore[arg-type]
+
+    assert received_a == [{"type": "snapshot", "data": {"v": 1}}]
+    assert received_b == [{"type": "snapshot", "data": {"v": 1}}]
+    assert received_other == []
+
+
+@pytest.mark.asyncio
+async def test_hub_evicts_failed_sockets() -> None:
+    """Sockets that raise on send are dropped so the next broadcast skips them."""
+    delivered: list[int] = []
+
+    class FlakySocket:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def send_json(self, _payload: dict) -> None:
+            self.calls += 1
+            raise RuntimeError("dead socket")
+
+    class HealthySocket:
+        async def send_json(self, _payload: dict) -> None:
+            delivered.append(1)
+
+    flaky = FlakySocket()
+    healthy = HealthySocket()
+    await hub.connect("evict-slug", flaky)  # type: ignore[arg-type]
+    await hub.connect("evict-slug", healthy)  # type: ignore[arg-type]
+    try:
+        await hub.broadcast("evict-slug", {"v": 1})
+        await hub.broadcast("evict-slug", {"v": 2})
+    finally:
+        await hub.disconnect("evict-slug", healthy)  # type: ignore[arg-type]
+
+    # flaky was called once, then evicted; healthy got both
+    assert flaky.calls == 1
+    assert delivered == [1, 1]

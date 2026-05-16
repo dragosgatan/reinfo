@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 class ScoringMode(StrEnum):
     sum = "sum"
+    test = "test"
 
 
 class Contest(Base, TimestampMixin):

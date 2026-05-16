@@ -14,8 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app import piston as piston_client
+from app.models.contest import Contest
 from app.models.problem import ComparisonMode, Problem
 from app.models.submission import Submission, SubmissionResult, Verdict
+from app.realtime import publish_contest_update
 
 _SNIPPET_MAX_LINES = 50
 
@@ -26,7 +28,7 @@ def _truncate_to_snippet(text: str) -> str:
 
 
 def _compare_exact(expected: bytes, actual: bytes) -> tuple[bool, str | None]:
-    return expected == actual, None
+    return expected.rstrip() == actual.rstrip(), None
 
 
 def _normalize_ws(data: bytes) -> list[str]:
@@ -85,6 +87,7 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
         submission.verdict = Verdict.AC
         submission.score = 0
         submission.judged_at = now
+        await _notify_contest_if_any(session, submission)
         await session.commit()
         return
 
@@ -225,4 +228,16 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
     submission.verdict = verdict
     submission.score = total_score
     submission.judged_at = now
+    await _notify_contest_if_any(session, submission)
     await session.commit()
+
+
+async def _notify_contest_if_any(session: AsyncSession, submission: Submission) -> None:
+    """Emit a NOTIFY for the contest leaderboard channel, if this submission
+    belongs to a contest. Runs in the same transaction as the verdict update
+    so subscribers only see the event after commit."""
+    if submission.contest_id is None:
+        return
+    slug = await session.scalar(select(Contest.slug).where(Contest.id == submission.contest_id))
+    if slug:
+        await publish_contest_update(session, slug)
