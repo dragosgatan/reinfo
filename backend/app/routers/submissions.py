@@ -9,12 +9,13 @@ from datetime import UTC, date, datetime, time
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db import get_session
 from app.dependencies import get_current_user, get_optional_user
+from app.models.contest import Contest
 from app.models.judging_job import JobStatus, JudgingJob
 from app.models.problem import Problem, Visibility
 from app.models.submission import Submission, Verdict
@@ -259,12 +260,23 @@ async def get_user_submissions(
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
 
-    total = (
-        await session.scalar(
-            select(func.count(Submission.id)).where(Submission.user_id == target.id)
-        )
-        or 0
+    # hide submissions made during an active contest until the contest ends
+    _not_in_active_contest = or_(
+        Submission.contest_id.is_(None),
+        and_(
+            Submission.contest_id.isnot(None),
+            Contest.end_time <= func.now(),
+        ),
     )
+
+    base_stmt = (
+        select(Submission)
+        .join(Problem, Submission.problem_id == Problem.id)
+        .outerjoin(Contest, Submission.contest_id == Contest.id)
+        .where(Submission.user_id == target.id, _not_in_active_contest)
+    )
+
+    total = await session.scalar(select(func.count()).select_from(base_stmt.subquery())) or 0
 
     rows = (
         await session.execute(
@@ -272,7 +284,8 @@ async def get_user_submissions(
                 Submission, Problem.slug.label("problem_slug"), Problem.title.label("problem_title")
             )
             .join(Problem, Submission.problem_id == Problem.id)
-            .where(Submission.user_id == target.id)
+            .outerjoin(Contest, Submission.contest_id == Contest.id)
+            .where(Submission.user_id == target.id, _not_in_active_contest)
             .order_by(Submission.created_at.desc())
             .offset((page - 1) * per_page)
             .limit(per_page)

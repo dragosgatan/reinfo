@@ -1,3 +1,4 @@
+from app.models.contest import Contest, ContestParticipant, ContestProblem, ScoringMode
 from app.models.judging_job import JobStatus, JudgingJob
 from app.models.problem import ComparisonMode, Problem, TestCase, Visibility
 from app.models.submission import Submission, SubmissionResult, Verdict
@@ -16,4 +17,8 @@ __all__ = [
     "Verdict",
     "JudgingJob",
     "JobStatus",
+    "Contest",
+    "ContestProblem",
+    "ContestParticipant",
+    "ScoringMode",
 ]

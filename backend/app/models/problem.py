@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, new_uuid
 
 if TYPE_CHECKING:
+    from app.models.contest import Contest, ContestProblem
     from app.models.submission import Submission, SubmissionResult
     from app.models.user import User
 
@@ -18,6 +19,7 @@ class Visibility(StrEnum):
     public = "public"
     draft = "draft"
     private = "private"
+    contest = "contest"
 
 
 class ComparisonMode(StrEnum):
@@ -62,6 +64,10 @@ class Problem(Base, TimestampMixin):
         server_default=text("'whitespace_insensitive'"),
     )
     float_epsilon: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # null for standalone problems; set when created as part of a contest
+    origin_contest_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("contests.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     author: Mapped["User | None"] = relationship("User", back_populates="problems")
     test_cases: Mapped[list["TestCase"]] = relationship(
@@ -71,6 +77,14 @@ class Problem(Base, TimestampMixin):
         order_by="TestCase.ordinal",
     )
     submissions: Mapped[list["Submission"]] = relationship("Submission", back_populates="problem")
+    origin_contest: Mapped["Contest | None"] = relationship(
+        "Contest",
+        back_populates="problems",
+        foreign_keys=[origin_contest_id],
+    )
+    contest_problem_entries: Mapped[list["ContestProblem"]] = relationship(
+        "ContestProblem", back_populates="problem"
+    )
 
 
 class TestCase(Base):

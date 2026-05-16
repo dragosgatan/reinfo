@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, new_uuid
 
 if TYPE_CHECKING:
+    from app.models.contest import Contest, ContestParticipant
     from app.models.problem import Problem
     from app.models.submission import Submission
 
@@ -44,6 +45,10 @@ class User(Base, TimestampMixin):
     )
     problems: Mapped[list["Problem"]] = relationship("Problem", back_populates="author")
     submissions: Mapped[list["Submission"]] = relationship("Submission", back_populates="user")
+    contests: Mapped[list["Contest"]] = relationship("Contest", back_populates="creator")
+    contest_participations: Mapped[list["ContestParticipant"]] = relationship(
+        "ContestParticipant", back_populates="user"
+    )
 
 
 class Session(Base, TimestampMixin):

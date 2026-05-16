@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
-from sqlalchemy import String, case, cast, func, or_, select
+from sqlalchemy import String, and_, case, cast, exists, func, or_, select
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload
 
 from app.db import get_session
 from app.dependencies import get_current_user, get_optional_user
+from app.models.contest import Contest
 from app.models.problem import Problem, TestCase, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
@@ -72,9 +73,11 @@ async def _get_problem_or_404(slug: str, session: AsyncSession) -> Problem:
     return problem
 
 
-def _assert_can_view(problem: Problem, user: User | None) -> None:
+def _assert_can_view(problem: Problem, user: User | None, *, contest_ended: bool = False) -> None:
     """Raise 403 if user cannot see a non-public problem."""
     if problem.visibility == Visibility.public:
+        return
+    if problem.visibility == Visibility.contest and contest_ended:
         return
     if user is None:
         raise HTTPException(status_code=403, detail="Acces interzis")
@@ -123,12 +126,27 @@ async def list_problems(
     if user_sq is not None:
         stmt = stmt.outerjoin(user_sq, Problem.id == user_sq.c.problem_id)
 
-    # visibility
+    _ended_contest = exists(
+        select(Contest.id).where(
+            Contest.id == Problem.origin_contest_id,
+            Contest.end_time < func.now(),
+        )
+    )
+
     if current_user is None:
-        stmt = stmt.where(Problem.visibility == Visibility.public)
+        stmt = stmt.where(
+            or_(
+                Problem.visibility == Visibility.public,
+                and_(Problem.visibility == Visibility.contest, _ended_contest),
+            )
+        )
     elif current_user.role != UserRole.admin:
         stmt = stmt.where(
-            or_(Problem.visibility == Visibility.public, Problem.author_id == current_user.id)
+            or_(
+                Problem.visibility == Visibility.public,
+                Problem.author_id == current_user.id,
+                and_(Problem.visibility == Visibility.contest, _ended_contest),
+            )
         )
 
     # optional filters
@@ -195,7 +213,13 @@ async def get_problem(
     if problem is None:
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
 
-    _assert_can_view(problem, current_user)
+    contest_ended = False
+    if problem.visibility == Visibility.contest and problem.origin_contest_id:
+        origin = await session.get(Contest, problem.origin_contest_id)
+        if origin is not None and origin.end_time < datetime.now(UTC):
+            contest_ended = True
+
+    _assert_can_view(problem, current_user, contest_ended=contest_ended)
 
     solve_count = (
         await session.scalar(

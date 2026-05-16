@@ -54,6 +54,7 @@ interface SubmissionPanelProps {
   isAuthenticated: boolean;
   editorFocused?: boolean;
   onToggleEditorFocus?: () => void;
+  submitUrl?: string;
 }
 
 type PanelState = "idle" | "submitting" | "judging" | "done" | "error";
@@ -107,6 +108,7 @@ export function SubmissionPanel({
   isAuthenticated,
   editorFocused = false,
   onToggleEditorFocus,
+  submitUrl,
 }: SubmissionPanelProps) {
   const t = useTranslations("problems");
   const { resolvedTheme } = useTheme();
@@ -192,7 +194,7 @@ export function SubmissionPanel({
       formData.append("source_code", code);
       formData.append("language", language);
 
-      const res = await fetch(`/api/problems/${slug}/submit`, {
+      const res = await fetch(submitUrl ?? `/api/problems/${slug}/submit`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -231,7 +233,7 @@ export function SubmissionPanel({
         err instanceof Error ? err.message : t("errorGeneric"),
       );
     }
-  }, [code, language, slug, fetchFullSubmission, t]);
+  }, [code, language, slug, submitUrl, fetchFullSubmission, t]);
 
   useEffect(() => {
     submitCallbackRef.current = handleSubmit;

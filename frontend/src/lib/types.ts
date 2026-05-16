@@ -40,7 +40,7 @@ export const ProblemDetailSchema = z.object({
   author_id: z.string().uuid().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
-  visibility: z.enum(["public", "draft", "private"]),
+  visibility: z.enum(["public", "draft", "private", "contest"]),
   time_limit_ms: z.number().int(),
   memory_limit_kb: z.number().int(),
   score_total: z.number().int(),
@@ -119,7 +119,7 @@ export const ProblemReadSchema = z.object({
   author_id: z.string().uuid().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
-  visibility: z.enum(["public", "draft", "private"]),
+  visibility: z.enum(["public", "draft", "private", "contest"]),
   time_limit_ms: z.number().int(),
   memory_limit_kb: z.number().int(),
   score_total: z.number().int(),
@@ -127,6 +127,66 @@ export const ProblemReadSchema = z.object({
   float_epsilon: z.number().nullable(),
 });
 export type ProblemRead = z.infer<typeof ProblemReadSchema>;
+
+export const ContestStatusSchema = z.enum(["upcoming", "ongoing", "past"]);
+export type ContestStatus = z.infer<typeof ContestStatusSchema>;
+
+export const ContestProblemEntrySchema = z.object({
+  ordinal: z.number().int(),
+  problem_slug: z.string(),
+  problem_title: z.string(),
+  score_total: z.number().int(),
+  solved_by_user: z.boolean().nullable(),
+});
+export type ContestProblemEntry = z.infer<typeof ContestProblemEntrySchema>;
+
+export const ContestSummarySchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  title: z.string(),
+  start_time: z.string(),
+  end_time: z.string(),
+  scoring_mode: z.enum(["sum"]),
+  participant_count: z.number().int(),
+  problem_count: z.number().int(),
+  status: ContestStatusSchema,
+});
+export type ContestSummary = z.infer<typeof ContestSummarySchema>;
+
+export const ContestDetailSchema = ContestSummarySchema.extend({
+  description_md: z.string().nullable(),
+  created_by: z.string().uuid().nullable(),
+  is_registered: z.boolean(),
+  problems: z.array(ContestProblemEntrySchema),
+});
+export type ContestDetail = z.infer<typeof ContestDetailSchema>;
+
+export const ContestListResponseSchema = z.object({
+  items: z.array(ContestSummarySchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  per_page: z.number().int(),
+  pages: z.number().int(),
+});
+export type ContestListResponse = z.infer<typeof ContestListResponseSchema>;
+
+export const LeaderboardEntrySchema = z.object({
+  rank: z.number().int(),
+  user_id: z.string().uuid(),
+  username: z.string(),
+  display_name: z.string(),
+  total_score: z.number().int(),
+  problem_scores: z.record(z.string(), z.number().int()),
+  last_submission_at: z.string().nullable(),
+});
+export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;
+
+export const LeaderboardResponseSchema = z.object({
+  contest_slug: z.string(),
+  entries: z.array(LeaderboardEntrySchema),
+  generated_at: z.string(),
+});
+export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 
 export const SUPPORTED_LANGUAGES = [
   "c",

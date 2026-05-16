@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,6 +71,8 @@ function slugify(title: string): string {
 
 export default function NouProblemPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const contestSlug = searchParams.get("contest_slug");
   const { user, isLoading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [publishMode, setPublishMode] = useState<"draft" | "public">("draft");
@@ -135,6 +137,8 @@ export default function NouProblemPage() {
     async (values: FormValues) => {
       setSubmitting(true);
       try {
+        const visibility = contestSlug ? "contest" : publishMode === "public" ? "public" : "draft";
+
         const problem = await api.post(
           "/api/problems/",
           {
@@ -145,7 +149,7 @@ export default function NouProblemPage() {
             output_format: values.output_format ?? "",
             difficulty: values.difficulty,
             tags: values.tags,
-            visibility: publishMode === "public" ? "public" : "draft",
+            visibility,
             time_limit_ms: values.time_limit_ms,
             memory_limit_kb: values.memory_limit_kb,
             score_total: values.testCases.reduce((sum, tc) => sum + (tc.score ?? 0), 0) || 100,
@@ -188,12 +192,19 @@ export default function NouProblemPage() {
           }
         }
 
-        toast.success(
-          publishMode === "public"
-            ? "Problema a fost publicată."
-            : "Ciornă salvată.",
-        );
-        router.push(`/probleme/${problem.slug}`);
+        if (contestSlug) {
+          await api.post(
+            `/api/contests/${contestSlug}/problems?problem_slug=${problem.slug}`,
+            {},
+          );
+          toast.success("Problema a fost adăugată la concurs.");
+          router.push(`/concursuri/${contestSlug}`);
+        } else {
+          toast.success(
+            publishMode === "public" ? "Problema a fost publicată." : "Ciornă salvată.",
+          );
+          router.push(`/probleme/${problem.slug}`);
+        }
       } catch (err) {
         const msg =
           err instanceof ApiError && err.status === 409
@@ -206,7 +217,7 @@ export default function NouProblemPage() {
         setSubmitting(false);
       }
     },
-    [publishMode, router],
+    [publishMode, contestSlug, router],
   );
 
   if (isLoading) return null;
@@ -229,32 +240,55 @@ export default function NouProblemPage() {
       onSubmit={handleSubmit(onSubmit)}
       className="mx-auto max-w-4xl px-4 py-6 sm:px-6"
     >
+      {contestSlug && (
+        <div className="mb-4">
+          <Link
+            href={`/concursuri/${contestSlug}`}
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            ← Înapoi la concurs
+          </Link>
+        </div>
+      )}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight">Problemă nouă</h1>
+        <h1 className="text-xl font-bold tracking-tight">
+          {contestSlug ? "Problemă nouă pentru concurs" : "Problemă nouă"}
+        </h1>
         <div className="flex items-center gap-2">
-          <Button
-            type="submit"
-            variant="outline"
-            size="sm"
-            disabled={submitting}
-            onClick={() => setPublishMode("draft")}
-          >
-            {submitting && publishMode === "draft" ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : null}
-            Salvează ciornă
-          </Button>
-          <Button
-            type="submit"
-            size="sm"
-            disabled={submitting}
-            onClick={() => setPublishMode("public")}
-          >
-            {submitting && publishMode === "public" ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : null}
-            Publică
-          </Button>
+          {contestSlug ? (
+            <Button type="submit" size="sm" disabled={submitting}>
+              {submitting ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              Adaugă la concurs
+            </Button>
+          ) : (
+            <>
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                disabled={submitting}
+                onClick={() => setPublishMode("draft")}
+              >
+                {submitting && publishMode === "draft" ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                Salvează ciornă
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={submitting}
+                onClick={() => setPublishMode("public")}
+              >
+                {submitting && publishMode === "public" ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                Publică
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
