@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = ["http://localhost:3000"]
     data_dir: str = "../data"
     environment: str = "development"
+    piston_url: str = "http://piston:2000"
 
 
 settings = Settings()

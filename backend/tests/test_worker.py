@@ -3,7 +3,7 @@
 import asyncio
 import json
 import uuid
-from io import BytesIO
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -14,11 +14,24 @@ from app.models.judging_job import JobStatus, JudgingJob
 from app.models.problem import ComparisonMode, Problem, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
+from app.piston import ExecutionResult
 from app.security import hash_password
-from app.storage import save_submission_output, save_test_case
+from app.storage import save_test_case
 from app.worker import process_one_job
 
 _PASSWORD = "testpass1"
+
+
+def _ok_result(stdout: str = "42\n") -> ExecutionResult:
+    return ExecutionResult(
+        stdout=stdout,
+        stderr="",
+        exit_code=0,
+        compile_error=False,
+        time_ms=50,
+        memory_kb=1024,
+        timed_out=False,
+    )
 
 
 async def _make_user(db: AsyncSession, username: str, role: UserRole = UserRole.student) -> User:
@@ -85,17 +98,18 @@ async def _enqueue_submission(
     db: AsyncSession,
     user_id: uuid.UUID,
     problem_id: uuid.UUID,
-    output: bytes,
+    code: str = "print(42)",
+    language: str = "python",
 ) -> tuple[uuid.UUID, uuid.UUID]:
     """Insert a submission + judging_job directly, bypassing the HTTP layer."""
     sub_id = uuid.uuid4()
-    path = await save_submission_output(user_id, sub_id, output)
 
     sub = Submission(
         id=sub_id,
         user_id=user_id,
         problem_id=problem_id,
-        submitted_output_path=path,
+        submitted_code=code,
+        language=language,
         verdict=Verdict.pending,
         score=0,
     )
@@ -113,9 +127,12 @@ async def _enqueue_submission(
 async def test_process_one_job_ac(db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "worker-ac")
     problem = await _make_problem_with_tc(db_session, user.id, "worker-ac-prob")
-    sub_id, _ = await _enqueue_submission(db_session, user.id, problem.id, b"42\n")
+    sub_id, _ = await _enqueue_submission(db_session, user.id, problem.id)
 
-    processed = await process_one_job(db_session)
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=_ok_result()
+    ):
+        processed = await process_one_job(db_session)
     assert processed is True
 
     sub = await db_session.get(Submission, sub_id)
@@ -135,9 +152,14 @@ async def test_process_one_job_ac(db_session: AsyncSession) -> None:
 async def test_process_one_job_wa(db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "worker-wa")
     problem = await _make_problem_with_tc(db_session, user.id, "worker-wa-prob")
-    sub_id, _ = await _enqueue_submission(db_session, user.id, problem.id, b"wrong\n")
+    sub_id, _ = await _enqueue_submission(db_session, user.id, problem.id)
 
-    await process_one_job(db_session)
+    with patch(
+        "app.judging.piston_client.execute",
+        new_callable=AsyncMock,
+        return_value=_ok_result("wrong\n"),
+    ):
+        await process_one_job(db_session)
 
     sub = await db_session.get(Submission, sub_id)
     assert sub is not None
@@ -155,15 +177,18 @@ async def test_no_double_processing(db_session: AsyncSession) -> None:
     """Two concurrent workers must not process the same job twice."""
     user = await _make_user(db_session, "worker-concurrent")
     problem = await _make_problem_with_tc(db_session, user.id, "worker-concurrent-prob")
-    sub_id, _ = await _enqueue_submission(db_session, user.id, problem.id, b"42\n")
+    sub_id, _ = await _enqueue_submission(db_session, user.id, problem.id)
 
     from tests.conftest import _session_factory
 
-    async with _session_factory() as session_a, _session_factory() as session_b:
-        results = await asyncio.gather(
-            process_one_job(session_a),
-            process_one_job(session_b),
-        )
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=_ok_result()
+    ):
+        async with _session_factory() as session_a, _session_factory() as session_b:
+            results = await asyncio.gather(
+                process_one_job(session_a),
+                process_one_job(session_b),
+            )
 
     assert results.count(True) == 1
     assert results.count(False) == 1
@@ -183,13 +208,15 @@ async def test_sse_delivers_updates(client: AsyncClient, db_session: AsyncSessio
 
     r = await client.post(
         f"/api/problems/{problem.slug}/submit",
-        files={"output_file": ("a.out", BytesIO(b"42\n"), "text/plain")},
+        data={"source_code": "print(42)", "language": "python"},
     )
     assert r.status_code == 201
     sub_id = r.json()["id"]
 
-    # judge before connecting; the generator terminates on the first poll
-    await process_one_job(db_session)
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=_ok_result()
+    ):
+        await process_one_job(db_session)
 
     r2 = await client.get(f"/api/submissions/{sub_id}/stream")
     assert r2.status_code == 200
@@ -211,19 +238,19 @@ async def test_sse_queued_then_done(client: AsyncClient, db_session: AsyncSessio
 
     r = await client.post(
         f"/api/problems/{problem.slug}/submit",
-        files={"output_file": ("a.out", BytesIO(b"42\n"), "text/plain")},
+        data={"source_code": "print(42)", "language": "python"},
     )
     sub_id = r.json()["id"]
 
-    # schedule worker to run after the first SSE poll (poll interval = 0.5s)
     async def delayed_judge() -> None:
         await asyncio.sleep(0.6)
-        await process_one_job(db_session)
+        with patch(
+            "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=_ok_result()
+        ):
+            await process_one_job(db_session)
 
     judge_task = asyncio.ensure_future(delayed_judge())
 
-    # client.get drives the ASGI app synchronously; asyncio.sleep inside the SSE generator
-    # yields to the event loop so judge_task can execute between polls
     r2 = await client.get(f"/api/submissions/{sub_id}/stream")
     await judge_task
 
@@ -241,7 +268,7 @@ async def test_sse_requires_auth(client: AsyncClient, db_session: AsyncSession) 
 
     r = await client.post(
         f"/api/problems/{problem.slug}/submit",
-        files={"output_file": ("a.out", BytesIO(b"42\n"), "text/plain")},
+        data={"source_code": "print(42)", "language": "python"},
     )
     sub_id = r.json()["id"]
     client.cookies.clear()

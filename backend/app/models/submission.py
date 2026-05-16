@@ -20,6 +20,8 @@ class Verdict(StrEnum):
     PARTIAL = "PARTIAL"
     CE = "CE"
     RE = "RE"
+    TLE = "TLE"
+    MLE = "MLE"
 
 
 # shared enum instance ensures the postgres type is only created once
@@ -38,9 +40,8 @@ class Submission(Base, TimestampMixin):
     )
     # fk to contests will be added once that table exists
     contest_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
-    submitted_output_path: Mapped[str] = mapped_column(String(512), nullable=False)
-    submitted_code_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    language: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    submitted_code: Mapped[str] = mapped_column(Text, nullable=False)
+    language: Mapped[str] = mapped_column(String(32), nullable=False)
     verdict: Mapped[Verdict] = mapped_column(
         _VERDICT_ENUM, nullable=False, server_default=text("'pending'")
     )
@@ -67,6 +68,8 @@ class SubmissionResult(Base):
     verdict: Mapped[Verdict] = mapped_column(_VERDICT_ENUM, nullable=False)
     score: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    execution_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    memory_kb: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     submission: Mapped["Submission"] = relationship("Submission", back_populates="results")
     test_case: Mapped["TestCase"] = relationship("TestCase", back_populates="results")

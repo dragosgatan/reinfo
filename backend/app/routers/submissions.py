@@ -7,7 +7,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, date, datetime, time
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,16 +19,15 @@ from app.models.judging_job import JobStatus, JudgingJob
 from app.models.problem import Problem, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
+from app.piston import SUPPORTED_LANGUAGES
 from app.schemas.submission import (
     SubmissionListResponse,
     SubmissionRead,
     SubmissionSummary,
 )
-from app.storage import save_submission_code, save_submission_output
 
 router = APIRouter(tags=["submissions"])
 
-_MAX_OUTPUT_BYTES = 10 * 1024 * 1024  # 10 MB
 _MAX_CODE_BYTES = 512 * 1024  # 512 KB
 
 
@@ -45,13 +44,21 @@ def _can_view_submission(sub: Submission, user: User | None, problem: Problem) -
 @router.post("/api/problems/{slug}/submit", response_model=SubmissionRead, status_code=201)
 async def submit(
     slug: str,
-    output_file: UploadFile = File(...),
-    source_code: UploadFile | None = File(default=None),
-    language: str | None = Form(default=None),
+    source_code: str = Form(...),
+    language: str = Form(...),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SubmissionRead:
-    """Trimite output-ul pentru o problemă. Judecarea este asincronă (job queue)."""
+    """Trimite codul sursă pentru o problemă. Judecarea este asincronă (job queue)."""
+    if language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Limbaj nesuportat: {language}. Limbaje acceptate: {sorted(SUPPORTED_LANGUAGES)}",
+        )
+
+    if len(source_code.encode("utf-8")) > _MAX_CODE_BYTES:
+        raise HTTPException(status_code=413, detail="Codul sursă este prea mare (max 512 KB)")
+
     problem = await session.scalar(select(Problem).where(Problem.slug == slug))
     if problem is None:
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
@@ -63,28 +70,12 @@ async def submit(
     ):
         raise HTTPException(status_code=403, detail="Acces interzis")
 
-    output_bytes = await output_file.read()
-    if len(output_bytes) > _MAX_OUTPUT_BYTES:
-        raise HTTPException(status_code=413, detail="Fișierul output este prea mare (max 10 MB)")
-
     submission_id = uuid.uuid4()
-    output_path = await save_submission_output(current_user.id, submission_id, output_bytes)
-
-    code_path: str | None = None
-    if source_code is not None:
-        code_bytes = await source_code.read()
-        if len(code_bytes) > _MAX_CODE_BYTES:
-            raise HTTPException(status_code=413, detail="Codul sursă este prea mare (max 512 KB)")
-        code_path = await save_submission_code(
-            current_user.id, submission_id, language or "txt", code_bytes
-        )
-
     submission = Submission(
         id=submission_id,
         user_id=current_user.id,
         problem_id=problem.id,
-        submitted_output_path=output_path,
-        submitted_code_path=code_path,
+        submitted_code=source_code,
         language=language,
         verdict=Verdict.pending,
         score=0,

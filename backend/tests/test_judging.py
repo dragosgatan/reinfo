@@ -2,8 +2,10 @@
 
 import uuid
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.judging import (
@@ -15,8 +17,9 @@ from app.judging import (
 from app.models.problem import ComparisonMode, Problem, TestCase, Visibility
 from app.models.submission import Submission, SubmissionResult, Verdict
 from app.models.user import User
+from app.piston import ExecutionResult
 from app.security import hash_password
-from app.storage import save_submission_output, save_test_case
+from app.storage import save_test_case
 
 
 class TestCompareExact:
@@ -191,15 +194,15 @@ async def _make_submission(
     db: AsyncSession,
     user_id: uuid.UUID,
     problem_id: uuid.UUID,
-    submitted_output: bytes,
+    *,
+    code: str = "print(42)",
+    language: str = "python",
 ) -> Submission:
-    sub_id = uuid.uuid4()
-    output_path = await save_submission_output(user_id, sub_id, submitted_output)
     sub = Submission(
-        id=sub_id,
         user_id=user_id,
         problem_id=problem_id,
-        submitted_output_path=output_path,
+        submitted_code=code,
+        language=language,
         verdict=Verdict.pending,
         score=0,
     )
@@ -209,6 +212,18 @@ async def _make_submission(
     return sub
 
 
+def _ok_result(stdout: str = "42\n") -> ExecutionResult:
+    return ExecutionResult(
+        stdout=stdout,
+        stderr="",
+        exit_code=0,
+        compile_error=False,
+        time_ms=50,
+        memory_kb=1024,
+        timed_out=False,
+    )
+
+
 @pytest.mark.asyncio
 async def test_judge_exact_ac(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
@@ -216,8 +231,12 @@ async def test_judge_exact_ac(db_session: AsyncSession) -> None:
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
     await _make_test_case(db_session, problem.id, 2, b"42\n", score=20)
 
-    sub = await _make_submission(db_session, user.id, problem.id, b"42\n")
-    await judge_submission(sub.id, db_session)
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=_ok_result()
+    ):
+        await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.AC
@@ -228,11 +247,15 @@ async def test_judge_exact_ac(db_session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_judge_exact_wa(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
-    problem = await _make_problem(db_session, user.id)
+    problem = await _make_problem(db_session, user.id, slug="judge-wa")
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
 
-    sub = await _make_submission(db_session, user.id, problem.id, b"43\n")
-    await judge_submission(sub.id, db_session)
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=_ok_result("99\n")
+    ):
+        await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.WA
@@ -241,15 +264,20 @@ async def test_judge_exact_wa(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_judge_partial_scoring(db_session: AsyncSession) -> None:
-    """PARTIAL verdict when submitted output matches some but not all test cases."""
+    """PARTIAL verdict when some test cases pass and others fail."""
     user = await _make_user(db_session)
-    problem = await _make_problem(db_session, user.id)
+    problem = await _make_problem(db_session, user.id, slug="judge-partial")
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
-    await _make_test_case(db_session, problem.id, 2, b"99\n", score=20)  # won't match
+    await _make_test_case(db_session, problem.id, 2, b"99\n", score=20)
     await _make_test_case(db_session, problem.id, 3, b"42\n", score=30)
 
-    sub = await _make_submission(db_session, user.id, problem.id, b"42\n")
-    await judge_submission(sub.id, db_session)
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    side_effects = [_ok_result("42\n"), _ok_result("42\n"), _ok_result("42\n")]
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, side_effect=side_effects
+    ):
+        await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.PARTIAL
@@ -275,13 +303,18 @@ async def test_judge_partial_scoring(db_session: AsyncSession) -> None:
 async def test_judge_whitespace_insensitive(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
     problem = await _make_problem(
-        db_session, user.id, comparison_mode=ComparisonMode.whitespace_insensitive
+        db_session, user.id, comparison_mode=ComparisonMode.whitespace_insensitive, slug="judge-ws"
     )
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
 
-    # trailing space should be ignored
-    sub = await _make_submission(db_session, user.id, problem.id, b"42   \n\n")
-    await judge_submission(sub.id, db_session)
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    with patch(
+        "app.judging.piston_client.execute",
+        new_callable=AsyncMock,
+        return_value=_ok_result("42   \n\n"),
+    ):
+        await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.AC
@@ -295,11 +328,18 @@ async def test_judge_float_epsilon_ac(db_session: AsyncSession) -> None:
         user.id,
         comparison_mode=ComparisonMode.float_epsilon,
         float_epsilon=1e-6,
+        slug="judge-float-ac",
     )
     await _make_test_case(db_session, problem.id, 1, b"3.14159265\n", score=10)
 
-    sub = await _make_submission(db_session, user.id, problem.id, b"3.14159266\n")
-    await judge_submission(sub.id, db_session)
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    with patch(
+        "app.judging.piston_client.execute",
+        new_callable=AsyncMock,
+        return_value=_ok_result("3.14159266\n"),
+    ):
+        await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.AC
@@ -313,11 +353,18 @@ async def test_judge_float_epsilon_wa(db_session: AsyncSession) -> None:
         user.id,
         comparison_mode=ComparisonMode.float_epsilon,
         float_epsilon=1e-9,
+        slug="judge-float-wa",
     )
     await _make_test_case(db_session, problem.id, 1, b"3.14\n", score=10)
 
-    sub = await _make_submission(db_session, user.id, problem.id, b"3.15\n")
-    await judge_submission(sub.id, db_session)
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    with patch(
+        "app.judging.piston_client.execute",
+        new_callable=AsyncMock,
+        return_value=_ok_result("3.15\n"),
+    ):
+        await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.WA
@@ -325,23 +372,138 @@ async def test_judge_float_epsilon_wa(db_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
-async def test_judge_missing_output_file(db_session: AsyncSession) -> None:
+async def test_judge_compile_error(db_session: AsyncSession) -> None:
+    """CE verdict when Piston reports a compile error; all test cases marked CE."""
     user = await _make_user(db_session)
-    problem = await _make_problem(db_session, user.id)
+    problem = await _make_problem(db_session, user.id, slug="judge-ce")
+    await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
+    await _make_test_case(db_session, problem.id, 2, b"42\n", score=10)
+
+    sub = await _make_submission(db_session, user.id, problem.id, language="cpp")
+
+    ce_result = ExecutionResult(
+        stdout="",
+        stderr="main.cpp:1: error: expected ';'",
+        exit_code=1,
+        compile_error=True,
+        time_ms=0,
+        memory_kb=0,
+        timed_out=False,
+    )
+    with patch("app.judging.piston_client.execute", new_callable=AsyncMock, return_value=ce_result):
+        await judge_submission(sub.id, db_session)
+
+    await db_session.refresh(sub)
+    assert sub.verdict == Verdict.CE
+    assert sub.score == 0
+
+    results = (
+        (
+            await db_session.execute(
+                select(SubmissionResult).where(SubmissionResult.submission_id == sub.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(results) == 2
+    assert all(r.verdict == Verdict.CE for r in results)
+
+
+@pytest.mark.asyncio
+async def test_judge_runtime_error(db_session: AsyncSession) -> None:
+    user = await _make_user(db_session)
+    problem = await _make_problem(db_session, user.id, slug="judge-re")
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
 
-    # create submission with a path that doesn't exist on disk
-    sub = Submission(
-        user_id=user.id,
-        problem_id=problem.id,
-        submitted_output_path="/tmp/nonexistent-reinfo-test-output.out",
-        verdict=Verdict.pending,
-        score=0,
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    re_result = ExecutionResult(
+        stdout="",
+        stderr="Segmentation fault",
+        exit_code=139,
+        compile_error=False,
+        time_ms=10,
+        memory_kb=512,
+        timed_out=False,
     )
-    db_session.add(sub)
+    with patch("app.judging.piston_client.execute", new_callable=AsyncMock, return_value=re_result):
+        await judge_submission(sub.id, db_session)
+
+    await db_session.refresh(sub)
+    assert sub.verdict == Verdict.WA  # passed == 0 → WA overall
+
+    results = (
+        (
+            await db_session.execute(
+                select(SubmissionResult).where(SubmissionResult.submission_id == sub.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert results[0].verdict == Verdict.RE
+
+
+@pytest.mark.asyncio
+async def test_judge_tle(db_session: AsyncSession) -> None:
+    user = await _make_user(db_session)
+    problem = await _make_problem(db_session, user.id, slug="judge-tle")
+    await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
+
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    tle_result = ExecutionResult(
+        stdout="",
+        stderr="",
+        exit_code=137,
+        compile_error=False,
+        time_ms=1000,
+        memory_kb=512,
+        timed_out=True,
+    )
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=tle_result
+    ):
+        await judge_submission(sub.id, db_session)
+
+    await db_session.refresh(sub)
+    results = (
+        (
+            await db_session.execute(
+                select(SubmissionResult).where(SubmissionResult.submission_id == sub.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert results[0].verdict == Verdict.TLE
+
+
+@pytest.mark.asyncio
+async def test_judge_missing_expected_output_file(db_session: AsyncSession) -> None:
+    """WA per test case when the expected .out file is missing from disk."""
+    user = await _make_user(db_session)
+    problem = await _make_problem(db_session, user.id, slug="judge-missing-out")
+    in_path, _ = await save_test_case(problem.id, 1, b"input\n", b"42\n")
+    tc = TestCase(
+        problem_id=problem.id,
+        ordinal=1,
+        input_path=in_path,
+        output_path="/tmp/nonexistent-reinfo-test-expected.out",
+        score=10,
+        is_sample=False,
+        is_hidden=True,
+    )
+    db_session.add(tc)
     await db_session.commit()
 
-    await judge_submission(sub.id, db_session)
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=_ok_result()
+    ):
+        await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.WA
@@ -352,13 +514,16 @@ async def test_judge_missing_output_file(db_session: AsyncSession) -> None:
 async def test_judge_skips_sample_test_cases(db_session: AsyncSession) -> None:
     """Sample test cases must not affect the verdict."""
     user = await _make_user(db_session)
-    problem = await _make_problem(db_session, user.id)
+    problem = await _make_problem(db_session, user.id, slug="judge-sample")
     await _make_test_case(db_session, problem.id, 0, b"wrong\n", score=10, is_sample=True)
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10, is_sample=False)
 
-    # user answers correctly for the non-sample; sample would be WA
-    sub = await _make_submission(db_session, user.id, problem.id, b"42\n")
-    await judge_submission(sub.id, db_session)
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=_ok_result()
+    ):
+        await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.AC
@@ -367,11 +532,43 @@ async def test_judge_skips_sample_test_cases(db_session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_judge_no_test_cases(db_session: AsyncSession) -> None:
     user = await _make_user(db_session)
-    problem = await _make_problem(db_session, user.id)
+    problem = await _make_problem(db_session, user.id, slug="judge-no-tc")
 
-    sub = await _make_submission(db_session, user.id, problem.id, b"anything\n")
+    sub = await _make_submission(db_session, user.id, problem.id)
     await judge_submission(sub.id, db_session)
 
     await db_session.refresh(sub)
     assert sub.verdict == Verdict.AC
     assert sub.score == 0
+
+
+@pytest.mark.asyncio
+async def test_judge_result_stores_timing(db_session: AsyncSession) -> None:
+    """execution_time_ms and memory_kb are stored in SubmissionResult."""
+    user = await _make_user(db_session)
+    problem = await _make_problem(db_session, user.id, slug="judge-timing")
+    await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
+
+    sub = await _make_submission(db_session, user.id, problem.id)
+
+    timed_result = ExecutionResult(
+        stdout="42\n",
+        stderr="",
+        exit_code=0,
+        compile_error=False,
+        time_ms=123,
+        memory_kb=2048,
+        timed_out=False,
+    )
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, return_value=timed_result
+    ):
+        await judge_submission(sub.id, db_session)
+
+    result_row = (
+        await db_session.execute(
+            select(SubmissionResult).where(SubmissionResult.submission_id == sub.id)
+        )
+    ).scalar_one()
+    assert result_row.execution_time_ms == 123
+    assert result_row.memory_kb == 2048

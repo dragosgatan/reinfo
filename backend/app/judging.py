@@ -1,7 +1,8 @@
-"""Synchronous judging engine for uploaded output files.
+"""Judging engine: executes submitted code via Piston and compares output.
 
-Compares the single submitted .out against every non-sample test case and
-writes per-test SubmissionResult rows, then updates the Submission verdict.
+Runs each non-sample test case through the sandbox, maps execution results to
+per-test verdicts (CE/TLE/MLE/RE/AC/WA), then sets the submission's overall
+verdict and score.
 """
 
 import uuid
@@ -12,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import piston as piston_client
 from app.models.problem import ComparisonMode, Problem
 from app.models.submission import Submission, SubmissionResult, Verdict
 
@@ -54,7 +56,7 @@ def _compare_float_epsilon(
 
 
 async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> None:
-    """Judge a submission against all non-sample test cases.
+    """Execute and judge a submission against all non-sample test cases.
 
     Updates verdict, score, judged_at on the Submission and inserts
     one SubmissionResult row per test case.
@@ -79,35 +81,42 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
         await session.commit()
         return
 
-    try:
-        async with aiofiles.open(submission.submitted_output_path, "rb") as fh:
-            submitted = await fh.read()
-    except FileNotFoundError:
-        results = [
-            SubmissionResult(
-                submission_id=submission_id,
-                test_case_id=tc.id,
-                verdict=Verdict.WA,
-                score=0,
-                message="Fișierul output lipsește",
-            )
-            for tc in test_cases
-        ]
-        session.add_all(results)
-        submission.verdict = Verdict.WA
-        submission.score = 0
-        submission.judged_at = now
-        await session.commit()
-        return
-
     results: list[SubmissionResult] = []
     total_score = 0
     passed = 0
+    got_compile_error = False
 
     for tc in test_cases:
+        if got_compile_error:
+            results.append(
+                SubmissionResult(
+                    submission_id=submission_id,
+                    test_case_id=tc.id,
+                    verdict=Verdict.CE,
+                    score=0,
+                    message="Eroare de compilare",
+                )
+            )
+            continue
+
+        try:
+            async with aiofiles.open(tc.input_path, "rb") as fh:
+                stdin_bytes = await fh.read()
+        except FileNotFoundError:
+            results.append(
+                SubmissionResult(
+                    submission_id=submission_id,
+                    test_case_id=tc.id,
+                    verdict=Verdict.RE,
+                    score=0,
+                    message="Fișierul de intrare lipsește de pe server",
+                )
+            )
+            continue
+
         try:
             async with aiofiles.open(tc.output_path, "rb") as fh:
-                expected = await fh.read()
+                expected_bytes = await fh.read()
         except FileNotFoundError:
             results.append(
                 SubmissionResult(
@@ -120,38 +129,83 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
             )
             continue
 
-        if problem.comparison_mode == ComparisonMode.exact:
-            ok, msg = _compare_exact(expected, submitted)
-        elif problem.comparison_mode == ComparisonMode.whitespace_insensitive:
-            ok, msg = _compare_whitespace_insensitive(expected, submitted)
-        else:  # float_epsilon
-            eps = problem.float_epsilon or 1e-9
-            ok, msg = _compare_float_epsilon(expected, submitted, eps)
+        stdin = stdin_bytes.decode("utf-8", errors="replace")
+        exec_result = await piston_client.execute(
+            language=submission.language,
+            code=submission.submitted_code,
+            stdin=stdin,
+            time_limit_ms=problem.time_limit_ms,
+            memory_limit_kb=problem.memory_limit_kb,
+        )
 
-        tc_score = tc.score if ok else 0
+        if exec_result.compile_error:
+            got_compile_error = True
+            results.append(
+                SubmissionResult(
+                    submission_id=submission_id,
+                    test_case_id=tc.id,
+                    verdict=Verdict.CE,
+                    score=0,
+                    message=(exec_result.stderr[:500] if exec_result.stderr else None),
+                    execution_time_ms=None,
+                    memory_kb=None,
+                )
+            )
+            continue
+
+        if exec_result.timed_out:
+            tc_verdict = Verdict.TLE
+            tc_score = 0
+            tc_message = None
+        elif exec_result.memory_kb > problem.memory_limit_kb:
+            tc_verdict = Verdict.MLE
+            tc_score = 0
+            tc_message = None
+        elif exec_result.exit_code != 0:
+            tc_verdict = Verdict.RE
+            tc_score = 0
+            tc_message = exec_result.stderr[:500] if exec_result.stderr else None
+        else:
+            actual_bytes = exec_result.stdout.encode("utf-8")
+            if problem.comparison_mode == ComparisonMode.exact:
+                ok, msg = _compare_exact(expected_bytes, actual_bytes)
+            elif problem.comparison_mode == ComparisonMode.whitespace_insensitive:
+                ok, msg = _compare_whitespace_insensitive(expected_bytes, actual_bytes)
+            else:
+                eps = problem.float_epsilon or 1e-9
+                ok, msg = _compare_float_epsilon(expected_bytes, actual_bytes, eps)
+
+            tc_verdict = Verdict.AC if ok else Verdict.WA
+            tc_score = tc.score if ok else 0
+            tc_message = None if ok else msg
+            if ok:
+                passed += 1
+
         total_score += tc_score
-        if ok:
-            passed += 1
-
         results.append(
             SubmissionResult(
                 submission_id=submission_id,
                 test_case_id=tc.id,
-                verdict=Verdict.AC if ok else Verdict.WA,
+                verdict=tc_verdict,
                 score=tc_score,
-                message=None if ok else msg,
+                message=tc_message,
+                execution_time_ms=exec_result.time_ms,
+                memory_kb=exec_result.memory_kb,
             )
         )
 
     session.add_all(results)
 
-    n = len(test_cases)
-    if passed == n:
-        verdict = Verdict.AC
-    elif passed == 0:
-        verdict = Verdict.WA
+    if got_compile_error:
+        verdict = Verdict.CE
     else:
-        verdict = Verdict.PARTIAL
+        n = len(test_cases)
+        if passed == n:
+            verdict = Verdict.AC
+        elif passed == 0:
+            verdict = Verdict.WA
+        else:
+            verdict = Verdict.PARTIAL
 
     submission.verdict = verdict
     submission.score = total_score

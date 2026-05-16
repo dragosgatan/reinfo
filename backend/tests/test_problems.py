@@ -260,7 +260,8 @@ async def test_list_status_filter_solved(client: AsyncClient, db_session: AsyncS
     sub = Submission(
         user_id=user.id,
         problem_id=problem.id,
-        submitted_output_path="/tmp/x.out",
+        submitted_code="print(100)",
+        language="python",
         verdict=Verdict.AC,
         score=100,
     )
@@ -294,7 +295,8 @@ async def test_list_solve_count(client: AsyncClient, db_session: AsyncSession) -
             Submission(
                 user_id=u.id,
                 problem_id=problem.id,
-                submitted_output_path="/tmp/x.out",
+                submitted_code="print(100)",
+                language="python",
                 verdict=Verdict.AC,
                 score=100,
             )

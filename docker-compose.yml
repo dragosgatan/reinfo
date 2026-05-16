@@ -25,6 +25,7 @@ services:
       SECRET_KEY: dev-secret-key-change-in-prod
       ALLOWED_ORIGINS: '["http://localhost:3000"]'
       ENVIRONMENT: development
+      PISTON_URL: http://piston:2000
     volumes:
       - ./backend:/app
       - ./data:/data
@@ -43,12 +44,22 @@ services:
       DATABASE_URL: postgresql+asyncpg://reinfo:reinfo@db:5432/reinfo
       SECRET_KEY: dev-secret-key-change-in-prod
       ENVIRONMENT: development
+      PISTON_URL: http://piston:2000
     volumes:
       - ./backend:/app
       - ./data:/data
     depends_on:
       db:
         condition: service_healthy
+
+  piston:
+    image: ghcr.io/engineer-man/piston
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "2000:2000"
+    tmpfs:
+      - /piston/jobs
 
   frontend:
     build:

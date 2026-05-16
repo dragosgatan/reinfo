@@ -20,6 +20,8 @@ class SubmissionResultRead(BaseModel):
     verdict: Verdict
     score: int
     message: str | None
+    execution_time_ms: int | None
+    memory_kb: int | None
 
 
 class SubmissionRead(BaseModel):
@@ -33,7 +35,7 @@ class SubmissionRead(BaseModel):
     contest_id: uuid.UUID | None
     verdict: Verdict
     score: int
-    language: str | None
+    language: str
     created_at: datetime
     judged_at: datetime | None
     results: list[SubmissionResultRead] = []
@@ -49,7 +51,7 @@ class SubmissionSummary(BaseModel):
     contest_id: uuid.UUID | None
     verdict: Verdict
     score: int
-    language: str | None
+    language: str
     created_at: datetime
     judged_at: datetime | None
 

@@ -1,7 +1,7 @@
 """Tests for submission API endpoints."""
 
 import uuid
-from io import BytesIO
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.problem import ComparisonMode, Problem, TestCase, Visibility
 from app.models.user import User, UserRole
+from app.piston import ExecutionResult
 from app.security import hash_password
 from app.storage import save_test_case
 from app.worker import process_one_job
@@ -90,13 +91,29 @@ async def _make_test_case(
     return tc
 
 
-def _output_file(content: bytes = b"42\n") -> dict:
-    return {"output_file": ("answer.out", BytesIO(content), "text/plain")}
+def _submit_data(source_code: str = "print(42)", language: str = "python") -> dict:
+    return {"source_code": source_code, "language": language}
 
 
-async def _judge(client: AsyncClient, db: AsyncSession, sub_id: str) -> dict:
+def _mock_piston(stdout: str = "42\n", exit_code: int = 0, compile_error: bool = False):
+    result = ExecutionResult(
+        stdout=stdout,
+        stderr="",
+        exit_code=exit_code,
+        compile_error=compile_error,
+        time_ms=50,
+        memory_kb=1024,
+        timed_out=False,
+    )
+    return patch("app.judging.piston_client.execute", new_callable=AsyncMock, return_value=result)
+
+
+async def _judge(
+    client: AsyncClient, db: AsyncSession, sub_id: str, piston_stdout: str = "42\n"
+) -> dict:
     """Run the worker for the pending job and return the refreshed submission."""
-    await process_one_job(db)
+    with _mock_piston(stdout=piston_stdout):
+        await process_one_job(db)
     r = await client.get(f"/api/submissions/{sub_id}")
     return r.json()
 
@@ -108,7 +125,7 @@ async def test_submit_ac(client: AsyncClient, db_session: AsyncSession) -> None:
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
     await _login(client, "submitter1")
 
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"42\n"))
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     assert r.status_code == 201
     assert r.json()["verdict"] == "pending"
 
@@ -128,11 +145,11 @@ async def test_submit_wa(client: AsyncClient, db_session: AsyncSession) -> None:
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
     await _login(client, "submitter2")
 
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"99\n"))
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     assert r.status_code == 201
     assert r.json()["verdict"] == "pending"
 
-    body = await _judge(client, db_session, r.json()["id"])
+    body = await _judge(client, db_session, r.json()["id"], piston_stdout="99\n")
     assert body["verdict"] == "WA"
     assert body["score"] == 0
 
@@ -145,11 +162,35 @@ async def test_submit_partial(client: AsyncClient, db_session: AsyncSession) -> 
     await _make_test_case(db_session, problem.id, 2, b"999\n", score=20)
     await _login(client, "submitter3")
 
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"42\n"))
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     assert r.status_code == 201
-    assert r.json()["verdict"] == "pending"
 
-    body = await _judge(client, db_session, r.json()["id"])
+    side_effects = [
+        ExecutionResult(
+            stdout="42\n",
+            stderr="",
+            exit_code=0,
+            compile_error=False,
+            time_ms=50,
+            memory_kb=1024,
+            timed_out=False,
+        ),
+        ExecutionResult(
+            stdout="42\n",
+            stderr="",
+            exit_code=0,
+            compile_error=False,
+            time_ms=50,
+            memory_kb=1024,
+            timed_out=False,
+        ),
+    ]
+    with patch(
+        "app.judging.piston_client.execute", new_callable=AsyncMock, side_effect=side_effects
+    ):
+        await process_one_job(db_session)
+
+    body = (await client.get(f"/api/submissions/{r.json()['id']}")).json()
     assert body["verdict"] == "PARTIAL"
     assert body["score"] == 10
 
@@ -157,7 +198,7 @@ async def test_submit_partial(client: AsyncClient, db_session: AsyncSession) -> 
 @pytest.mark.asyncio
 async def test_submit_requires_auth(client: AsyncClient, db_session: AsyncSession) -> None:
     problem = await _make_problem(db_session, None, slug="sub-noauth")
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     assert r.status_code == 401
 
 
@@ -165,7 +206,7 @@ async def test_submit_requires_auth(client: AsyncClient, db_session: AsyncSessio
 async def test_submit_problem_not_found(client: AsyncClient, db_session: AsyncSession) -> None:
     await _make_user(db_session, "sub-404")
     await _login(client, "sub-404")
-    r = await client.post("/api/problems/nonexistent-prob/submit", files=_output_file())
+    r = await client.post("/api/problems/nonexistent-prob/submit", data=_submit_data())
     assert r.status_code == 404
 
 
@@ -180,34 +221,48 @@ async def test_submit_private_problem_forbidden(
     )
     await _login(client, "sub-other")
 
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     assert r.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_submit_output_too_large(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_submit_code_too_large(client: AsyncClient, db_session: AsyncSession) -> None:
     user = await _make_user(db_session, "sub-large")
     problem = await _make_problem(db_session, user.id, slug="sub-large")
     await _login(client, "sub-large")
 
-    big = b"x" * (10 * 1024 * 1024 + 1)
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(big))
+    big_code = "x" * (512 * 1024 + 1)
+    r = await client.post(
+        f"/api/problems/{problem.slug}/submit",
+        data={"source_code": big_code, "language": "python"},
+    )
     assert r.status_code == 413
 
 
 @pytest.mark.asyncio
-async def test_submit_with_source_code(client: AsyncClient, db_session: AsyncSession) -> None:
-    user = await _make_user(db_session, "submitter-code")
-    problem = await _make_problem(db_session, user.id, slug="sub-code")
-    await _make_test_case(db_session, problem.id, 1, b"42\n")
-    await _login(client, "submitter-code")
+async def test_submit_invalid_language(client: AsyncClient, db_session: AsyncSession) -> None:
+    user = await _make_user(db_session, "sub-lang")
+    problem = await _make_problem(db_session, user.id, slug="sub-lang")
+    await _login(client, "sub-lang")
 
-    files = {
-        "output_file": ("answer.out", BytesIO(b"42\n"), "text/plain"),
-        "source_code": ("sol.cpp", BytesIO(b"#include<bits/stdc++.h>"), "text/plain"),
-    }
-    data = {"language": "cpp"}
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=files, data=data)
+    r = await client.post(
+        f"/api/problems/{problem.slug}/submit",
+        data={"source_code": "code", "language": "brainfuck"},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_submit_language_stored(client: AsyncClient, db_session: AsyncSession) -> None:
+    user = await _make_user(db_session, "submitter-lang")
+    problem = await _make_problem(db_session, user.id, slug="sub-lang-stored")
+    await _make_test_case(db_session, problem.id, 1, b"42\n")
+    await _login(client, "submitter-lang")
+
+    r = await client.post(
+        f"/api/problems/{problem.slug}/submit",
+        data={"source_code": "#include<bits/stdc++.h>", "language": "cpp"},
+    )
     assert r.status_code == 201
     assert r.json()["language"] == "cpp"
 
@@ -218,7 +273,7 @@ async def test_submit_returns_submission_id(client: AsyncClient, db_session: Asy
     problem = await _make_problem(db_session, user.id, slug="sub-id")
     await _login(client, "submitter-id")
 
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     assert r.status_code == 201
     assert "id" in r.json()
 
@@ -229,7 +284,7 @@ async def test_get_submission_owner(client: AsyncClient, db_session: AsyncSessio
     problem = await _make_problem(db_session, user.id, slug="get-sub-prob")
     await _login(client, "get-sub-owner")
 
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     sub_id = r.json()["id"]
 
     r2 = await client.get(f"/api/submissions/{sub_id}")
@@ -244,7 +299,7 @@ async def test_get_submission_problem_author(client: AsyncClient, db_session: As
     problem = await _make_problem(db_session, teacher.id, slug="sub-auth-prob")
 
     await _login(client, "sub-student")
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     sub_id = r.json()["id"]
     client.cookies.clear()
 
@@ -260,7 +315,7 @@ async def test_get_submission_admin(client: AsyncClient, db_session: AsyncSessio
     problem = await _make_problem(db_session, student.id, slug="sub-admin-prob")
 
     await _login(client, "sub-stu")
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     sub_id = r.json()["id"]
     client.cookies.clear()
 
@@ -278,7 +333,7 @@ async def test_get_submission_other_user_forbidden(
     problem = await _make_problem(db_session, owner.id, slug="sub-protected")
 
     await _login(client, "sub-real-owner")
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     sub_id = r.json()["id"]
     client.cookies.clear()
 
@@ -295,7 +350,7 @@ async def test_get_submission_anonymous_forbidden(
     problem = await _make_problem(db_session, user.id, slug="sub-anon-prob")
 
     await _login(client, "sub-anon-owner")
-    r = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    r = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     sub_id = r.json()["id"]
     client.cookies.clear()
 
@@ -322,7 +377,7 @@ async def test_list_submissions_own(client: AsyncClient, db_session: AsyncSessio
     await _login(client, "list-own")
 
     for _ in range(3):
-        await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+        await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
 
     r = await client.get("/api/submissions")
     assert r.status_code == 200
@@ -353,7 +408,7 @@ async def test_list_submissions_admin_filter_by_user(
     problem = await _make_problem(db_session, student.id, slug="list-adm-prob")
 
     await _login(client, "list-stu")
-    await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     client.cookies.clear()
 
     await _login(client, "list-adm")
@@ -371,10 +426,12 @@ async def test_list_submissions_filter_verdict(
     await _make_test_case(db_session, problem.id, 1, b"42\n")
     await _login(client, "list-verdict")
 
-    r1 = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"42\n"))
-    await process_one_job(db_session)
-    r2 = await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file(b"99\n"))
-    await process_one_job(db_session)
+    r1 = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
+    with _mock_piston(stdout="42\n"):
+        await process_one_job(db_session)
+    r2 = await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
+    with _mock_piston(stdout="99\n"):
+        await process_one_job(db_session)
     _ = r1, r2
 
     r = await client.get("/api/submissions?verdict=AC")
@@ -392,8 +449,8 @@ async def test_list_submissions_filter_problem_slug(
     p2 = await _make_problem(db_session, user.id, slug="list-slug-p2")
     await _login(client, "list-slug")
 
-    await client.post(f"/api/problems/{p1.slug}/submit", files=_output_file())
-    await client.post(f"/api/problems/{p2.slug}/submit", files=_output_file())
+    await client.post(f"/api/problems/{p1.slug}/submit", data=_submit_data())
+    await client.post(f"/api/problems/{p2.slug}/submit", data=_submit_data())
 
     r = await client.get(f"/api/submissions?problem_slug={p1.slug}")
     assert r.status_code == 200
@@ -408,7 +465,7 @@ async def test_list_submissions_pagination(client: AsyncClient, db_session: Asyn
     await _login(client, "list-page")
 
     for _ in range(5):
-        await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+        await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
 
     r = await client.get("/api/submissions?per_page=2&page=1")
     body = r.json()
@@ -422,7 +479,7 @@ async def test_user_submissions_public(client: AsyncClient, db_session: AsyncSes
     user = await _make_user(db_session, "user-subs")
     problem = await _make_problem(db_session, user.id, slug="user-subs-prob")
     await _login(client, "user-subs")
-    await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+    await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     client.cookies.clear()
 
     r = await client.get("/api/users/user-subs/submissions")
@@ -455,7 +512,7 @@ async def test_user_submissions_pagination(client: AsyncClient, db_session: Asyn
     await _login(client, "user-page-subs")
 
     for _ in range(4):
-        await client.post(f"/api/problems/{problem.slug}/submit", files=_output_file())
+        await client.post(f"/api/problems/{problem.slug}/submit", data=_submit_data())
     client.cookies.clear()
 
     r = await client.get("/api/users/user-page-subs/submissions?per_page=2&page=1")
