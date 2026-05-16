@@ -5,13 +5,36 @@ import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Loader2, Send, RotateCcw } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  RotateCcw,
+  Settings2,
+  Maximize2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 import { VerdictBadge } from "./verdict-badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, MONACO_LANGUAGE_MAP } from "@/lib/types";
+import {
+  SUPPORTED_LANGUAGES,
+  LANGUAGE_LABELS,
+  MONACO_LANGUAGE_MAP,
+} from "@/lib/types";
 import type { Submission, VerdictType } from "@/lib/types";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
@@ -31,11 +54,47 @@ interface SubmissionPanelProps {
 }
 
 type PanelState = "idle" | "submitting" | "judging" | "done" | "error";
+type EditorTheme = "vs-light" | "vs-dark" | "github-dark" | "dracula";
 
 interface JudgingUpdate {
   verdict: VerdictType;
   score: number;
   job_status: string;
+}
+
+const EDITOR_THEME_LABELS: Record<EditorTheme, string> = {
+  "vs-light": "Light",
+  "vs-dark": "Dark",
+  "github-dark": "GitHub",
+  dracula: "Dracula",
+};
+
+const MONACO_THEME_ID: Record<EditorTheme, string> = {
+  "vs-light": "vs",
+  "vs-dark": "vs-dark",
+  "github-dark": "reinfo-github-dark",
+  dracula: "reinfo-dracula",
+};
+
+const FONT_SIZES = [12, 13, 14, 16, 18] as const;
+const TAB_SIZES = [2, 4] as const;
+
+function readPref<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const stored = localStorage.getItem(key);
+    return stored !== null ? (JSON.parse(stored) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writePref<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore quota errors
+  }
 }
 
 export function SubmissionPanel({
@@ -48,13 +107,28 @@ export function SubmissionPanel({
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [language, setLanguage] = useState("cpp");
-  useEffect(() => { setMounted(true); }, []);
   const [code, setCode] = useState(DEFAULT_CODE["cpp"] ?? "");
   const [state, setState] = useState<PanelState>("idle");
   const [liveUpdate, setLiveUpdate] = useState<JudgingUpdate | null>(null);
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [editorTheme, setEditorTheme] = useState<EditorTheme>("vs-dark");
+  const [fontSize, setFontSize] = useState(13);
+  const [tabSize, setTabSize] = useState(2);
+  const [fullscreen, setFullscreen] = useState(false);
   const abortRef = useRef<EventSource | null>(null);
+  const submitCallbackRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const defaultTheme: EditorTheme =
+      resolvedTheme === "dark" ? "vs-dark" : "vs-light";
+    setEditorTheme(readPref<EditorTheme>("editor-theme", defaultTheme));
+    setFontSize(readPref<number>("editor-font-size", 13));
+    setTabSize(readPref<number>("editor-tab-size", 2));
+    setMounted(true);
+  // only run on mount; resolvedTheme may still be undefined at this point
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLanguageChange = useCallback(
     (lang: string) => {
@@ -66,9 +140,26 @@ export function SubmissionPanel({
     [language, code],
   );
 
+  const handleThemeChange = useCallback((theme: EditorTheme) => {
+    setEditorTheme(theme);
+    writePref("editor-theme", theme);
+  }, []);
+
+  const handleFontSizeChange = useCallback((size: number) => {
+    setFontSize(size);
+    writePref("editor-font-size", size);
+  }, []);
+
+  const handleTabSizeChange = useCallback((size: number) => {
+    setTabSize(size);
+    writePref("editor-tab-size", size);
+  }, []);
+
   const fetchFullSubmission = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/submissions/${id}`, { credentials: "include" });
+      const res = await fetch(`/api/submissions/${id}`, {
+        credentials: "include",
+      });
       if (res.ok) {
         const data = (await res.json()) as Submission;
         setSubmission(data);
@@ -104,7 +195,9 @@ export function SubmissionPanel({
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        throw new Error((payload as { detail?: string }).detail ?? res.statusText);
+        throw new Error(
+          (payload as { detail?: string }).detail ?? res.statusText,
+        );
       }
 
       const sub = (await res.json()) as Submission;
@@ -129,9 +222,15 @@ export function SubmissionPanel({
       };
     } catch (err) {
       setState("error");
-      setErrorMessage(err instanceof Error ? err.message : t("errorGeneric"));
+      setErrorMessage(
+        err instanceof Error ? err.message : t("errorGeneric"),
+      );
     }
   }, [code, language, slug, fetchFullSubmission, t]);
+
+  useEffect(() => {
+    submitCallbackRef.current = handleSubmit;
+  }, [handleSubmit]);
 
   const handleReset = useCallback(() => {
     abortRef.current?.close();
@@ -140,6 +239,35 @@ export function SubmissionPanel({
     setLiveUpdate(null);
     setErrorMessage(null);
   }, []);
+
+  const handleBeforeMount = useCallback(
+    (
+      monacoInstance: Parameters<
+        NonNullable<React.ComponentProps<typeof MonacoEditor>["beforeMount"]>
+      >[0],
+    ) => {
+      monacoInstance.editor.defineTheme("reinfo-github-dark", GITHUB_DARK_THEME);
+      monacoInstance.editor.defineTheme("reinfo-dracula", DRACULA_THEME);
+    },
+    [],
+  );
+
+  const handleEditorMount = useCallback(
+    (
+      editor: Parameters<
+        NonNullable<React.ComponentProps<typeof MonacoEditor>["onMount"]>
+      >[0],
+      monacoInstance: Parameters<
+        NonNullable<React.ComponentProps<typeof MonacoEditor>["onMount"]>
+      >[1],
+    ) => {
+      editor.addCommand(
+        monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter,
+        () => { submitCallbackRef.current(); },
+      );
+    },
+    [],
+  );
 
   if (!isAuthenticated) {
     return (
@@ -153,63 +281,183 @@ export function SubmissionPanel({
   }
 
   const isDisabled = state === "submitting" || state === "judging";
+  const activeMonacoTheme = mounted ? MONACO_THEME_ID[editorTheme] : "vs";
 
-  return (
-    <div className="space-y-3">
-      {bestScore !== null && (
-        <div className="flex items-center justify-between rounded border border-border bg-muted/40 px-3 py-2">
-          <span className="text-xs text-muted-foreground">{t("bestScore")}</span>
-          <span className="font-mono text-sm font-semibold text-foreground">
-            {bestScore}/{scoreTotal}
-          </span>
-        </div>
+  const editorNode = (
+    <div
+      className={cn(
+        "rounded border border-border overflow-hidden",
+        isDisabled && "opacity-70",
+        fullscreen && "flex-1 min-h-0",
+      )}
+    >
+      <MonacoEditor
+        height={fullscreen ? "100%" : "300px"}
+        language={MONACO_LANGUAGE_MAP[language] ?? "plaintext"}
+        value={code}
+        onChange={(v) => {
+          if (v !== undefined) setCode(v);
+        }}
+        theme={activeMonacoTheme}
+        beforeMount={handleBeforeMount}
+        onMount={handleEditorMount}
+        options={{
+          minimap: { enabled: false },
+          fontSize,
+          lineNumbers: "on",
+          scrollBeyondLastLine: false,
+          wordWrap: "on",
+          readOnly: isDisabled,
+          tabSize,
+          padding: { top: 8, bottom: 8 },
+        }}
+      />
+    </div>
+  );
+
+  const toolbar = (
+    <div className="flex items-center gap-1.5">
+      <Select
+        value={language}
+        onValueChange={handleLanguageChange}
+        disabled={isDisabled}
+      >
+        <SelectTrigger className="flex-1 min-w-0">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {SUPPORTED_LANGUAGES.map((lang) => (
+            <SelectItem key={lang} value={lang}>
+              {LANGUAGE_LABELS[lang]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={editorTheme}
+        onValueChange={(v) => handleThemeChange(v as EditorTheme)}
+        disabled={isDisabled}
+      >
+        <SelectTrigger className="w-[90px] shrink-0 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="end">
+          {(Object.keys(EDITOR_THEME_LABELS) as EditorTheme[]).map((theme) => (
+            <SelectItem key={theme} value={theme} className="text-xs">
+              {EDITOR_THEME_LABELS[theme]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            aria-label="Editor settings"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56" align="end">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">
+                Font size
+              </Label>
+              <div className="flex gap-1 flex-wrap">
+                {FONT_SIZES.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => handleFontSizeChange(size)}
+                    className={cn(
+                      "rounded border px-2 py-0.5 font-mono text-xs transition-colors",
+                      fontSize === size
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
+                    )}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Tab width</Label>
+              <div className="flex gap-1">
+                {TAB_SIZES.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => handleTabSizeChange(size)}
+                    className={cn(
+                      "rounded border px-3 py-0.5 font-mono text-xs transition-colors",
+                      tabSize === size
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
+                    )}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {fullscreen ? (
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          onClick={() => setFullscreen(false)}
+          aria-label="Ieși din fullscreen"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 shrink-0 lg:hidden"
+          onClick={() => setFullscreen(true)}
+          aria-label="Fullscreen editor"
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+        </Button>
       )}
 
-      <div className="flex items-center gap-2">
-        <Select value={language} onValueChange={handleLanguageChange} disabled={isDisabled}>
-          <SelectTrigger className="flex-1">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SUPPORTED_LANGUAGES.map((lang) => (
-              <SelectItem key={lang} value={lang}>
-                {LANGUAGE_LABELS[lang]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {(state === "done" || state === "error") && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          onClick={handleReset}
+          aria-label="Resetează"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
 
-        {state === "done" || state === "error" ? (
-          <Button variant="outline" size="sm" onClick={handleReset} className="shrink-0">
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
-        ) : null}
-      </div>
-
-      <div className={cn("rounded border border-border overflow-hidden", isDisabled && "opacity-70")}>
-        <MonacoEditor
-          height="300px"
-          language={MONACO_LANGUAGE_MAP[language] ?? "plaintext"}
-          value={code}
-          onChange={(v) => { if (v !== undefined) setCode(v); }}
-          theme={mounted && resolvedTheme === "dark" ? "vs-dark" : "light"}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 13,
-            lineNumbers: "on",
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            readOnly: isDisabled,
-            tabSize: 2,
-            padding: { top: 8, bottom: 8 },
-          }}
-        />
-      </div>
-
+  const submitArea = (
+    <>
       {state === "idle" && (
-        <Button type="button" onClick={handleSubmit} className="w-full gap-2" size="sm">
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          className={cn("gap-2", fullscreen ? "w-full" : "w-full")}
+          size="sm"
+        >
           <Send className="h-3.5 w-3.5" />
           {t("submitTitle")}
+          <span className="ml-auto font-mono text-[10px] opacity-60">
+            Ctrl+Enter
+          </span>
         </Button>
       )}
 
@@ -232,6 +480,33 @@ export function SubmissionPanel({
       {state === "done" && submission && (
         <SubmissionResult submission={submission} scoreTotal={scoreTotal} />
       )}
+    </>
+  );
+
+  if (fullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col gap-2 bg-background p-3">
+        {toolbar}
+        {editorNode}
+        <div className="shrink-0">{submitArea}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {bestScore !== null && (
+        <div className="flex items-center justify-between rounded border border-border bg-muted/40 px-3 py-2">
+          <span className="text-xs text-muted-foreground">{t("bestScore")}</span>
+          <span className="font-mono text-sm font-semibold text-foreground">
+            {bestScore}/{scoreTotal}
+          </span>
+        </div>
+      )}
+
+      {toolbar}
+      {editorNode}
+      {submitArea}
     </div>
   );
 }
@@ -268,13 +543,21 @@ function SubmissionResult({
                   : "bg-destructive/5 text-destructive",
               )}
             >
-              <span className="w-8 shrink-0 text-muted-foreground">#{i + 1}</span>
-              <span className="w-8 shrink-0 font-semibold">{result.verdict}</span>
+              <span className="w-8 shrink-0 text-muted-foreground">
+                #{i + 1}
+              </span>
+              <span className="w-8 shrink-0 font-semibold">
+                {result.verdict}
+              </span>
               {result.execution_time_ms != null && (
-                <span className="text-muted-foreground">{result.execution_time_ms}ms</span>
+                <span className="text-muted-foreground">
+                  {result.execution_time_ms}ms
+                </span>
               )}
               {result.memory_kb != null && (
-                <span className="text-muted-foreground">{result.memory_kb}KB</span>
+                <span className="text-muted-foreground">
+                  {result.memory_kb}KB
+                </span>
               )}
               <span className="ml-auto">{result.score}p</span>
             </div>
@@ -298,6 +581,92 @@ function SubmissionResult({
     </div>
   );
 }
+
+const GITHUB_DARK_THEME = {
+  base: "vs-dark" as const,
+  inherit: true,
+  rules: [
+    { token: "comment", foreground: "8b949e", fontStyle: "italic" },
+    { token: "comment.line", foreground: "8b949e", fontStyle: "italic" },
+    { token: "comment.block", foreground: "8b949e", fontStyle: "italic" },
+    { token: "keyword", foreground: "ff7b72" },
+    { token: "keyword.control", foreground: "ff7b72" },
+    { token: "storage.type", foreground: "ff7b72" },
+    { token: "string", foreground: "a5d6ff" },
+    { token: "string.quoted", foreground: "a5d6ff" },
+    { token: "number", foreground: "79c0ff" },
+    { token: "constant.numeric", foreground: "79c0ff" },
+    { token: "type", foreground: "ffa657" },
+    { token: "entity.name.type", foreground: "ffa657" },
+    { token: "entity.name.function", foreground: "d2a8ff" },
+    { token: "support.function", foreground: "d2a8ff" },
+    { token: "variable", foreground: "c9d1d9" },
+    { token: "constant", foreground: "79c0ff" },
+    { token: "operator", foreground: "ff7b72" },
+    { token: "punctuation", foreground: "c9d1d9" },
+    { token: "tag", foreground: "7ee787" },
+    { token: "attribute.name", foreground: "ffa657" },
+  ],
+  colors: {
+    "editor.background": "#0d1117",
+    "editor.foreground": "#c9d1d9",
+    "editor.lineHighlightBackground": "#161b22",
+    "editorLineNumber.foreground": "#484f58",
+    "editorLineNumber.activeForeground": "#c9d1d9",
+    "editor.selectionBackground": "#264f78",
+    "editor.inactiveSelectionBackground": "#264f7840",
+    "editorCursor.foreground": "#c9d1d9",
+    "editor.wordHighlightBackground": "#388bfd26",
+    "editorWidget.background": "#161b22",
+    "editorWidget.border": "#30363d",
+    "editorGutter.background": "#0d1117",
+    "editorIndentGuide.background1": "#21262d",
+    "editorIndentGuide.activeBackground1": "#30363d",
+  },
+};
+
+const DRACULA_THEME = {
+  base: "vs-dark" as const,
+  inherit: true,
+  rules: [
+    { token: "comment", foreground: "6272a4", fontStyle: "italic" },
+    { token: "comment.line", foreground: "6272a4", fontStyle: "italic" },
+    { token: "comment.block", foreground: "6272a4", fontStyle: "italic" },
+    { token: "keyword", foreground: "ff79c6" },
+    { token: "keyword.control", foreground: "ff79c6" },
+    { token: "storage.type", foreground: "ff79c6" },
+    { token: "string", foreground: "f1fa8c" },
+    { token: "string.quoted", foreground: "f1fa8c" },
+    { token: "number", foreground: "bd93f9" },
+    { token: "constant.numeric", foreground: "bd93f9" },
+    { token: "type", foreground: "8be9fd" },
+    { token: "entity.name.type", foreground: "8be9fd" },
+    { token: "entity.name.function", foreground: "50fa7b" },
+    { token: "support.function", foreground: "50fa7b" },
+    { token: "variable", foreground: "f8f8f2" },
+    { token: "constant", foreground: "bd93f9" },
+    { token: "operator", foreground: "ff79c6" },
+    { token: "punctuation", foreground: "f8f8f2" },
+    { token: "tag", foreground: "ff79c6" },
+    { token: "attribute.name", foreground: "50fa7b" },
+  ],
+  colors: {
+    "editor.background": "#282a36",
+    "editor.foreground": "#f8f8f2",
+    "editor.lineHighlightBackground": "#44475a",
+    "editorLineNumber.foreground": "#6272a4",
+    "editorLineNumber.activeForeground": "#f8f8f2",
+    "editor.selectionBackground": "#44475a",
+    "editor.inactiveSelectionBackground": "#44475a80",
+    "editorCursor.foreground": "#f8f8f2",
+    "editor.wordHighlightBackground": "#8be9fd26",
+    "editorWidget.background": "#21222c",
+    "editorWidget.border": "#6272a4",
+    "editorGutter.background": "#282a36",
+    "editorIndentGuide.background1": "#3d3f4e",
+    "editorIndentGuide.activeBackground1": "#4d4f5e",
+  },
+};
 
 const DEFAULT_CODE: Record<string, string> = {
   cpp: `#include <bits/stdc++.h>
