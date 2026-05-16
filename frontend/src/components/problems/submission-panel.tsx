@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Settings2,
   Maximize2,
+  Minimize2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,8 @@ interface SubmissionPanelProps {
   scoreTotal: number;
   bestScore: number | null;
   isAuthenticated: boolean;
+  editorFocused?: boolean;
+  onToggleEditorFocus?: () => void;
 }
 
 type PanelState = "idle" | "submitting" | "judging" | "done" | "error";
@@ -102,6 +105,8 @@ export function SubmissionPanel({
   scoreTotal,
   bestScore,
   isAuthenticated,
+  editorFocused = false,
+  onToggleEditorFocus,
 }: SubmissionPanelProps) {
   const t = useTranslations("problems");
   const { resolvedTheme } = useTheme();
@@ -409,11 +414,27 @@ export function SubmissionPanel({
         </PopoverContent>
       </Popover>
 
+      {onToggleEditorFocus && (
+        <Button
+          variant={editorFocused ? "default" : "outline"}
+          size="sm"
+          className="hidden lg:flex h-9 shrink-0 gap-1.5 px-2.5"
+          onClick={onToggleEditorFocus}
+          aria-label={editorFocused ? "Minimizează editorul" : "Maximizează editorul"}
+        >
+          {editorFocused ? (
+            <><Minimize2 className="h-3.5 w-3.5" /><span className="text-xs">Minimize</span></>
+          ) : (
+            <><Maximize2 className="h-3.5 w-3.5" /><span className="text-xs">Maximize</span></>
+          )}
+        </Button>
+      )}
+
       {fullscreen ? (
         <Button
           variant="outline"
           size="icon"
-          className="h-9 w-9 shrink-0"
+          className="h-9 w-9 shrink-0 lg:hidden"
           onClick={() => setFullscreen(false)}
           aria-label="Ieși din fullscreen"
         >

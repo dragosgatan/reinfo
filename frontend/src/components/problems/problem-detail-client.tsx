@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, MemoryStick, Copy, Check, AlertCircle, Pencil, Expand, Shrink } from "lucide-react";
+import { Clock, MemoryStick, Copy, Check, AlertCircle, Pencil } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -142,22 +142,6 @@ function ProblemDetailLayout({
                 Editează
               </Link>
             )}
-            <button
-              onClick={() => setEditorFocused((v) => !v)}
-              className={cn(
-                "hidden lg:flex items-center gap-1.5 rounded border px-2.5 py-1.5 text-xs font-medium transition-colors",
-                editorFocused
-                  ? "border-foreground/40 bg-foreground text-background hover:bg-foreground/90"
-                  : "border-border bg-muted text-foreground hover:bg-muted/80 hover:border-foreground/20",
-              )}
-              aria-label={editorFocused ? "Focalizează enunțul" : "Focalizează editorul"}
-            >
-              {editorFocused ? (
-                <><Shrink className="h-3.5 w-3.5" /> Editor</>
-              ) : (
-                <><Expand className="h-3.5 w-3.5" /> Editor</>
-              )}
-            </button>
           </div>
         </div>
       </div>
@@ -254,6 +238,8 @@ function ProblemDetailLayout({
               scoreTotal={problem.score_total}
               bestScore={bestScore}
               isAuthenticated={isAuthenticated}
+              editorFocused={editorFocused}
+              onToggleEditorFocus={() => setEditorFocused((v) => !v)}
             />
           </div>
 
