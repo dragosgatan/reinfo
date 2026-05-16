@@ -68,6 +68,8 @@ class SubmissionResult(Base):
     verdict: Mapped[Verdict] = mapped_column(_VERDICT_ENUM, nullable=False)
     score: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actual_output: Mapped[str | None] = mapped_column(Text, nullable=True)
+    expected_output_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
     execution_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     memory_kb: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

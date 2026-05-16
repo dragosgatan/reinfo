@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/probleme", key: "problems" },
+  { href: "/submisii", key: "submissions" },
   { href: "/concursuri", key: "contests" },
   { href: "/invatare", key: "learning" },
   { href: "/clasament", key: "leaderboard" },

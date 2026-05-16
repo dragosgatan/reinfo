@@ -17,6 +17,13 @@ from app import piston as piston_client
 from app.models.problem import ComparisonMode, Problem
 from app.models.submission import Submission, SubmissionResult, Verdict
 
+_SNIPPET_MAX_LINES = 50
+
+
+def _truncate_to_snippet(text: str) -> str:
+    lines = text.splitlines()
+    return "\n".join(lines[:_SNIPPET_MAX_LINES])
+
 
 def _compare_exact(expected: bytes, actual: bytes) -> tuple[bool, str | None]:
     return expected == actual, None
@@ -153,6 +160,9 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
             )
             continue
 
+        wa_actual: str | None = None
+        wa_expected: str | None = None
+
         if exec_result.timed_out:
             tc_verdict = Verdict.TLE
             tc_score = 0
@@ -178,6 +188,9 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
             tc_verdict = Verdict.AC if ok else Verdict.WA
             tc_score = tc.score if ok else 0
             tc_message = None if ok else msg
+            if not ok:
+                wa_actual = _truncate_to_snippet(exec_result.stdout)
+                wa_expected = _truncate_to_snippet(expected_bytes.decode("utf-8", errors="replace"))
             if ok:
                 passed += 1
 
@@ -189,6 +202,8 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
                 verdict=tc_verdict,
                 score=tc_score,
                 message=tc_message,
+                actual_output=wa_actual,
+                expected_output_snippet=wa_expected,
                 execution_time_ms=exec_result.time_ms,
                 memory_kb=exec_result.memory_kb,
             )

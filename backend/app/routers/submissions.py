@@ -165,7 +165,9 @@ async def get_submission(
     if not _can_view_submission(sub, current_user, sub.problem):
         raise HTTPException(status_code=403, detail="Acces interzis")
 
-    return SubmissionRead.model_validate(sub)
+    read = SubmissionRead.model_validate(sub)
+    read.problem_slug = sub.problem.slug
+    return read
 
 
 @router.get("/api/submissions", response_model=SubmissionListResponse)
@@ -175,6 +177,7 @@ async def list_submissions(
     user_id: uuid.UUID | None = Query(default=None),
     problem_slug: str | None = Query(default=None),
     verdict: Verdict | None = Query(default=None),
+    language: str | None = Query(default=None),
     contest_id: uuid.UUID | None = Query(default=None),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
@@ -193,6 +196,8 @@ async def list_submissions(
 
     if verdict is not None:
         filters.append(Submission.verdict == verdict)
+    if language is not None:
+        filters.append(Submission.language == language)
     if contest_id is not None:
         filters.append(Submission.contest_id == contest_id)
     if date_from is not None:
@@ -208,7 +213,9 @@ async def list_submissions(
 
     rows = (
         await session.execute(
-            select(Submission, Problem.slug.label("problem_slug"))
+            select(
+                Submission, Problem.slug.label("problem_slug"), Problem.title.label("problem_title")
+            )
             .join(Problem, Submission.problem_id == Problem.id)
             .where(*filters)
             .order_by(Submission.created_at.desc())
@@ -223,6 +230,7 @@ async def list_submissions(
             user_id=row.Submission.user_id,
             problem_id=row.Submission.problem_id,
             problem_slug=row.problem_slug,
+            problem_title=row.problem_title,
             contest_id=row.Submission.contest_id,
             verdict=row.Submission.verdict,
             score=row.Submission.score,
@@ -260,7 +268,9 @@ async def get_user_submissions(
 
     rows = (
         await session.execute(
-            select(Submission, Problem.slug.label("problem_slug"))
+            select(
+                Submission, Problem.slug.label("problem_slug"), Problem.title.label("problem_title")
+            )
             .join(Problem, Submission.problem_id == Problem.id)
             .where(Submission.user_id == target.id)
             .order_by(Submission.created_at.desc())
@@ -275,6 +285,7 @@ async def get_user_submissions(
             user_id=row.Submission.user_id,
             problem_id=row.Submission.problem_id,
             problem_slug=row.problem_slug,
+            problem_title=row.problem_title,
             contest_id=row.Submission.contest_id,
             verdict=row.Submission.verdict,
             score=row.Submission.score,

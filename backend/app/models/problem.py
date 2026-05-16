@@ -59,7 +59,7 @@ class Problem(Base, TimestampMixin):
     comparison_mode: Mapped[ComparisonMode] = mapped_column(
         Enum(ComparisonMode, name="comparisonmode"),
         nullable=False,
-        server_default=text("'exact'"),
+        server_default=text("'whitespace_insensitive'"),
     )
     float_epsilon: Mapped[float | None] = mapped_column(Float, nullable=True)
 
