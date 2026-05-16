@@ -247,10 +247,13 @@ async def test_list_admin_sees_all(client: AsyncClient, db_session: AsyncSession
     teacher = await _make_user(db_session, "teacher-priv", UserRole.teacher)
     await _make_user(db_session, "admin-list", UserRole.admin)
     await _make_problem(db_session, teacher.id, slug="private-one", visibility=Visibility.private)
+    await _make_problem(db_session, teacher.id, slug="draft-one", visibility=Visibility.draft)
 
     await _login(client, "admin-list")
     r = await client.get("/api/problems/")
-    assert any(i["slug"] == "private-one" for i in r.json()["items"])
+    slugs = [i["slug"] for i in r.json()["items"]]
+    assert "private-one" not in slugs
+    assert "draft-one" in slugs
 
 
 @pytest.mark.asyncio

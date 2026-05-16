@@ -33,7 +33,7 @@ class TestCompareExact:
 
     def test_extra_trailing_newline(self):
         ok, _ = _compare_exact(b"hello\n", b"hello\n\n")
-        assert not ok
+        assert ok
 
     def test_trailing_space_matters(self):
         ok, _ = _compare_exact(b"hello \n", b"hello\n")

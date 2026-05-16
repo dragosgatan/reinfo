@@ -28,7 +28,7 @@ def _truncate_to_snippet(text: str) -> str:
 
 
 def _compare_exact(expected: bytes, actual: bytes) -> tuple[bool, str | None]:
-    return expected.rstrip() == actual.rstrip(), None
+    return expected.rstrip(b"\r\n") == actual.rstrip(b"\r\n"), None
 
 
 def _normalize_ws(data: bytes) -> list[str]:
