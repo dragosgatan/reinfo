@@ -2,6 +2,7 @@
 
 import re
 import time
+import unicodedata
 import uuid
 from datetime import UTC, datetime
 
@@ -43,7 +44,9 @@ _LB_TTL = 5.0
 
 def _slugify(text: str) -> str:
     """Convert title to a URL-safe slug."""
-    slug = text.lower().strip()
+    slug = unicodedata.normalize("NFKD", text)
+    slug = slug.encode("ascii", "ignore").decode("ascii")
+    slug = slug.lower().strip()
     slug = re.sub(r"[^\w\s-]", "", slug)
     slug = re.sub(r"[\s_-]+", "-", slug)
     slug = slug.strip("-")

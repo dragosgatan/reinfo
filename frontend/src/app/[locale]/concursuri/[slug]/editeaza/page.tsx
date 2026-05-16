@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { use } from "react";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { ContestDetailSchema } from "@/lib/types";
@@ -23,9 +22,9 @@ function toLocalDatetime(iso: string) {
 export default function EditeazaConcursPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
 }) {
-  const { slug } = use(params);
+  const { slug } = params;
   const t = useTranslations("contests");
   const { user } = useAuth();
   const router = useRouter();

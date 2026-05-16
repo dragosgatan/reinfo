@@ -13,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
@@ -58,9 +57,6 @@ export default function ContestDetailClient({ slug }: Props) {
     );
   }
 
-  const now = new Date();
-  const startTime = new Date(contest.start_time);
-  const endTime = new Date(contest.end_time);
   const isUpcoming = contest.status === "upcoming";
   const isOngoing = contest.status === "ongoing";
   const isPast = contest.status === "past";

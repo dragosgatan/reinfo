@@ -162,7 +162,7 @@ async def test_create_contest_teacher(client: AsyncClient, db_session: AsyncSess
     )
     assert r.status_code == 201
     body = r.json()
-    assert body["slug"] == "olimpiad-local"
+    assert body["slug"] == "olimpiada-locala"
     assert body["status"] == "upcoming"
     assert body["problem_count"] == 0
     assert body["participant_count"] == 0
