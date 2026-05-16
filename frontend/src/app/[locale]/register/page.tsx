@@ -17,15 +17,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { api, ApiError } from "@/lib/api";
-import { useQueryClient } from "@tanstack/react-query";
 
 const registerSchema = z
   .object({
     username: z
       .string()
       .min(3, "Minimum 3 caractere")
-      .max(32, "Maximum 32 de caractere")
-      .regex(/^[a-zA-Z0-9_-]+$/, "Doar litere, cifre, _ și -"),
+      .max(20, "Maximum 20 de caractere")
+      .regex(/^[a-zA-Z0-9_]+$/, "Doar litere, cifre și _"),
+    display_name: z.string().min(1, "Obligatoriu").max(128, "Maximum 128 de caractere"),
     email: z.string().email("Email invalid"),
     password: z.string().min(8, "Minimum 8 caractere"),
     confirmPassword: z.string(),
@@ -41,28 +41,27 @@ export default function RegisterPage() {
   const t = useTranslations("register");
   const tAuth = useTranslations("auth");
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { username: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { username: "", display_name: "", email: "", password: "", confirmPassword: "" },
   });
 
   async function onSubmit(values: RegisterValues) {
     try {
       await api.post("/api/auth/register", {
         username: values.username,
+        display_name: values.display_name,
         email: values.email,
         password: values.password,
       });
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      router.push("/");
-      toast.success("Cont creat cu succes!");
+      router.push("/login");
+      toast.success(t("submit"));
     } catch (err) {
       const message =
         err instanceof ApiError && err.status === 409
-          ? "Utilizatorul sau emailul există deja."
-          : "A apărut o eroare. Încearcă din nou.";
+          ? t("errorConflict")
+          : t("errorGeneric");
       toast.error(message);
     }
   }
@@ -88,6 +87,20 @@ export default function RegisterPage() {
                 <FormLabel>{t("username")}</FormLabel>
                 <FormControl>
                   <Input placeholder="ion_popescu" autoComplete="username" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="display_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("displayName")}</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ion Popescu" autoComplete="name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

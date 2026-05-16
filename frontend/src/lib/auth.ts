@@ -5,12 +5,13 @@ import { z } from "zod";
 import { api, ApiError } from "./api";
 
 export const UserSchema = z.object({
-  id: z.number(),
+  id: z.string().uuid(),
   username: z.string(),
   email: z.string(),
-  role: z.enum(["user", "admin", "moderator"]),
+  role: z.enum(["student", "teacher", "admin"]),
   created_at: z.string(),
   avatar_url: z.string().nullable().optional(),
+  display_name: z.string().optional(),
 });
 
 export type User = z.infer<typeof UserSchema>;

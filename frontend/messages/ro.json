@@ -90,24 +90,29 @@
   "login": {
     "title": "Autentificare",
     "subtitle": "Intră în contul tău ReInfo",
-    "email": "Email",
+    "username": "Nume utilizator",
     "password": "Parolă",
     "submit": "Autentificare",
     "noAccount": "Nu ai cont?",
     "register": "Înregistrează-te",
-    "forgotPassword": "Ai uitat parola?"
+    "forgotPassword": "Ai uitat parola?",
+    "errorInvalid": "Nume de utilizator sau parolă incorectă.",
+    "errorGeneric": "A apărut o eroare. Încearcă din nou."
   },
   "register": {
     "title": "Înregistrare",
     "subtitle": "Creează-ți contul ReInfo",
     "username": "Nume utilizator",
+    "displayName": "Nume afișat",
     "email": "Email",
     "password": "Parolă",
     "confirmPassword": "Confirmă parola",
     "submit": "Înregistrare",
     "hasAccount": "Ai deja cont?",
     "login": "Autentifică-te",
-    "terms": "Prin înregistrare, accepți termenii și condițiile."
+    "terms": "Prin înregistrare, accepți termenii și condițiile.",
+    "errorConflict": "Utilizatorul sau emailul există deja.",
+    "errorGeneric": "A apărut o eroare. Încearcă din nou."
   },
   "common": {
     "loading": "Se încarcă...",

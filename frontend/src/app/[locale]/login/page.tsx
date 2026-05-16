@@ -17,10 +17,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { api, ApiError } from "@/lib/api";
+import { UserSchema } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 const loginSchema = z.object({
-  email: z.string().email("Email invalid"),
+  username: z.string().min(1, "Obligatoriu"),
   password: z.string().min(1, "Parola este obligatorie"),
 });
 
@@ -34,19 +35,19 @@ export default function LoginPage() {
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { username: "", password: "" },
   });
 
   async function onSubmit(values: LoginValues) {
     try {
-      await api.post("/api/auth/login", values);
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      const user = await api.post("/api/auth/login", values, UserSchema);
+      queryClient.setQueryData(["auth", "me"], user);
       router.push("/");
     } catch (err) {
       const message =
         err instanceof ApiError && err.status === 401
-          ? "Email sau parolă incorectă."
-          : "A apărut o eroare. Încearcă din nou.";
+          ? t("errorInvalid")
+          : t("errorGeneric");
       toast.error(message);
     }
   }
@@ -66,12 +67,12 @@ export default function LoginPage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="email"
+            name="username"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("email")}</FormLabel>
+                <FormLabel>{t("username")}</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="tu@exemplu.ro" autoComplete="email" {...field} />
+                  <Input placeholder="ion_popescu" autoComplete="username" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -22,11 +22,13 @@ export function UserMenu() {
   const t = useTranslations("auth");
   const { user, isLoading, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   async function handleLogout() {
     try {
       await api.post("/api/auth/logout", {});
-      queryClient.clear();
+      queryClient.setQueryData(["auth", "me"], null);
+      router.push("/");
     } catch {
       toast.error("Eroare la deconectare.");
     }

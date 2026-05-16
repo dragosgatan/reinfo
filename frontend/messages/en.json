@@ -90,24 +90,29 @@
   "login": {
     "title": "Sign In",
     "subtitle": "Enter your ReInfo account",
-    "email": "Email",
+    "username": "Username",
     "password": "Password",
     "submit": "Sign In",
     "noAccount": "Don't have an account?",
     "register": "Register",
-    "forgotPassword": "Forgot your password?"
+    "forgotPassword": "Forgot your password?",
+    "errorInvalid": "Incorrect username or password.",
+    "errorGeneric": "An error occurred. Try again."
   },
   "register": {
     "title": "Register",
     "subtitle": "Create your ReInfo account",
     "username": "Username",
+    "displayName": "Display name",
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm password",
     "submit": "Register",
     "hasAccount": "Already have an account?",
     "login": "Sign in",
-    "terms": "By registering, you agree to our terms and conditions."
+    "terms": "By registering, you agree to our terms and conditions.",
+    "errorConflict": "Username or email already in use.",
+    "errorGeneric": "An error occurred. Try again."
   },
   "common": {
     "loading": "Loading...",
