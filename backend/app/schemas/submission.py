@@ -42,6 +42,7 @@ class SubmissionRead(BaseModel):
     submitted_code: str
     created_at: datetime
     judged_at: datetime | None
+    flag_reason: str | None = None
     results: list[SubmissionResultRead] = []
 
 
@@ -59,6 +60,7 @@ class SubmissionSummary(BaseModel):
     language: str
     created_at: datetime
     judged_at: datetime | None
+    flag_reason: str | None = None
 
 
 class SubmissionListResponse(BaseModel):

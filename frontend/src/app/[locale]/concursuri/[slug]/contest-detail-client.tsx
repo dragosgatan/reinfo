@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Trophy, Users, CheckCircle, Plus } from "lucide-react";
+import { Trophy, Users, CheckCircle, Plus, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -110,11 +110,19 @@ export default function ContestDetailClient({ slug }: Props) {
             </Link>
           )}
           {canEdit && (
-            <Link href={`/concursuri/${slug}/editeaza`}>
-              <Button variant="outline" size="sm">
-                {t("edit.title")}
-              </Button>
-            </Link>
+            <>
+              <Link href={`/concursuri/${slug}/monitorizare`}>
+                <Button variant="outline" size="sm">
+                  <ShieldAlert className="mr-2 h-4 w-4" />
+                  Monitorizare
+                </Button>
+              </Link>
+              <Link href={`/concursuri/${slug}/editeaza`}>
+                <Button variant="outline" size="sm">
+                  {t("edit.title")}
+                </Button>
+              </Link>
+            </>
           )}
           {!isAuthenticated && isUpcoming && (
             <Link href="/login">

@@ -49,6 +49,7 @@ class Submission(Base, TimestampMixin):
     )
     score: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     judged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    flag_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="submissions")
     problem: Mapped["Problem"] = relationship("Problem", back_populates="submissions")

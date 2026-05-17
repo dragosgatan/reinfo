@@ -1,4 +1,4 @@
-"""Contest, ContestProblem, and ContestParticipant models."""
+"""Contest, ContestProblem, ContestParticipant, and ContestViolation models."""
 
 import uuid
 from datetime import datetime
@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     Enum,
@@ -59,6 +60,12 @@ class Contest(Base, TimestampMixin):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    fullscreen_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    copy_paste_blocked: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
 
     creator: Mapped["User | None"] = relationship("User", back_populates="contests")
     contest_problems: Mapped[list["ContestProblem"]] = relationship(
@@ -113,3 +120,25 @@ class ContestParticipant(Base):
 
     contest: Mapped["Contest"] = relationship("Contest", back_populates="participants")
     user: Mapped["User"] = relationship("User", back_populates="contest_participations")
+
+
+class ContestViolation(Base):
+    """Logged when a suspicious browser event is detected during a contest."""
+
+    __tablename__ = "contest_violations"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
+    contest_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    violation_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()"), nullable=False
+    )
+
+    contest: Mapped["Contest"] = relationship("Contest")
+    user: Mapped["User"] = relationship("User")

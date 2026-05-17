@@ -3,7 +3,7 @@
 import math
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -17,6 +17,8 @@ class ContestCreate(BaseModel):
     end_time: datetime
     scoring_mode: ScoringMode = ScoringMode.sum
     contest_type: ContestType = ContestType.competition
+    fullscreen_required: bool = False
+    copy_paste_blocked: bool = False
 
     @model_validator(mode="after")
     def _end_after_start(self) -> "ContestCreate":
@@ -32,6 +34,8 @@ class ContestUpdate(BaseModel):
     end_time: datetime | None = None
     scoring_mode: ScoringMode | None = None
     contest_type: ContestType | None = None
+    fullscreen_required: bool | None = None
+    copy_paste_blocked: bool | None = None
 
 
 class ContestProblemEntry(BaseModel):
@@ -57,6 +61,8 @@ class ContestSummary(BaseModel):
     participant_count: int
     problem_count: int
     status: Literal["upcoming", "ongoing", "past"]
+    fullscreen_required: bool = False
+    copy_paste_blocked: bool = False
 
 
 class ContestDetail(ContestSummary):
@@ -64,6 +70,22 @@ class ContestDetail(ContestSummary):
     created_by: uuid.UUID | None
     is_registered: bool
     problems: list[ContestProblemEntry]
+
+
+class ContestViolationCreate(BaseModel):
+    violation_type: str = Field(max_length=64)
+    details: dict[str, Any] | None = None
+
+
+class ContestViolationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    contest_id: uuid.UUID
+    user_id: uuid.UUID
+    violation_type: str
+    details: dict[str, Any] | None
+    created_at: datetime
 
 
 class ContestListResponse(BaseModel):

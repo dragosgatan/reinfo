@@ -93,6 +93,7 @@ export const SubmissionSchema = z.object({
   submitted_code: z.string(),
   created_at: z.string(),
   judged_at: z.string().nullable(),
+  flag_reason: z.string().nullable().optional(),
   results: z.array(SubmissionResultSchema),
 });
 export type Submission = z.infer<typeof SubmissionSchema>;
@@ -109,6 +110,7 @@ export const SubmissionSummarySchema = z.object({
   language: z.string(),
   created_at: z.string(),
   judged_at: z.string().nullable(),
+  flag_reason: z.string().nullable().optional(),
 });
 export type SubmissionSummary = z.infer<typeof SubmissionSummarySchema>;
 
@@ -166,6 +168,8 @@ export const ContestSummarySchema = z.object({
   participant_count: z.number().int(),
   problem_count: z.number().int(),
   status: ContestStatusSchema,
+  fullscreen_required: z.boolean(),
+  copy_paste_blocked: z.boolean(),
 });
 export type ContestSummary = z.infer<typeof ContestSummarySchema>;
 
@@ -176,6 +180,16 @@ export const ContestDetailSchema = ContestSummarySchema.extend({
   problems: z.array(ContestProblemEntrySchema),
 });
 export type ContestDetail = z.infer<typeof ContestDetailSchema>;
+
+export const ContestViolationSchema = z.object({
+  id: z.string().uuid(),
+  contest_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  violation_type: z.string(),
+  details: z.record(z.unknown()).nullable(),
+  created_at: z.string(),
+});
+export type ContestViolation = z.infer<typeof ContestViolationSchema>;
 
 export const ContestListResponseSchema = z.object({
   items: z.array(ContestSummarySchema),

@@ -15,13 +15,21 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db import async_session_factory, get_session
 from app.dependencies import get_current_user, get_optional_user, require_role
-from app.models.contest import Contest, ContestParticipant, ContestProblem, ScoringMode
+from app.flagging import detect_flag
+from app.models.contest import (
+    Contest,
+    ContestParticipant,
+    ContestProblem,
+    ContestViolation,
+    ScoringMode,
+)
 from app.models.judging_job import JudgingJob
 from app.models.problem import Problem, Visibility
 from app.models.submission import Submission, Verdict
@@ -35,6 +43,8 @@ from app.schemas.contest import (
     ContestProblemEntry,
     ContestSummary,
     ContestUpdate,
+    ContestViolationCreate,
+    ContestViolationRead,
     LeaderboardEntry,
     LeaderboardResponse,
     contest_status,
@@ -84,9 +94,12 @@ def _build_summary(contest: Contest, now: datetime) -> ContestSummary:
         start_time=contest.start_time,
         end_time=contest.end_time,
         scoring_mode=contest.scoring_mode,
+        contest_type=contest.contest_type,
         participant_count=len(contest.participants),
         problem_count=len(contest.contest_problems),
         status=contest_status(now, contest.start_time, contest.end_time),
+        fullscreen_required=contest.fullscreen_required,
+        copy_paste_blocked=contest.copy_paste_blocked,
     )
 
 
@@ -128,6 +141,8 @@ def _build_detail(
         created_by=contest.created_by,
         is_registered=is_registered,
         problems=problems,
+        fullscreen_required=contest.fullscreen_required,
+        copy_paste_blocked=contest.copy_paste_blocked,
     )
 
 
@@ -208,6 +223,8 @@ async def create_contest(
         end_time=data.end_time,
         scoring_mode=data.scoring_mode,
         created_by=current_user.id,
+        fullscreen_required=data.fullscreen_required,
+        copy_paste_blocked=data.copy_paste_blocked,
     )
     session.add(contest)
     await session.commit()
@@ -416,6 +433,7 @@ async def contest_submit(
         raise HTTPException(status_code=404, detail="Problema nu face parte din acest concurs")
 
     submission_id = uuid.uuid4()
+    flag = detect_flag(source_code, contest.start_time, now)
     submission = Submission(
         id=submission_id,
         user_id=current_user.id,
@@ -425,6 +443,7 @@ async def contest_submit(
         language=language,
         verdict=Verdict.pending,
         score=0,
+        flag_reason=flag,
     )
     session.add(submission)
     session.add(JudgingJob(submission_id=submission_id))
@@ -438,6 +457,152 @@ async def contest_submit(
         .options(selectinload(Submission.results))
     )
     return SubmissionRead.model_validate(sub)
+
+
+@router.post("/{slug}/violations", status_code=201)
+async def log_violation(
+    slug: str,
+    data: ContestViolationCreate,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
+    """Înregistrează o încălcare de securitate detectată în browser."""
+    contest = await session.scalar(select(Contest).where(Contest.slug == slug))
+    if contest is None:
+        raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+
+    session.add(
+        ContestViolation(
+            contest_id=contest.id,
+            user_id=current_user.id,
+            violation_type=data.violation_type,
+            details=data.details,
+        )
+    )
+    await session.commit()
+    return {"message": "Încălcare înregistrată"}
+
+
+class FingerprintBody(BaseModel):
+    fingerprint: str
+
+
+@router.post("/{slug}/fingerprint", status_code=200)
+async def check_fingerprint(
+    slug: str,
+    data: FingerprintBody,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
+    """Verifică fingerprint-ul browserului față de sesiunea anterioară înregistrată.
+
+    La prima intrare stochează fingerprint-ul; la reintrări, detectează schimbarea.
+    """
+    contest = await session.scalar(select(Contest).where(Contest.slug == slug))
+    if contest is None:
+        raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+
+    previous = await session.scalar(
+        select(ContestViolation)
+        .where(
+            ContestViolation.contest_id == contest.id,
+            ContestViolation.user_id == current_user.id,
+            ContestViolation.violation_type.in_(["contest_entry", "fingerprint_mismatch"]),
+        )
+        .order_by(ContestViolation.created_at.desc())
+    )
+
+    if previous is None:
+        violation_type = "contest_entry"
+    elif (previous.details or {}).get("fingerprint") != data.fingerprint:
+        violation_type = "fingerprint_mismatch"
+    else:
+        return {"message": "ok"}
+
+    session.add(
+        ContestViolation(
+            contest_id=contest.id,
+            user_id=current_user.id,
+            violation_type=violation_type,
+            details={"fingerprint": data.fingerprint},
+        )
+    )
+    await session.commit()
+    return {"message": violation_type}
+
+
+@router.get("/{slug}/violations", response_model=list[ContestViolationRead])
+async def list_violations(
+    slug: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+) -> list[ContestViolation]:
+    """Listează toate încălcările de securitate pentru un concurs. Doar profesori/admini."""
+    contest = await session.scalar(select(Contest).where(Contest.slug == slug))
+    if contest is None:
+        raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+
+    if current_user.role != UserRole.admin and contest.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
+
+    violations = list(
+        await session.scalars(
+            select(ContestViolation)
+            .where(ContestViolation.contest_id == contest.id)
+            .order_by(ContestViolation.created_at.desc())
+        )
+    )
+    return violations
+
+
+@router.get("/{slug}/flagged-submissions", response_model=list)
+async def list_flagged_submissions(
+    slug: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+) -> list:
+    """Listează submisiile marcate automat ca suspecte. Doar profesori/admini."""
+    from app.schemas.submission import SubmissionSummary
+
+    contest = await session.scalar(select(Contest).where(Contest.slug == slug))
+    if contest is None:
+        raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+
+    if current_user.role != UserRole.admin and contest.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
+
+    from app.models.problem import Problem
+    from app.models.user import User as UserModel
+
+    rows = await session.execute(
+        select(Submission, Problem, UserModel)
+        .join(Problem, Submission.problem_id == Problem.id)
+        .join(UserModel, Submission.user_id == UserModel.id)
+        .where(
+            Submission.contest_id == contest.id,
+            Submission.flag_reason.isnot(None),
+        )
+        .order_by(Submission.created_at.desc())
+    )
+    result = []
+    for sub, prob, _usr in rows:
+        result.append(
+            SubmissionSummary(
+                id=sub.id,
+                user_id=sub.user_id,
+                problem_id=sub.problem_id,
+                problem_slug=prob.slug,
+                problem_title=prob.title,
+                contest_id=sub.contest_id,
+                verdict=sub.verdict,
+                score=sub.score,
+                language=sub.language,
+                created_at=sub.created_at,
+                judged_at=sub.judged_at,
+                flag_reason=sub.flag_reason,
+            )
+        )
+    return [s.model_dump() for s in result]
 
 
 def _is_staff(user: User | None) -> bool:

@@ -37,6 +37,8 @@ export default function NouConcursPage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [contestType, setContestType] = useState<ContestType>("competition");
+  const [fullscreenRequired, setFullscreenRequired] = useState(false);
+  const [copyPasteBlocked, setCopyPasteBlocked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   if (authLoading) return null;
@@ -66,6 +68,8 @@ export default function NouConcursPage() {
           end_time: new Date(endTime).toISOString(),
           contest_type: contestType,
           scoring_mode: contestType === "class_test" ? "test" : "sum",
+          fullscreen_required: fullscreenRequired,
+          copy_paste_blocked: copyPasteBlocked,
         },
         ContestDetailSchema,
       );
@@ -155,6 +159,28 @@ export default function NouConcursPage() {
               required
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Securitate</p>
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={fullscreenRequired}
+              onChange={(e) => setFullscreenRequired(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            <span className="text-sm">Impune ecran complet</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={copyPasteBlocked}
+              onChange={(e) => setCopyPasteBlocked(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            <span className="text-sm">Blochează copy-paste</span>
+          </label>
         </div>
 
         <Button type="submit" disabled={submitting} className="w-full">

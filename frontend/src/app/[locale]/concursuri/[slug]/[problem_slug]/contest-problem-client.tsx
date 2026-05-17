@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, Maximize2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { ProblemDetailSchema } from "@/lib/types";
+import { ContestDetailSchema, ProblemDetailSchema } from "@/lib/types";
 import { ProblemStatement } from "@/components/problems/problem-statement";
 import { SubmissionPanel } from "@/components/problems/submission-panel";
 import { DifficultyIndicator } from "@/components/problems/difficulty-indicator";
@@ -18,16 +19,144 @@ interface Props {
   problemSlug: string;
 }
 
+function computeFingerprint(): string {
+  const parts = [
+    navigator.userAgent,
+    `${screen.width}x${screen.height}`,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    navigator.language,
+  ];
+  return parts.join("|");
+}
+
+function logViolation(
+  contestSlug: string,
+  violationType: string,
+  details?: Record<string, unknown>,
+) {
+  api
+    .post(`/api/contests/${contestSlug}/violations`, {
+      violation_type: violationType,
+      details: details ?? null,
+    })
+    .catch(() => {});
+}
+
+function checkFingerprint(contestSlug: string) {
+  const fp = computeFingerprint();
+  api.post(`/api/contests/${contestSlug}/fingerprint`, { fingerprint: fp }).catch(() => {});
+}
+
 export default function ContestProblemClient({ contestSlug, problemSlug }: Props) {
   const t = useTranslations("problems");
   const { isAuthenticated } = useAuth();
   const [editorFocused, setEditorFocused] = useState(false);
+
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [fullscreenExited, setFullscreenExited] = useState(false);
+  const fingerprintSent = useRef(false);
+
+  const { data: contest } = useQuery({
+    queryKey: ["contest", contestSlug],
+    queryFn: () => api.get(`/api/contests/${contestSlug}`, ContestDetailSchema),
+  });
 
   const { data: problem, isLoading, error } = useQuery({
     queryKey: ["problem", problemSlug],
     queryFn: () => api.get(`/api/problems/${problemSlug}`, ProblemDetailSchema),
     retry: (count, err) => !(err instanceof ApiError && err.status === 404) && count < 2,
   });
+
+  const ackKey = `reinfo_ack_${contestSlug}`;
+
+  useEffect(() => {
+    if (typeof sessionStorage !== "undefined") {
+      const wasAcknowledged = sessionStorage.getItem(ackKey) === "1";
+      if (wasAcknowledged) setAcknowledged(true);
+    }
+  }, [ackKey]);
+
+  useEffect(() => {
+    if (!acknowledged || fingerprintSent.current || !isAuthenticated) return;
+    fingerprintSent.current = true;
+    checkFingerprint(contestSlug);
+  }, [acknowledged, isAuthenticated, contestSlug]);
+
+  const enterFullscreen = useCallback(() => {
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!acknowledged || !contest?.fullscreen_required) return;
+
+    const handler = () => {
+      if (!document.fullscreenElement) {
+        setFullscreenExited(true);
+        logViolation(contestSlug, "fullscreen_exit");
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, [acknowledged, contest?.fullscreen_required, contestSlug]);
+
+  useEffect(() => {
+    if (!acknowledged || !contest?.copy_paste_blocked) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      logViolation(contestSlug, "paste_attempt");
+    };
+
+    document.addEventListener("paste", handlePaste, true);
+    return () => document.removeEventListener("paste", handlePaste, true);
+  }, [acknowledged, contest?.copy_paste_blocked, contestSlug]);
+
+  function handleAcknowledge() {
+    sessionStorage.setItem(ackKey, "1");
+    setAcknowledged(true);
+    if (contest?.fullscreen_required) {
+      enterFullscreen();
+    }
+  }
+
+  if (!acknowledged) {
+    const rules: string[] = [];
+    if (contest?.fullscreen_required) rules.push("Concursul se desfășoară în modul ecran complet.");
+    if (contest?.copy_paste_blocked) rules.push("Copy-paste în editor este blocat.");
+    rules.push("Activitatea browserului este monitorizată.");
+    rules.push("Codul sursă este verificat automat pentru nereguli.");
+
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <div className="rounded border border-border bg-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+            <h2 className="text-base font-semibold">Înainte de a intra în concurs</h2>
+          </div>
+          <ul className="mb-6 space-y-2 text-sm text-muted-foreground">
+            {rules.map((r) => (
+              <li key={r} className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
+                {r}
+              </li>
+            ))}
+          </ul>
+          <Button onClick={handleAcknowledge} className="w-full">
+            {contest?.fullscreen_required ? (
+              <>
+                <Maximize2 className="mr-2 h-4 w-4" />
+                Înțeleg, intră în ecran complet
+              </>
+            ) : (
+              "Înțeleg, continuă"
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -56,6 +185,25 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      {fullscreenExited && (
+        <div className="mb-4 flex items-center gap-3 rounded border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Ai ieșit din ecran complet. Acest eveniment a fost înregistrat.</span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto shrink-0"
+            onClick={() => {
+              setFullscreenExited(false);
+              enterFullscreen();
+            }}
+          >
+            <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
+            Reintră
+          </Button>
+        </div>
+      )}
+
       <div className="mb-4">
         <Link
           href={`/concursuri/${contestSlug}`}

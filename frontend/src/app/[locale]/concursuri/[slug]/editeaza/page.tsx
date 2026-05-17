@@ -55,6 +55,8 @@ export default function EditeazaConcursPage({
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [contestType, setContestType] = useState<ContestType>("competition");
+  const [fullscreenRequired, setFullscreenRequired] = useState(false);
+  const [copyPasteBlocked, setCopyPasteBlocked] = useState(false);
 
   useEffect(() => {
     if (contest) {
@@ -63,6 +65,8 @@ export default function EditeazaConcursPage({
       setStartTime(toLocalDatetime(contest.start_time));
       setEndTime(toLocalDatetime(contest.end_time));
       setContestType(contest.contest_type);
+      setFullscreenRequired(contest.fullscreen_required ?? false);
+      setCopyPasteBlocked(contest.copy_paste_blocked ?? false);
     }
   }, [contest]);
 
@@ -123,6 +127,8 @@ export default function EditeazaConcursPage({
       start_time: new Date(startTime).toISOString(),
       end_time: new Date(endTime).toISOString(),
       contest_type: contestType,
+      fullscreen_required: fullscreenRequired,
+      copy_paste_blocked: copyPasteBlocked,
     });
   }
 
@@ -210,6 +216,28 @@ export default function EditeazaConcursPage({
               required
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Securitate</p>
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={fullscreenRequired}
+              onChange={(e) => setFullscreenRequired(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            <span className="text-sm">Impune ecran complet</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={copyPasteBlocked}
+              onChange={(e) => setCopyPasteBlocked(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            <span className="text-sm">Blochează copy-paste</span>
+          </label>
         </div>
 
         <div className="flex gap-3">

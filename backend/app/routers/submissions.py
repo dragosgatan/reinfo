@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 
 from app.db import get_session
 from app.dependencies import get_current_user, get_optional_user
+from app.flagging import detect_flag
 from app.models.contest import Contest
 from app.models.judging_job import JobStatus, JudgingJob
 from app.models.problem import Problem, Visibility
@@ -72,6 +73,7 @@ async def submit(
         raise HTTPException(status_code=403, detail="Acces interzis")
 
     submission_id = uuid.uuid4()
+    flag = detect_flag(source_code, None, datetime.now(UTC))
     submission = Submission(
         id=submission_id,
         user_id=current_user.id,
@@ -80,6 +82,7 @@ async def submit(
         language=language,
         verdict=Verdict.pending,
         score=0,
+        flag_reason=flag,
     )
     session.add(submission)
     session.add(JudgingJob(submission_id=submission_id))
@@ -182,6 +185,7 @@ async def list_submissions(
     contest_id: uuid.UUID | None = Query(default=None),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
+    flagged_only: bool = Query(default=False),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SubmissionListResponse:
@@ -207,6 +211,8 @@ async def list_submissions(
         filters.append(Submission.created_at <= datetime.combine(date_to, time.max, tzinfo=UTC))
     if problem_slug is not None:
         filters.append(Problem.slug == problem_slug)
+    if flagged_only:
+        filters.append(Submission.flag_reason.isnot(None))
 
     base = select(Submission).join(Problem, Submission.problem_id == Problem.id).where(*filters)
 
@@ -238,6 +244,7 @@ async def list_submissions(
             language=row.Submission.language,
             created_at=row.Submission.created_at,
             judged_at=row.Submission.judged_at,
+            flag_reason=row.Submission.flag_reason,
         )
         for row in rows
     ]

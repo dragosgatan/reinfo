@@ -50,7 +50,7 @@ const schema = z.object({
   comparison_mode: z.enum(["exact", "whitespace_insensitive", "float_epsilon"]),
   float_epsilon: z.coerce.number().optional().nullable(),
   tags: z.array(z.string()).default([]),
-  visibility: z.enum(["draft", "public", "private"]),
+  visibility: z.enum(["draft", "public", "private", "contest"]),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -427,19 +427,25 @@ export default function EditProblemPage() {
 
           <div className="space-y-1.5">
             <Label>Vizibilitate</Label>
-            <Select
-              value={watchVisibility ?? "draft"}
-              onValueChange={(v) => setValue("visibility", v as FormValues["visibility"])}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Ciornă</SelectItem>
-                <SelectItem value="public">Publică</SelectItem>
-                <SelectItem value="private">Privată</SelectItem>
-              </SelectContent>
-            </Select>
+            {watchVisibility === "contest" ? (
+              <div className="rounded border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+                Gestionată de concurs
+              </div>
+            ) : (
+              <Select
+                value={watchVisibility ?? "draft"}
+                onValueChange={(v) => setValue("visibility", v as FormValues["visibility"])}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Ciornă</SelectItem>
+                  <SelectItem value="public">Publică</SelectItem>
+                  <SelectItem value="private">Privată</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {user?.role === "admin" && (

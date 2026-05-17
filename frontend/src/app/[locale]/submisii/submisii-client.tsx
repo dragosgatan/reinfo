@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
+import { Flag } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { VerdictBadge } from "@/components/problems/verdict-badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +17,8 @@ import type { VerdictType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const VERDICTS: VerdictType[] = ["AC", "WA", "CE", "RE", "TLE", "MLE", "PARTIAL"];
+
+type Tab = "mine" | "all" | "flagged";
 
 interface Filters {
   problem_slug: string;
@@ -33,7 +36,13 @@ const EMPTY_FILTERS: Filters = {
   date_to: "",
 };
 
-function buildQuery(filters: Filters, page: number): string {
+const FLAG_LABELS: Record<string, string> = {
+  diacritics: "Diacritice",
+  emoji: "Emoji",
+  impossibly_fast: "Prea rapid",
+};
+
+function buildQuery(filters: Filters, page: number, tab: Tab): string {
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("per_page", "20");
@@ -42,19 +51,23 @@ function buildQuery(filters: Filters, page: number): string {
   if (filters.language) params.set("language", filters.language);
   if (filters.date_from) params.set("date_from", filters.date_from);
   if (filters.date_to) params.set("date_to", filters.date_to);
+  if (tab === "flagged") params.set("flagged_only", "true");
   return `/api/submissions?${params.toString()}`;
 }
 
 export function SubmisiiClient() {
   const t = useTranslations("submissions");
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const isAdmin = user?.role === "admin";
+
+  const [tab, setTab] = useState<Tab>("mine");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["submissions-list", appliedFilters, page],
-    queryFn: () => api.get(buildQuery(appliedFilters, page), SubmissionListResponseSchema),
+    queryKey: ["submissions-list", tab, appliedFilters, page],
+    queryFn: () => api.get(buildQuery(appliedFilters, page, tab), SubmissionListResponseSchema),
     enabled: isAuthenticated,
     staleTime: 15 * 1000,
   });
@@ -69,6 +82,13 @@ export function SubmisiiClient() {
     setAppliedFilters(EMPTY_FILTERS);
     setPage(1);
   }, []);
+
+  const switchTab = (next: Tab) => {
+    setTab(next);
+    setFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+    setPage(1);
+  };
 
   const hasActiveFilters = Object.values(appliedFilters).some(Boolean);
 
@@ -85,9 +105,36 @@ export function SubmisiiClient() {
     );
   }
 
+  const TABS: { value: Tab; label: string }[] = [
+    { value: "mine", label: "Ale mele" },
+    ...(isAdmin ? [
+      { value: "all" as Tab, label: "Toate" },
+      { value: "flagged" as Tab, label: "Marcate" },
+    ] : []),
+  ];
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <h1 className="mb-5 text-xl font-bold tracking-tight">{t("title")}</h1>
+
+      {isAdmin && (
+        <div className="mb-4 flex gap-1 border-b border-border">
+          {TABS.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => switchTab(t.value)}
+              className={cn(
+                "px-4 py-2 text-sm font-medium transition-colors",
+                tab === t.value
+                  ? "border-b-2 border-foreground text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
         <Input
@@ -170,9 +217,17 @@ export function SubmisiiClient() {
       ) : (
         <>
           <div className="rounded border border-border">
-            <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-x-4 border-b border-border px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div
+              className={cn(
+                "grid gap-x-4 border-b border-border px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground",
+                isAdmin
+                  ? "grid-cols-[auto_1fr_auto_auto_auto_auto]"
+                  : "grid-cols-[auto_1fr_auto_auto_auto]",
+              )}
+            >
               <span>{t("verdict")}</span>
               <span>{t("problem")}</span>
+              {isAdmin && <span>User</span>}
               <span className="text-right">{t("score")}</span>
               <span className="hidden sm:block">{t("language")}</span>
               <span className="text-right">{t("date")}</span>
@@ -182,16 +237,36 @@ export function SubmisiiClient() {
                 key={sub.id}
                 href={`/submisii/${sub.id}` as Parameters<typeof Link>[0]["href"]}
                 className={cn(
-                  "grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-4 border-b border-border px-3 py-2.5 text-sm transition-colors last:border-0 hover:bg-muted/40",
+                  "grid items-center gap-x-4 border-b border-border px-3 py-2.5 text-sm transition-colors last:border-0 hover:bg-muted/40",
+                  isAdmin
+                    ? "grid-cols-[auto_1fr_auto_auto_auto_auto]"
+                    : "grid-cols-[auto_1fr_auto_auto_auto]",
+                  sub.flag_reason && "bg-amber-50/50 dark:bg-amber-950/20",
                 )}
               >
                 <VerdictBadge verdict={sub.verdict} />
                 <div className="min-w-0">
-                  <span className="block truncate font-medium">{sub.problem_title}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="block truncate font-medium">{sub.problem_title}</span>
+                    {sub.flag_reason && (
+                      <span
+                        title={FLAG_LABELS[sub.flag_reason] ?? sub.flag_reason}
+                        className="inline-flex shrink-0 items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-400"
+                      >
+                        <Flag className="h-2.5 w-2.5" />
+                        {FLAG_LABELS[sub.flag_reason] ?? sub.flag_reason}
+                      </span>
+                    )}
+                  </div>
                   <span className="block truncate font-mono text-xs text-muted-foreground">
                     {sub.problem_slug}
                   </span>
                 </div>
+                {isAdmin && (
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {sub.user_id.slice(0, 8)}
+                  </span>
+                )}
                 <span className="font-mono text-xs text-muted-foreground">{sub.score}p</span>
                 <span className="hidden font-mono text-xs text-muted-foreground sm:block">
                   {LANGUAGE_LABELS[sub.language] ?? sub.language}
