@@ -13,6 +13,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "@/i18n/navigation";
 
+type ContestType = "competition" | "class_test";
+
+const TYPE_OPTIONS: { value: ContestType; label: string; description: string }[] = [
+  {
+    value: "competition",
+    label: "Concurs",
+    description: "Clasament public, participare liberă",
+  },
+  {
+    value: "class_test",
+    label: "Test de clasă",
+    description: "Clasament ascuns elevilor în timpul testului",
+  },
+];
+
 function toLocalDatetime(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -39,6 +54,7 @@ export default function EditeazaConcursPage({
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [contestType, setContestType] = useState<ContestType>("competition");
 
   useEffect(() => {
     if (contest) {
@@ -46,6 +62,7 @@ export default function EditeazaConcursPage({
       setDescription(contest.description_md ?? "");
       setStartTime(toLocalDatetime(contest.start_time));
       setEndTime(toLocalDatetime(contest.end_time));
+      setContestType(contest.contest_type);
     }
   }, [contest]);
 
@@ -105,6 +122,7 @@ export default function EditeazaConcursPage({
       description_md: description || null,
       start_time: new Date(startTime).toISOString(),
       end_time: new Date(endTime).toISOString(),
+      contest_type: contestType,
     });
   }
 
@@ -128,6 +146,28 @@ export default function EditeazaConcursPage({
       <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("edit.title")}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-1.5">
+          <Label>Tip</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setContestType(opt.value)}
+                className={[
+                  "rounded border px-3 py-3 text-left transition-colors",
+                  contestType === opt.value
+                    ? "border-foreground bg-foreground/5"
+                    : "border-input hover:border-foreground/40",
+                ].join(" ")}
+              >
+                <div className="text-sm font-medium">{opt.label}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{opt.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="title">{t("create.name")}</Label>
           <Input

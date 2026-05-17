@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
+import type { UseFormSetValue } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,8 @@ const schema = z.object({
     .max(128)
     .regex(/^[a-z0-9-]+$/, "Doar litere mici, cifre și cratimă"),
   difficulty: z.coerce.number().int().min(1).max(10),
-  statement_md: z.string().min(1, "Enunțul este obligatoriu"),
+  statement_md: z.string().min(1, "Enunțul în română este obligatoriu"),
+  statement_md_en: z.string().default(""),
   input_format: z.string().default(""),
   output_format: z.string().default(""),
   time_limit_ms: z.coerce.number().int().min(100).max(30000).default(1000),
@@ -76,6 +78,7 @@ export default function NouProblemPage() {
   const { user, isLoading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [publishMode, setPublishMode] = useState<"draft" | "public">("draft");
+  const [statementLang, setStatementLang] = useState<"ro" | "en">("ro");
 
   const {
     register,
@@ -93,6 +96,7 @@ export default function NouProblemPage() {
       comparison_mode: "exact",
       tags: [],
       testCases: [],
+      statement_md_en: "",
     },
   });
 
@@ -104,6 +108,7 @@ export default function NouProblemPage() {
   const watchTitle = watch("title");
   const watchSlug = watch("slug");
   const watchStatement = watch("statement_md");
+  const watchStatementEn = watch("statement_md_en");
   const watchTags = watch("tags");
   const watchComparisonMode = watch("comparison_mode");
 
@@ -145,6 +150,7 @@ export default function NouProblemPage() {
             slug: values.slug,
             title: values.title,
             statement_md: values.statement_md,
+            statement_md_en: values.statement_md_en || null,
             input_format: values.input_format ?? "",
             output_format: values.output_format ?? "",
             difficulty: values.difficulty,
@@ -256,12 +262,24 @@ export default function NouProblemPage() {
         </h1>
         <div className="flex items-center gap-2">
           {contestSlug ? (
-            <Button type="submit" size="sm" disabled={submitting}>
-              {submitting ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : null}
-              Adaugă la concurs
-            </Button>
+            <>
+              <Button type="submit" size="sm" disabled={submitting}>
+                {submitting ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                Adaugă la concurs
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => router.push(`/concursuri/${contestSlug}`)}
+                aria-label="Închide"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </>
           ) : (
             <>
               <Button
@@ -286,6 +304,16 @@ export default function NouProblemPage() {
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : null}
                 Publică
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => router.push("/probleme")}
+                aria-label="Închide"
+              >
+                <X className="h-4 w-4" />
               </Button>
             </>
           )}
@@ -328,7 +356,35 @@ export default function NouProblemPage() {
           </div>
 
           <div>
-            <Label className="mb-2 block">Enunț</Label>
+            <div className="mb-2 flex items-center justify-between">
+              <Label>Enunț</Label>
+              <div className="flex rounded border border-border text-xs">
+                <button
+                  type="button"
+                  onClick={() => setStatementLang("ro")}
+                  className={cn(
+                    "px-2.5 py-1 transition-colors",
+                    statementLang === "ro"
+                      ? "bg-muted font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  RO
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatementLang("en")}
+                  className={cn(
+                    "px-2.5 py-1 transition-colors",
+                    statementLang === "en"
+                      ? "bg-muted font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
             <Tabs defaultValue="edit">
               <TabsList className="mb-2">
                 <TabsTrigger value="edit">
@@ -341,23 +397,36 @@ export default function NouProblemPage() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="edit">
-                <textarea
-                  {...register("statement_md")}
-                  rows={10}
-                  placeholder="Enunțul problemei în Markdown. Suportă LaTeX cu $...$ și $$...$$."
-                  className={cn(
-                    "w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
-                    errors.statement_md && "border-destructive",
-                  )}
-                />
-                {errors.statement_md && (
-                  <p className="mt-1 text-xs text-destructive">{errors.statement_md.message}</p>
+                {statementLang === "ro" ? (
+                  <>
+                    <textarea
+                      {...register("statement_md")}
+                      rows={10}
+                      placeholder="Enunțul problemei în română (Markdown + LaTeX)."
+                      className={cn(
+                        "w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+                        errors.statement_md && "border-destructive",
+                      )}
+                    />
+                    {errors.statement_md && (
+                      <p className="mt-1 text-xs text-destructive">{errors.statement_md.message}</p>
+                    )}
+                  </>
+                ) : (
+                  <textarea
+                    {...register("statement_md_en")}
+                    rows={10}
+                    placeholder="Problem statement in English (Markdown + LaTeX). Optional."
+                    className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
                 )}
               </TabsContent>
               <TabsContent value="preview">
-                {watchStatement ? (
+                {(statementLang === "ro" ? watchStatement : watchStatementEn) ? (
                   <div className="min-h-[200px] rounded border border-border p-4">
-                    <ProblemStatement markdown={watchStatement} />
+                    <ProblemStatement
+                      markdown={(statementLang === "ro" ? watchStatement : watchStatementEn) ?? ""}
+                    />
                   </div>
                 ) : (
                   <div className="flex min-h-[200px] items-center justify-center rounded border border-border text-sm text-muted-foreground">
@@ -435,6 +504,7 @@ export default function NouProblemPage() {
                     key={field.id}
                     index={index}
                     register={register}
+                    setValue={setValue}
                     errors={errors}
                     onRemove={() => remove(index)}
                   />
@@ -574,19 +644,64 @@ type ErrorsType = ReturnType<typeof useForm<FormValues>>["formState"]["errors"];
 function TestCaseRow({
   index,
   register,
+  setValue,
   errors,
   onRemove,
 }: {
   index: number;
   register: RegisterFn;
+  setValue: UseFormSetValue<FormValues>;
   errors: ErrorsType;
   onRemove: () => void;
 }) {
+  const [mode, setMode] = useState<"text" | "file">("text");
+  const inFileRef = useRef<HTMLInputElement>(null);
+  const outFileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = useCallback(
+    (type: "in" | "out", file: File | undefined) => {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = (e.target?.result as string) ?? "";
+        if (type === "in") {
+          setValue(`testCases.${index}.input_content`, text, { shouldValidate: true });
+        } else {
+          setValue(`testCases.${index}.output_content`, text, { shouldValidate: true });
+        }
+      };
+      reader.readAsText(file);
+    },
+    [index, setValue],
+  );
+
   return (
     <div className="rounded border border-border p-3">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs text-muted-foreground">#{index + 1}</span>
+          <div className="flex rounded border border-border text-xs">
+            <button
+              type="button"
+              onClick={() => setMode("text")}
+              className={cn(
+                "px-2 py-0.5 transition-colors",
+                mode === "text" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Text
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("file")}
+              className={cn(
+                "px-2 py-0.5 transition-colors",
+                mode === "file" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Fișier
+            </button>
+          </div>
           <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"
@@ -616,32 +731,64 @@ function TestCaseRow({
           </Button>
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <p className="mb-1 font-mono text-xs text-muted-foreground">Input</p>
-          <textarea
-            {...register(`testCases.${index}.input_content`)}
-            rows={4}
-            placeholder="1 2 3 4 5"
-            className={cn(
-              "w-full rounded border border-input bg-muted/30 px-2 py-1.5 font-mono text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
-              errors.testCases?.[index]?.input_content && "border-destructive",
-            )}
-          />
+
+      {mode === "text" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <p className="mb-1 font-mono text-xs text-muted-foreground">Input</p>
+            <textarea
+              {...register(`testCases.${index}.input_content`)}
+              rows={4}
+              placeholder="1 2 3 4 5"
+              className={cn(
+                "w-full rounded border border-input bg-muted/30 px-2 py-1.5 font-mono text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+                errors.testCases?.[index]?.input_content && "border-destructive",
+              )}
+            />
+          </div>
+          <div>
+            <p className="mb-1 font-mono text-xs text-muted-foreground">Output</p>
+            <textarea
+              {...register(`testCases.${index}.output_content`)}
+              rows={4}
+              placeholder="15"
+              className={cn(
+                "w-full rounded border border-input bg-muted/30 px-2 py-1.5 font-mono text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+                errors.testCases?.[index]?.output_content && "border-destructive",
+              )}
+            />
+          </div>
         </div>
-        <div>
-          <p className="mb-1 font-mono text-xs text-muted-foreground">Output</p>
-          <textarea
-            {...register(`testCases.${index}.output_content`)}
-            rows={4}
-            placeholder="15"
-            className={cn(
-              "w-full rounded border border-input bg-muted/30 px-2 py-1.5 font-mono text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
-              errors.testCases?.[index]?.output_content && "border-destructive",
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <p className="font-mono text-xs text-muted-foreground">Fișier .in</p>
+            <input
+              ref={inFileRef}
+              type="file"
+              accept=".in,text/*"
+              onChange={(e) => handleFileChange("in", e.target.files?.[0])}
+              className="block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border file:border-border file:bg-muted file:px-2 file:py-1 file:text-xs file:text-foreground"
+            />
+            {errors.testCases?.[index]?.input_content && (
+              <p className="text-xs text-destructive">Selectează un fișier</p>
             )}
-          />
+          </div>
+          <div className="space-y-1">
+            <p className="font-mono text-xs text-muted-foreground">Fișier .out</p>
+            <input
+              ref={outFileRef}
+              type="file"
+              accept=".out,text/*"
+              onChange={(e) => handleFileChange("out", e.target.files?.[0])}
+              className="block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border file:border-border file:bg-muted file:px-2 file:py-1 file:text-xs file:text-foreground"
+            />
+            {errors.testCases?.[index]?.output_content && (
+              <p className="text-xs text-destructive">Selectează un fișier</p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

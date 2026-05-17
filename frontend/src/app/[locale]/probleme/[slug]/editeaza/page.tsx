@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2, Trash2, Upload, X } from "lucide-react";
+import { Eye, EyeOff, Loader2, Trash2, Upload, X, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ const schema = z.object({
   title: z.string().min(1, "Titlul este obligatoriu").max(256),
   difficulty: z.coerce.number().int().min(1).max(10),
   statement_md: z.string().min(1, "Enunțul este obligatoriu"),
+  statement_md_en: z.string().default(""),
   input_format: z.string().default(""),
   output_format: z.string().default(""),
   time_limit_ms: z.coerce.number().int().min(100).max(30000),
@@ -65,6 +66,7 @@ export default function EditProblemPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [statementLang, setStatementLang] = useState<"ro" | "en">("ro");
 
   const {
     register,
@@ -78,6 +80,7 @@ export default function EditProblemPage() {
   });
 
   const watchStatement = watch("statement_md");
+  const watchStatementEn = watch("statement_md_en");
   const watchTags = watch("tags");
   const watchComparisonMode = watch("comparison_mode");
   const watchVisibility = watch("visibility");
@@ -92,6 +95,7 @@ export default function EditProblemPage() {
           title: problem.title,
           difficulty: problem.difficulty,
           statement_md: problem.statement_md,
+          statement_md_en: problem.statement_md_en ?? "",
           input_format: problem.input_format ?? "",
           output_format: problem.output_format ?? "",
           time_limit_ms: problem.time_limit_ms,
@@ -126,6 +130,7 @@ export default function EditProblemPage() {
           {
             title: values.title,
             statement_md: values.statement_md,
+            statement_md_en: values.statement_md_en || null,
             input_format: values.input_format ?? "",
             output_format: values.output_format ?? "",
             difficulty: values.difficulty,
@@ -204,17 +209,30 @@ export default function EditProblemPage() {
         <div>
           <Link
             href={`/probleme/${slug}`}
-            className="mb-1 inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
+            className="mb-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            ← Înapoi la problemă
+            <ArrowLeft className="h-3 w-3" />
+            Înapoi la problemă
           </Link>
           <h1 className="text-xl font-bold tracking-tight">Editează problema</h1>
           <p className="mt-0.5 font-mono text-xs text-muted-foreground">{slug}</p>
         </div>
-        <Button type="submit" size="sm" disabled={submitting}>
-          {submitting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-          Salvează
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="submit" size="sm" disabled={submitting}>
+            {submitting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            Salvează
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            onClick={() => router.push(`/probleme/${slug}`)}
+            aria-label="Închide"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
@@ -232,7 +250,35 @@ export default function EditProblemPage() {
           </div>
 
           <div>
-            <Label className="mb-2 block">Enunț</Label>
+            <div className="mb-2 flex items-center justify-between">
+              <Label>Enunț</Label>
+              <div className="flex rounded border border-border text-xs">
+                <button
+                  type="button"
+                  onClick={() => setStatementLang("ro")}
+                  className={cn(
+                    "px-2.5 py-1 transition-colors",
+                    statementLang === "ro"
+                      ? "bg-muted font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  RO
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatementLang("en")}
+                  className={cn(
+                    "px-2.5 py-1 transition-colors",
+                    statementLang === "en"
+                      ? "bg-muted font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
             <Tabs defaultValue="edit">
               <TabsList className="mb-2">
                 <TabsTrigger value="edit">
@@ -245,22 +291,35 @@ export default function EditProblemPage() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="edit">
-                <textarea
-                  {...register("statement_md")}
-                  rows={10}
-                  className={cn(
-                    "w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
-                    errors.statement_md && "border-destructive",
-                  )}
-                />
-                {errors.statement_md && (
-                  <p className="mt-1 text-xs text-destructive">{errors.statement_md.message}</p>
+                {statementLang === "ro" ? (
+                  <>
+                    <textarea
+                      {...register("statement_md")}
+                      rows={10}
+                      className={cn(
+                        "w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+                        errors.statement_md && "border-destructive",
+                      )}
+                    />
+                    {errors.statement_md && (
+                      <p className="mt-1 text-xs text-destructive">{errors.statement_md.message}</p>
+                    )}
+                  </>
+                ) : (
+                  <textarea
+                    {...register("statement_md_en")}
+                    rows={10}
+                    placeholder="Problem statement in English (Markdown + LaTeX). Optional."
+                    className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
                 )}
               </TabsContent>
               <TabsContent value="preview">
-                {watchStatement ? (
+                {(statementLang === "ro" ? watchStatement : watchStatementEn) ? (
                   <div className="min-h-[200px] rounded border border-border p-4">
-                    <ProblemStatement markdown={watchStatement} />
+                    <ProblemStatement
+                      markdown={(statementLang === "ro" ? watchStatement : watchStatementEn) ?? ""}
+                    />
                   </div>
                 ) : (
                   <div className="flex min-h-[200px] items-center justify-center rounded border border-border text-sm text-muted-foreground">

@@ -17,6 +17,39 @@ import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { ProblemDetailSchema, SubmissionListResponseSchema } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+function StatementLangToggle({ markdown, markdownEn }: { markdown: string; markdownEn: string }) {
+  const [lang, setLang] = useState<"ro" | "en">("ro");
+  return (
+    <div>
+      <div className="mb-3 flex justify-end">
+        <div className="flex rounded border border-border text-xs">
+          <button
+            type="button"
+            onClick={() => setLang("ro")}
+            className={cn(
+              "px-2.5 py-1 transition-colors",
+              lang === "ro" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            RO
+          </button>
+          <button
+            type="button"
+            onClick={() => setLang("en")}
+            className={cn(
+              "px-2.5 py-1 transition-colors",
+              lang === "en" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            EN
+          </button>
+        </div>
+      </div>
+      <ProblemStatement markdown={lang === "ro" ? markdown : markdownEn} />
+    </div>
+  );
+}
 import type { ProblemDetail, SubmissionSummary } from "@/lib/types";
 
 interface ProblemDetailClientProps {
@@ -172,7 +205,13 @@ function ProblemDetailLayout({
             </TabsList>
 
             <TabsContent value="statement" className="mt-0">
-              <ProblemStatement markdown={problem.statement_md} />
+              {problem.statement_md_en && (
+                <StatementLangToggle
+                  markdown={problem.statement_md}
+                  markdownEn={problem.statement_md_en}
+                />
+              )}
+              {!problem.statement_md_en && <ProblemStatement markdown={problem.statement_md} />}
 
               {(problem.input_format || problem.output_format) && (
                 <>

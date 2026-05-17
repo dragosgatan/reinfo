@@ -35,6 +35,7 @@ class Problem(Base, TimestampMixin):
     slug: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     statement_md: Mapped[str] = mapped_column(Text, nullable=False)
+    statement_md_en: Mapped[str | None] = mapped_column(Text, nullable=True)
     input_format: Mapped[str] = mapped_column(Text, nullable=False)
     output_format: Mapped[str] = mapped_column(Text, nullable=False)
     difficulty: Mapped[int] = mapped_column(Integer, nullable=False)

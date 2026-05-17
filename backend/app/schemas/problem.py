@@ -11,6 +11,7 @@ class ProblemCreate(BaseModel):
     slug: str = Field(min_length=1, max_length=128, pattern=r"^[a-z0-9-]+$")
     title: str = Field(min_length=1, max_length=256)
     statement_md: str
+    statement_md_en: str | None = None
     input_format: str
     output_format: str
     difficulty: int = Field(ge=1, le=10)
@@ -26,6 +27,7 @@ class ProblemCreate(BaseModel):
 class ProblemUpdate(BaseModel):
     title: str | None = Field(default=None, max_length=256)
     statement_md: str | None = None
+    statement_md_en: str | None = None
     input_format: str | None = None
     output_format: str | None = None
     difficulty: int | None = Field(default=None, ge=1, le=10)
@@ -44,6 +46,7 @@ class ProblemRead(BaseModel):
     slug: str
     title: str
     statement_md: str
+    statement_md_en: str | None
     input_format: str
     output_format: str
     difficulty: int
@@ -137,6 +140,7 @@ class ProblemDetail(BaseModel):
     slug: str
     title: str
     statement_md: str
+    statement_md_en: str | None
     input_format: str
     output_format: str
     difficulty: int

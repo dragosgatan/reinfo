@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.models.contest import ScoringMode
+from app.models.contest import ContestType, ScoringMode
 
 
 class ContestCreate(BaseModel):
@@ -16,6 +16,7 @@ class ContestCreate(BaseModel):
     start_time: datetime
     end_time: datetime
     scoring_mode: ScoringMode = ScoringMode.sum
+    contest_type: ContestType = ContestType.competition
 
     @model_validator(mode="after")
     def _end_after_start(self) -> "ContestCreate":
@@ -30,6 +31,7 @@ class ContestUpdate(BaseModel):
     start_time: datetime | None = None
     end_time: datetime | None = None
     scoring_mode: ScoringMode | None = None
+    contest_type: ContestType | None = None
 
 
 class ContestProblemEntry(BaseModel):
@@ -51,6 +53,7 @@ class ContestSummary(BaseModel):
     start_time: datetime
     end_time: datetime
     scoring_mode: ScoringMode
+    contest_type: ContestType
     participant_count: int
     problem_count: int
     status: Literal["upcoming", "ongoing", "past"]

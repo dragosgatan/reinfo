@@ -31,6 +31,11 @@ class ScoringMode(StrEnum):
     test = "test"
 
 
+class ContestType(StrEnum):
+    competition = "competition"
+    class_test = "class_test"
+
+
 class Contest(Base, TimestampMixin):
     __tablename__ = "contests"
 
@@ -44,6 +49,11 @@ class Contest(Base, TimestampMixin):
         Enum(ScoringMode, name="scoringmode"),
         nullable=False,
         server_default=text("'sum'"),
+    )
+    contest_type: Mapped[ContestType] = mapped_column(
+        Enum(ContestType, name="contesttype"),
+        nullable=False,
+        server_default=text("'competition'"),
     )
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
