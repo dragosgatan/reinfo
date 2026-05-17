@@ -121,6 +121,7 @@ def _build_detail(
         start_time=contest.start_time,
         end_time=contest.end_time,
         scoring_mode=contest.scoring_mode,
+        contest_type=contest.contest_type,
         participant_count=len(contest.participants),
         problem_count=len(contest.contest_problems),
         status=status,
