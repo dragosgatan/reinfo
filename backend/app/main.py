@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -12,8 +13,10 @@ from app.config import settings
 from app.limiter import limiter
 from app.realtime import run_listener
 from app.routers import auth, contests, duels, lessons, problems, submissions
+from app.routers import users as users_router
 from app.routers.contests import dispatch_leaderboard_update
 from app.routers.duels import dispatch_duel_update
+from app.storage import avatars_directory
 
 log = logging.getLogger(__name__)
 
@@ -56,11 +59,14 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(users_router.router)
 app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(contests.router)
 app.include_router(duels.router)
 app.include_router(lessons.router)
+
+app.mount("/avatars", StaticFiles(directory=str(avatars_directory())), name="avatars")
 
 
 @app.get("/api/health", tags=["system"])

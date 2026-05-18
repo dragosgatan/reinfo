@@ -453,6 +453,55 @@ export const LessonListResponseSchema = z.object({
 });
 export type LessonListResponse = z.infer<typeof LessonListResponseSchema>;
 
+export const UserProfileReadSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  display_name: z.string(),
+  avatar_url: z.string().nullable(),
+  bio: z.string().nullable(),
+  role: z.enum(["student", "teacher", "admin"]),
+  created_at: z.string(),
+  last_active_at: z.string(),
+  duel_rating: z.number().int(),
+  duel_wins: z.number().int(),
+  duel_losses: z.number().int(),
+  duel_draws: z.number().int(),
+});
+export type UserProfileRead = z.infer<typeof UserProfileReadSchema>;
+
+export const ActivityDaySchema = z.object({
+  date: z.string(),
+  count: z.number().int(),
+});
+export type ActivityDay = z.infer<typeof ActivityDaySchema>;
+
+export const DifficultyDistributionSchema = z.object({
+  easy: z.number().int(),
+  medium: z.number().int(),
+  hard: z.number().int(),
+});
+
+export const UserStatsReadSchema = z.object({
+  total_solved: z.number().int(),
+  total_submissions: z.number().int(),
+  difficulty_distribution: DifficultyDistributionSchema,
+  achievements: z.array(z.string()),
+});
+export type UserStatsRead = z.infer<typeof UserStatsReadSchema>;
+
+export const ExternalResultReadSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  contest_name: z.string(),
+  platform: z.string(),
+  result_text: z.string(),
+  year: z.number().int(),
+  verified: z.boolean(),
+  verified_by_id: z.string().uuid().nullable(),
+  created_at: z.string(),
+});
+export type ExternalResultRead = z.infer<typeof ExternalResultReadSchema>;
+
 export const LessonReadSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { LogOut, Settings, User } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +59,7 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
           <Avatar className="h-8 w-8">
-            {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.username} />}
+            {user.avatar_url && <AvatarImage src={resolveMediaUrl(user.avatar_url)} alt={user.username} />}
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -70,13 +71,13 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={`/profile/${user.username}`}>
+          <Link href={`/u/${user.username}`}>
             <User className="mr-2 h-4 w-4" />
             {t("profile")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings">
+          <Link href="/setari/profil">
             <Settings className="mr-2 h-4 w-4" />
             {t("settings")}
           </Link>

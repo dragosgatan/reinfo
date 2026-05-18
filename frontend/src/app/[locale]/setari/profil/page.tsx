@@ -1,0 +1,290 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
+import { useAuth, type User } from "@/lib/auth";
+import { api } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Link } from "@/i18n/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Camera, ExternalLink } from "lucide-react";
+
+function Toggle({
+  checked,
+  onChange,
+  id,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  id: string;
+}) {
+  return (
+    <button
+      id={id}
+      role="switch"
+      aria-checked={checked}
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        checked ? "bg-primary" : "bg-muted"
+      }`}
+    >
+      <span
+        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-md ring-0 transition-transform ${
+          checked ? "translate-x-4" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
+
+export default function ProfileSettingsPage() {
+  const t = useTranslations("settings.profile");
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [form, setForm] = useState({
+    display_name: "",
+    bio: "",
+    language: "ro",
+    privacy_show_email: false,
+    privacy_show_activity: true,
+    privacy_show_solved: true,
+  });
+  const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setForm({
+        display_name: user.display_name ?? user.username,
+        bio: user.bio ?? "",
+        language: user.language ?? "ro",
+        privacy_show_email: user.privacy_show_email ?? false,
+        privacy_show_activity: user.privacy_show_activity ?? true,
+        privacy_show_solved: user.privacy_show_solved ?? true,
+      });
+    }
+  }, [user]);
+
+  if (isLoading) {
+    return <div className="mx-auto max-w-xl px-4 py-16 text-center text-muted-foreground">{t("saving")}...</div>;
+  }
+
+  if (!user) {
+    router.push("/login");
+    return null;
+  }
+
+  const u = user as User;
+  const initials = u.username.slice(0, 2).toUpperCase();
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const updated = await api.patch<User>("/api/users/me", {
+        display_name: form.display_name,
+        bio: form.bio || null,
+        language: form.language,
+        privacy_show_email: form.privacy_show_email,
+        privacy_show_activity: form.privacy_show_activity,
+        privacy_show_solved: form.privacy_show_solved,
+      });
+      queryClient.setQueryData(["auth", "me"], updated);
+      toast.success(t("saveSuccess"));
+    } catch {
+      toast.error(t("saveError"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/users/me/avatar`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("upload failed");
+      const updated = (await res.json()) as User;
+      queryClient.setQueryData(["auth", "me"], updated);
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      toast.success(t("avatarSuccess"));
+    } catch {
+      toast.error(t("avatarError"));
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-lg font-bold tracking-tight">{t("title")}</h1>
+        <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+          <Link href={`/u/${u.username}`}>
+            <ExternalLink className="h-3.5 w-3.5" />
+            {t("viewProfile")}
+          </Link>
+        </Button>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-8">
+        <section className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+              {t("avatar")}
+            </p>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Avatar className="h-20 w-20 rounded-lg">
+                  {u.avatar_url && (
+                    <AvatarImage src={resolveMediaUrl(u.avatar_url)} alt={u.username} className="rounded-lg" />
+                  )}
+                  <AvatarFallback className="rounded-lg font-mono text-xl">{initials}</AvatarFallback>
+                </Avatar>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-muted transition-colors"
+                >
+                  <Camera className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="text-xs"
+                >
+                  {uploadingAvatar ? "Se încarcă..." : t("changeAvatar")}
+                </Button>
+                <p className="mt-1 text-[11px] text-muted-foreground">{t("avatarHint")}</p>
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="display_name" className="text-sm">
+              {t("displayName")}
+            </Label>
+            <Input
+              id="display_name"
+              value={form.display_name}
+              onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
+              maxLength={128}
+              className="max-w-sm"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="bio" className="text-sm">
+              {t("bio")}
+            </Label>
+            <textarea
+              id="bio"
+              value={form.bio}
+              onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+              placeholder={t("bioPlaceholder")}
+              maxLength={2000}
+              rows={4}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+            />
+            <p className="text-[11px] text-muted-foreground text-right">{form.bio.length}/2000</p>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="language" className="text-sm">
+              {t("language")}
+            </Label>
+            <select
+              id="language"
+              value={form.language}
+              onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="ro">Română</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("privacy")}
+          </p>
+          {[
+            {
+              id: "privacy_show_email",
+              key: "privacy_show_email" as const,
+              label: t("showEmail"),
+            },
+            {
+              id: "privacy_show_activity",
+              key: "privacy_show_activity" as const,
+              label: t("showActivity"),
+            },
+            {
+              id: "privacy_show_solved",
+              key: "privacy_show_solved" as const,
+              label: t("showSolved"),
+            },
+          ].map(({ id, key, label }) => (
+            <div key={id} className="flex items-center justify-between gap-4 py-1">
+              <Label htmlFor={id} className="text-sm font-normal cursor-pointer">
+                {label}
+              </Label>
+              <Toggle
+                id={id}
+                checked={form[key]}
+                onChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
+              />
+            </div>
+          ))}
+        </section>
+
+        <div className="flex items-center gap-3 pt-2 border-t border-border">
+          <Button type="submit" disabled={saving} size="sm">
+            {saving ? t("saving") : t("save")}
+          </Button>
+          {u.role === "admin" && (
+            <Badge variant="secondary" className="text-xs">
+              Admin
+            </Badge>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+}

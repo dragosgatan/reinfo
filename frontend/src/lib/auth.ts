@@ -12,6 +12,11 @@ export const UserSchema = z.object({
   created_at: z.string(),
   avatar_url: z.string().nullable().optional(),
   display_name: z.string().optional(),
+  bio: z.string().nullable().optional(),
+  language: z.string().optional(),
+  privacy_show_email: z.boolean().optional(),
+  privacy_show_activity: z.boolean().optional(),
+  privacy_show_solved: z.boolean().optional(),
 });
 
 export type User = z.infer<typeof UserSchema>;

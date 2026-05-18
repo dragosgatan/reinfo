@@ -99,6 +99,49 @@ async def save_submission_output(
     return str(path)
 
 
+_ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_MAX_AVATAR_BYTES = 2 * 1024 * 1024  # 2 MB
+_AVATAR_EXT_MAP = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+
+
+def _avatar_path(user_id: uuid.UUID, ext: str) -> Path:
+    return _data_root() / "avatars" / f"{user_id}{ext}"
+
+
+async def save_avatar(user_id: uuid.UUID, content_type: str, data: bytes) -> str:
+    """Save an uploaded avatar image and return the URL path.
+
+    Validates content type and size. Returns the URL path like /avatars/{user_id}.jpg.
+    """
+    if content_type not in _ALLOWED_AVATAR_TYPES:
+        raise ValueError(f"Unsupported image type: {content_type}")
+    if len(data) > _MAX_AVATAR_BYTES:
+        raise ValueError("Avatar exceeds 2 MB size limit")
+
+    ext = _AVATAR_EXT_MAP[content_type]
+    path = _avatar_path(user_id, ext)
+    _assert_inside_data_root(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    # remove any previously stored avatar with a different extension
+    for old_ext in _AVATAR_EXT_MAP.values():
+        old = _avatar_path(user_id, old_ext)
+        if old != path and old.exists():
+            old.unlink()
+
+    async with aiofiles.open(path, "wb") as fh:
+        await fh.write(data)
+
+    return f"/avatars/{user_id}{ext}"
+
+
+def avatars_directory() -> Path:
+    """Return the avatars directory, creating it if needed."""
+    d = _data_root() / "avatars"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 async def save_submission_code(
     user_id: uuid.UUID,
     submission_id: uuid.UUID,

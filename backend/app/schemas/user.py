@@ -29,6 +29,17 @@ class UserUpdate(BaseModel):
     language: str | None = Field(default=None, max_length=8)
 
 
+class UserProfileUpdate(BaseModel):
+    """Editable profile fields for the authenticated user."""
+
+    display_name: str | None = Field(default=None, min_length=1, max_length=128)
+    bio: str | None = Field(default=None, max_length=2000)
+    language: str | None = Field(default=None, max_length=8)
+    privacy_show_email: bool | None = None
+    privacy_show_activity: bool | None = None
+    privacy_show_solved: bool | None = None
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -42,6 +53,9 @@ class UserRead(BaseModel):
     created_at: datetime
     last_active_at: datetime
     language: str
+    privacy_show_email: bool
+    privacy_show_activity: bool
+    privacy_show_solved: bool
 
 
 class UserPublic(BaseModel):
@@ -74,3 +88,48 @@ class UserProfileRead(BaseModel):
     duel_wins: int
     duel_losses: int
     duel_draws: int
+
+
+class ExternalResultCreate(BaseModel):
+    contest_name: str = Field(min_length=1, max_length=256)
+    platform: str = Field(min_length=1, max_length=128)
+    result_text: str = Field(min_length=1, max_length=256)
+    year: int = Field(ge=2000, le=2100)
+
+
+class ExternalResultRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    contest_name: str
+    platform: str
+    result_text: str
+    year: int
+    verified: bool
+    verified_by_id: uuid.UUID | None
+    created_at: datetime
+
+
+class ActivityDay(BaseModel):
+    date: str
+    count: int
+
+
+class DifficultyDistribution(BaseModel):
+    easy: int
+    medium: int
+    hard: int
+
+
+class UserStatsRead(BaseModel):
+    total_solved: int
+    total_submissions: int
+    difficulty_distribution: DifficultyDistribution
+    achievements: list[str]
+
+
+class AchievementInfo(BaseModel):
+    key: str
+    label: str
+    description: str

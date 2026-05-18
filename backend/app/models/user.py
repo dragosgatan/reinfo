@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, text
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, new_uuid
@@ -43,6 +43,15 @@ class User(Base, TimestampMixin):
     duel_wins: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     duel_losses: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     duel_draws: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    privacy_show_email: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    privacy_show_activity: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
+    privacy_show_solved: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
 
     sessions: Mapped[list["Session"]] = relationship(
         "Session", back_populates="user", cascade="all, delete-orphan"
@@ -53,6 +62,34 @@ class User(Base, TimestampMixin):
     contest_participations: Mapped[list["ContestParticipant"]] = relationship(
         "ContestParticipant", back_populates="user"
     )
+    external_results: Mapped[list["ExternalResult"]] = relationship(
+        "ExternalResult",
+        foreign_keys="ExternalResult.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class ExternalResult(Base, TimestampMixin):
+    __tablename__ = "external_results"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    contest_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    platform: Mapped[str] = mapped_column(String(128), nullable=False)
+    result_text: Mapped[str] = mapped_column(String(256), nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    verified_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    user: Mapped["User"] = relationship(
+        "User", foreign_keys=[user_id], back_populates="external_results"
+    )
+    verified_by: Mapped["User | None"] = relationship("User", foreign_keys=[verified_by_id])
 
 
 class Session(Base, TimestampMixin):
