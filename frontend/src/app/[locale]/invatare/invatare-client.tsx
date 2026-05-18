@@ -156,7 +156,7 @@ export default function InvatareClient() {
 
 function LessonCard({
   lesson,
-  showTeacherHint,
+  showTeacherHint: _showTeacherHint,
 }: {
   lesson: LessonListItem;
   showTeacherHint: boolean;

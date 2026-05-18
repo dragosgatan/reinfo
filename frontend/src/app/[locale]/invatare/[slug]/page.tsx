@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import { getTranslations } from "next-intl/server";
 import { LessonView } from "./lesson-view";
 import { LessonReadSchema, LessonListResponseSchema } from "@/lib/types";
 

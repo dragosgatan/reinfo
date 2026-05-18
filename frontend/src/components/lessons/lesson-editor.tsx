@@ -600,7 +600,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
               <code className="rounded bg-muted px-1">{`<!-- quiz:ID -->`}</code>{" "}
               în conținut unde vrei să apară o întrebare.
             </p>
-            <p>ID-ul trebuie să corespundă câmpului „id" din editorul de mai jos.</p>
+            <p>{'ID-ul trebuie să corespundă câmpului „id" din editorul de mai jos.'}</p>
           </div>
         </aside>
       </div>
