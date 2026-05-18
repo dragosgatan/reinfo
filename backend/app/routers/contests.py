@@ -146,7 +146,7 @@ def _build_detail(
     )
 
 
-@router.get("/", response_model=ContestListResponse)
+@router.get("", response_model=ContestListResponse)
 async def list_contests(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=50),
@@ -201,7 +201,7 @@ async def get_contest(
     return _build_detail(contest, now, current_user, is_registered)
 
 
-@router.post("/", response_model=ContestDetail, status_code=201)
+@router.post("", response_model=ContestDetail, status_code=201)
 async def create_contest(
     data: ContestCreate,
     session: AsyncSession = Depends(get_session),

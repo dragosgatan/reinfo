@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.limiter import limiter
 from app.realtime import run_listener
-from app.routers import auth, contests, duels, problems, submissions
+from app.routers import auth, contests, duels, lessons, problems, submissions
 from app.routers.contests import dispatch_leaderboard_update
 from app.routers.duels import dispatch_duel_update
 
@@ -41,6 +41,7 @@ app = FastAPI(
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
 app.state.limiter = limiter
@@ -59,6 +60,7 @@ app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(contests.router)
 app.include_router(duels.router)
+app.include_router(lessons.router)
 
 
 @app.get("/api/health", tags=["system"])

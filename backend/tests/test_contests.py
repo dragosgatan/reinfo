@@ -140,7 +140,7 @@ async def test_create_contest_requires_teacher(
     await _login(client, "student1")
 
     r = await client.post(
-        "/api/contests/",
+        "/api/contests",
         json={
             "title": "My Contest",
             "start_time": "2030-01-01T10:00:00Z",
@@ -156,7 +156,7 @@ async def test_create_contest_teacher(client: AsyncClient, db_session: AsyncSess
     await _login(client, "teacher1")
 
     r = await client.post(
-        "/api/contests/",
+        "/api/contests",
         json={
             "title": "Olimpiadă Locală",
             "start_time": "2030-01-01T10:00:00Z",
@@ -181,8 +181,8 @@ async def test_slug_uniqueness(client: AsyncClient, db_session: AsyncSession) ->
         "start_time": "2030-01-01T10:00:00Z",
         "end_time": "2030-01-01T12:00:00Z",
     }
-    r1 = await client.post("/api/contests/", json=payload)
-    r2 = await client.post("/api/contests/", json=payload)
+    r1 = await client.post("/api/contests", json=payload)
+    r2 = await client.post("/api/contests", json=payload)
     assert r1.status_code == 201
     assert r2.status_code == 201
     assert r1.json()["slug"] != r2.json()["slug"]
@@ -408,7 +408,7 @@ async def test_contest_problem_public_after_end(
     await db_session.commit()
 
     # unauthenticated — should see the problem now that contest is over
-    r = await client.get("/api/problems/")
+    r = await client.get("/api/problems")
     assert r.status_code == 200
     slugs = [item["slug"] for item in r.json()["items"]]
     assert "post-prob" in slugs

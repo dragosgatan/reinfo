@@ -399,3 +399,73 @@ export const LobbyResponseSchema = z.object({
   your_queue_entry: QueueEntryReadSchema.nullable(),
 });
 export type LobbyResponse = z.infer<typeof LobbyResponseSchema>;
+
+export const LESSON_CATEGORIES = [
+  "basics",
+  "data_structures",
+  "graphs",
+  "dp",
+  "math",
+] as const;
+export type LessonCategory = (typeof LESSON_CATEGORIES)[number];
+
+export const LESSON_LEVELS = ["beginner", "intermediate", "advanced"] as const;
+export type LessonLevel = (typeof LESSON_LEVELS)[number];
+
+export const LESSON_CATEGORY_LABELS: Record<LessonCategory, string> = {
+  basics: "Noțiuni de bază",
+  data_structures: "Structuri de date",
+  graphs: "Grafuri",
+  dp: "Programare dinamică",
+  math: "Matematică",
+};
+
+export const LESSON_LEVEL_LABELS: Record<LessonLevel, string> = {
+  beginner: "Începător",
+  intermediate: "Intermediar",
+  advanced: "Avansat",
+};
+
+export const QuizQuestionSchema = z.object({
+  id: z.string(),
+  question: z.string(),
+  options: z.array(z.string()),
+  correct: z.number().int(),
+  explanation: z.string(),
+});
+export type QuizQuestion = z.infer<typeof QuizQuestionSchema>;
+
+export const LessonListItemSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  title: z.string(),
+  category: z.enum(LESSON_CATEGORIES),
+  level: z.enum(LESSON_LEVELS),
+  ordinal: z.number().int(),
+  published: z.boolean(),
+  is_completed: z.boolean(),
+});
+export type LessonListItem = z.infer<typeof LessonListItemSchema>;
+
+export const LessonListResponseSchema = z.object({
+  items: z.array(LessonListItemSchema),
+  total: z.number().int(),
+});
+export type LessonListResponse = z.infer<typeof LessonListResponseSchema>;
+
+export const LessonReadSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  title: z.string(),
+  category: z.enum(LESSON_CATEGORIES),
+  level: z.enum(LESSON_LEVELS),
+  content_md: z.string(),
+  teacher_notes_md: z.string().nullable(),
+  quizzes: z.array(z.record(z.unknown())),
+  ordinal: z.number().int(),
+  published: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  is_completed: z.boolean(),
+});
+export type LessonRead = z.infer<typeof LessonReadSchema>;

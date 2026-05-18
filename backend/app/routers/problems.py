@@ -95,7 +95,7 @@ def _assert_can_edit(problem: Problem, user: User) -> None:
     raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
 
-@router.get("/", response_model=ProblemListResponse)
+@router.get("", response_model=ProblemListResponse)
 async def list_problems(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=50),
@@ -248,7 +248,7 @@ async def get_problem(
     )
 
 
-@router.post("/", response_model=ProblemRead, status_code=201)
+@router.post("", response_model=ProblemRead, status_code=201)
 async def create_problem(
     data: ProblemCreate,
     session: AsyncSession = Depends(get_session),

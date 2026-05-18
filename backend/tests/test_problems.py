@@ -119,7 +119,7 @@ def _upload_files(
 
 @pytest.mark.asyncio
 async def test_list_empty(client: AsyncClient) -> None:
-    r = await client.get("/api/problems/")
+    r = await client.get("/api/problems")
     assert r.status_code == 200
     body = r.json()
     assert body["total"] == 0
@@ -133,7 +133,7 @@ async def test_list_public_problems(client: AsyncClient, db_session: AsyncSessio
     await _make_problem(db_session, author.id, slug="p1", visibility=Visibility.public)
     await _make_problem(db_session, author.id, slug="p2", visibility=Visibility.draft)
 
-    r = await client.get("/api/problems/")
+    r = await client.get("/api/problems")
     assert r.status_code == 200
     body = r.json()
     # draft problem is hidden from anonymous users
@@ -147,20 +147,20 @@ async def test_list_pagination(client: AsyncClient, db_session: AsyncSession) ->
     for i in range(5):
         await _make_problem(db_session, author.id, slug=f"prob-{i}")
 
-    r = await client.get("/api/problems/?per_page=2&page=1")
+    r = await client.get("/api/problems?per_page=2&page=1")
     assert r.status_code == 200
     body = r.json()
     assert body["total"] == 5
     assert len(body["items"]) == 2
     assert body["pages"] == 3
 
-    r2 = await client.get("/api/problems/?per_page=2&page=3")
+    r2 = await client.get("/api/problems?per_page=2&page=3")
     assert len(r2.json()["items"]) == 1
 
 
 @pytest.mark.asyncio
 async def test_list_per_page_max(client: AsyncClient) -> None:
-    r = await client.get("/api/problems/?per_page=51")
+    r = await client.get("/api/problems?per_page=51")
     assert r.status_code == 422
 
 
@@ -172,7 +172,7 @@ async def test_list_search(client: AsyncClient, db_session: AsyncSession) -> Non
     await db_session.commit()
     await _make_problem(db_session, author.id, slug="altfel")
 
-    r = await client.get("/api/problems/?search=sortare")
+    r = await client.get("/api/problems?search=sortare")
     body = r.json()
     assert body["total"] == 1
     assert body["items"][0]["slug"] == "sortare"
@@ -185,7 +185,7 @@ async def test_list_tags_filter(client: AsyncClient, db_session: AsyncSession) -
     await _make_problem(db_session, author.id, slug="p-graph", tags=["graph"])
     await _make_problem(db_session, author.id, slug="p-dp", tags=["dp"])
 
-    r = await client.get("/api/problems/?tags=graph&tags=dp")
+    r = await client.get("/api/problems?tags=graph&tags=dp")
     body = r.json()
     assert body["total"] == 1
     assert body["items"][0]["slug"] == "p-graph-dp"
@@ -198,7 +198,7 @@ async def test_list_difficulty_filter(client: AsyncClient, db_session: AsyncSess
     await _make_problem(db_session, author.id, slug="medium", difficulty=5)
     await _make_problem(db_session, author.id, slug="hard", difficulty=9)
 
-    r = await client.get("/api/problems/?difficulty_min=4&difficulty_max=6")
+    r = await client.get("/api/problems?difficulty_min=4&difficulty_max=6")
     body = r.json()
     assert body["total"] == 1
     assert body["items"][0]["slug"] == "medium"
@@ -206,7 +206,7 @@ async def test_list_difficulty_filter(client: AsyncClient, db_session: AsyncSess
 
 @pytest.mark.asyncio
 async def test_list_status_requires_auth(client: AsyncClient) -> None:
-    r = await client.get("/api/problems/?status=solved")
+    r = await client.get("/api/problems?status=solved")
     assert r.status_code == 401
 
 
@@ -216,7 +216,7 @@ async def test_list_sort_hardest(client: AsyncClient, db_session: AsyncSession) 
     await _make_problem(db_session, author.id, slug="s-easy", difficulty=1)
     await _make_problem(db_session, author.id, slug="s-hard", difficulty=10)
 
-    r = await client.get("/api/problems/?sort=hardest")
+    r = await client.get("/api/problems?sort=hardest")
     items = r.json()["items"]
     assert items[0]["difficulty"] >= items[1]["difficulty"]
 
@@ -227,7 +227,7 @@ async def test_list_sort_easiest(client: AsyncClient, db_session: AsyncSession) 
     await _make_problem(db_session, author.id, slug="se-easy", difficulty=1)
     await _make_problem(db_session, author.id, slug="se-hard", difficulty=10)
 
-    r = await client.get("/api/problems/?sort=easiest")
+    r = await client.get("/api/problems?sort=easiest")
     items = r.json()["items"]
     assert items[0]["difficulty"] <= items[1]["difficulty"]
 
@@ -238,7 +238,7 @@ async def test_list_author_sees_own_drafts(client: AsyncClient, db_session: Asyn
     await _make_problem(db_session, teacher.id, slug="my-draft", visibility=Visibility.draft)
     await _login(client, "teacher-draft")
 
-    r = await client.get("/api/problems/")
+    r = await client.get("/api/problems")
     assert any(i["slug"] == "my-draft" for i in r.json()["items"])
 
 
@@ -250,7 +250,7 @@ async def test_list_admin_sees_all(client: AsyncClient, db_session: AsyncSession
     await _make_problem(db_session, teacher.id, slug="draft-one", visibility=Visibility.draft)
 
     await _login(client, "admin-list")
-    r = await client.get("/api/problems/")
+    r = await client.get("/api/problems")
     slugs = [i["slug"] for i in r.json()["items"]]
     assert "private-one" not in slugs
     assert "draft-one" in slugs
@@ -272,7 +272,7 @@ async def test_list_status_filter_solved(client: AsyncClient, db_session: AsyncS
     await db_session.commit()
 
     await _login(client, "solver1")
-    r = await client.get("/api/problems/?status=solved")
+    r = await client.get("/api/problems?status=solved")
     body = r.json()
     assert body["total"] == 1
     assert body["items"][0]["user_status"] == "solved"
@@ -285,7 +285,7 @@ async def test_list_user_status_none_when_anon(
     author = await _make_user(db_session, "anon-test", UserRole.teacher)
     await _make_problem(db_session, author.id, slug="anon-prob")
 
-    r = await client.get("/api/problems/")
+    r = await client.get("/api/problems")
     assert r.json()["items"][0]["user_status"] is None
 
 
@@ -306,7 +306,7 @@ async def test_list_solve_count(client: AsyncClient, db_session: AsyncSession) -
         )
     await db_session.commit()
 
-    r = await client.get("/api/problems/")
+    r = await client.get("/api/problems")
     assert r.json()["items"][0]["solve_count"] == 3
 
 
@@ -385,7 +385,7 @@ async def test_create_problem_teacher(client: AsyncClient, db_session: AsyncSess
     await _make_user(db_session, "teacher-create", UserRole.teacher)
     await _login(client, "teacher-create")
 
-    r = await client.post("/api/problems/", json=_PROBLEM_PAYLOAD)
+    r = await client.post("/api/problems", json=_PROBLEM_PAYLOAD)
     assert r.status_code == 201
     body = r.json()
     assert body["slug"] == "new-problem"
@@ -397,7 +397,7 @@ async def test_create_problem_admin(client: AsyncClient, db_session: AsyncSessio
     await _make_user(db_session, "admin-create", UserRole.admin)
     await _login(client, "admin-create")
 
-    r = await client.post("/api/problems/", json={**_PROBLEM_PAYLOAD, "slug": "admin-problem"})
+    r = await client.post("/api/problems", json={**_PROBLEM_PAYLOAD, "slug": "admin-problem"})
     assert r.status_code == 201
 
 
@@ -408,13 +408,13 @@ async def test_create_problem_student_forbidden(
     await _make_user(db_session, "student-create", UserRole.student)
     await _login(client, "student-create")
 
-    r = await client.post("/api/problems/", json=_PROBLEM_PAYLOAD)
+    r = await client.post("/api/problems", json=_PROBLEM_PAYLOAD)
     assert r.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_create_problem_requires_auth(client: AsyncClient) -> None:
-    r = await client.post("/api/problems/", json=_PROBLEM_PAYLOAD)
+    r = await client.post("/api/problems", json=_PROBLEM_PAYLOAD)
     assert r.status_code == 401
 
 
@@ -424,7 +424,7 @@ async def test_create_problem_duplicate_slug(client: AsyncClient, db_session: As
     await _make_problem(db_session, teacher.id, slug="duplicate-slug")
     await _login(client, "teacher-dup")
 
-    r = await client.post("/api/problems/", json={**_PROBLEM_PAYLOAD, "slug": "duplicate-slug"})
+    r = await client.post("/api/problems", json={**_PROBLEM_PAYLOAD, "slug": "duplicate-slug"})
     assert r.status_code == 409
 
 
@@ -433,7 +433,7 @@ async def test_create_problem_invalid_slug(client: AsyncClient, db_session: Asyn
     await _make_user(db_session, "teacher-slug", UserRole.teacher)
     await _login(client, "teacher-slug")
 
-    r = await client.post("/api/problems/", json={**_PROBLEM_PAYLOAD, "slug": "UPPERCASE_INVALID"})
+    r = await client.post("/api/problems", json={**_PROBLEM_PAYLOAD, "slug": "UPPERCASE_INVALID"})
     assert r.status_code == 422
 
 
@@ -444,7 +444,7 @@ async def test_create_problem_invalid_difficulty(
     await _make_user(db_session, "teacher-diff", UserRole.teacher)
     await _login(client, "teacher-diff")
 
-    r = await client.post("/api/problems/", json={**_PROBLEM_PAYLOAD, "difficulty": 11})
+    r = await client.post("/api/problems", json={**_PROBLEM_PAYLOAD, "difficulty": 11})
     assert r.status_code == 422
 
 

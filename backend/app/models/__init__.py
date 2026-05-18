@@ -9,6 +9,7 @@ from app.models.duel import (
     DuelStatus,
 )
 from app.models.judging_job import JobStatus, JudgingJob
+from app.models.lesson import Lesson, LessonCategory, LessonLevel, LessonProgress
 from app.models.problem import ComparisonMode, Problem, TestCase, Visibility
 from app.models.submission import Submission, SubmissionResult, Verdict
 from app.models.user import Session, User, UserRole
@@ -37,4 +38,8 @@ __all__ = [
     "DuelRatingHistory",
     "DuelQueue",
     "DuelQueueStatus",
+    "Lesson",
+    "LessonCategory",
+    "LessonLevel",
+    "LessonProgress",
 ]
