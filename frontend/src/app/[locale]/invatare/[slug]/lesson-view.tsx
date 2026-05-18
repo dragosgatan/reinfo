@@ -1,6 +1,6 @@
 "use client";
 
-import { isValidElement, useCallback, useRef, useState } from "react";
+import { createContext, isValidElement, useCallback, useContext, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
@@ -42,6 +42,14 @@ interface PyodideInterface {
 }
 
 const PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/v0.27.6/full/";
+
+interface PyodideCtxValue {
+  pyodide: React.MutableRefObject<PyodideInterface | null>;
+  pyStatus: "idle" | "loading" | "ready" | "error";
+  loadPyodide: (onReady?: () => void) => void;
+}
+
+const PyodideCtx = createContext<PyodideCtxValue | null>(null);
 
 const QUIZ_MARKER_RE = /<!--\s*quiz:([\w-]+)\s*-->/g;
 
@@ -113,17 +121,8 @@ function usePyodide() {
   return { pyodide: ref, status, load };
 }
 
-function RunnablePython({
-  code,
-  pyodide,
-  pyStatus,
-  onLoadPyodide,
-}: {
-  code: string;
-  pyodide: React.MutableRefObject<PyodideInterface | null>;
-  pyStatus: "idle" | "loading" | "ready" | "error";
-  onLoadPyodide: (onReady?: () => void) => void;
-}) {
+function RunnablePython({ code }: { code: string }) {
+  const { pyodide, pyStatus, loadPyodide: onLoadPyodide } = useContext(PyodideCtx)!;
   const t = useTranslations("learning");
   const [output, setOutput] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -247,6 +246,33 @@ function QuizBlock({ quiz }: { quiz: QuizQuestion }) {
   );
 }
 
+function CodeRenderer({
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLElement> & { inline?: boolean }) {
+  const language = /language-(\w+)/.exec(className || "")?.[1];
+  const codeStr = childrenToString(children).replace(/\n$/, "");
+
+  if (language === "python" && !props.inline) {
+    return <RunnablePython code={codeStr} />;
+  }
+
+  if (language) {
+    return (
+      <code className={cn("text-xs", className)} {...props}>
+        {children}
+      </code>
+    );
+  }
+
+  return (
+    <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs" {...props}>
+      {children}
+    </code>
+  );
+}
+
 const MD_COMPONENTS = {
   p: ({ children }: React.HTMLAttributes<HTMLParagraphElement>) => (
     <p className="mb-4 text-sm leading-7 last:mb-0">{children}</p>
@@ -309,6 +335,7 @@ const MD_COMPONENTS = {
   td: ({ children }: React.HTMLAttributes<HTMLTableCellElement>) => (
     <td className="border border-border px-3 py-1.5 text-sm">{children}</td>
   ),
+  code: CodeRenderer,
 };
 
 interface LessonViewProps {
@@ -349,43 +376,6 @@ export function LessonView({ lesson, prevLesson, nextLesson }: LessonViewProps) 
     }
   }, [isCompleted, lesson.slug, user]);
 
-  const markdownComponents = {
-    ...MD_COMPONENTS,
-    code({
-      className,
-      children,
-      ...props
-    }: React.HTMLAttributes<HTMLElement> & { inline?: boolean }) {
-      const language = /language-(\w+)/.exec(className || "")?.[1];
-      const codeStr = childrenToString(children).replace(/\n$/, "");
-
-      if (language === "python" && !props.inline) {
-        return (
-          <RunnablePython
-            code={codeStr}
-            pyodide={pyodide}
-            pyStatus={pyStatus}
-            onLoadPyodide={loadPyodide}
-          />
-        );
-      }
-
-      if (language) {
-        return (
-          <code className={cn("text-xs", className)} {...props}>
-            {children}
-          </code>
-        );
-      }
-
-      return (
-        <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs" {...props}>
-          {children}
-        </code>
-      );
-    },
-  };
-
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <div className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">
@@ -421,24 +411,26 @@ export function LessonView({ lesson, prevLesson, nextLesson }: LessonViewProps) 
         <h1 className="text-2xl font-semibold tracking-tight">{lesson.title}</h1>
       </div>
 
-      <div className="space-y-0">
-        {parts.map((part, i) => {
-          if (part.type === "quiz") {
-            const quiz = quizMap.get(part.id);
-            return quiz ? <QuizBlock key={i} quiz={quiz} /> : null;
-          }
-          return (
-            <ReactMarkdown
-              key={i}
-              remarkPlugins={[remarkMath]}
-              rehypePlugins={[rehypeKatex, [rehypeHighlight, { detect: true, ignoreMissing: true }]]}
-              components={markdownComponents as never}
-            >
-              {part.value}
-            </ReactMarkdown>
-          );
-        })}
-      </div>
+      <PyodideCtx.Provider value={{ pyodide, pyStatus, loadPyodide }}>
+        <div className="space-y-0">
+          {parts.map((part, i) => {
+            if (part.type === "quiz") {
+              const quiz = quizMap.get(part.id);
+              return quiz ? <QuizBlock key={i} quiz={quiz} /> : null;
+            }
+            return (
+              <ReactMarkdown
+                key={i}
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex, [rehypeHighlight, { detect: true, ignoreMissing: true }]]}
+                components={MD_COMPONENTS as never}
+              >
+                {part.value}
+              </ReactMarkdown>
+            );
+          })}
+        </div>
+      </PyodideCtx.Provider>
 
       {isTeacher && lesson.teacher_notes_md && (
         <div className="mt-10 rounded-lg border border-amber-400/40 bg-amber-50/50 p-5 dark:bg-amber-950/20">
