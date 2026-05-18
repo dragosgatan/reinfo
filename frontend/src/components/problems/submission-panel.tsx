@@ -82,7 +82,6 @@ export function SubmissionPanel({
 }: SubmissionPanelProps) {
   const t = useTranslations("problems");
   const {
-    mounted,
     language,
     editorTheme,
     fontSize,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Swords } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -51,7 +50,6 @@ interface ChallengeButtonProps {
 
 export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
   const { user, isAuthenticated } = useAuth();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [timeLimit, setTimeLimit] = useState(30);
   const [diffMin, setDiffMin] = useState(3);

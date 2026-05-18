@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import {
@@ -15,7 +15,6 @@ import {
 } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Loader2, Swords, Clock, Users, Trophy, X } from "lucide-react";
 
 const TIME_CONTROLS = [
