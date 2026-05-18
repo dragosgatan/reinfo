@@ -3,6 +3,7 @@
     "problems": "Problems",
     "submissions": "Submissions",
     "contests": "Contests",
+    "duels": "Duels",
     "learning": "Learning",
     "leaderboard": "Leaderboard",
     "search": "Search...",
@@ -266,5 +267,24 @@
     "theme": "Theme",
     "lightMode": "Light mode",
     "darkMode": "Dark mode"
+  },
+  "duel": {
+    "title": "Duel",
+    "challenge": "Challenge to duel",
+    "rating": "Duel Rating",
+    "wins": "Wins",
+    "losses": "Losses",
+    "draws": "Draws",
+    "resign": "Resign",
+    "offerDraw": "Offer draw",
+    "acceptDraw": "Accept draw",
+    "declineDraw": "Decline draw",
+    "pendingRequests": "Pending challenges",
+    "accept": "Accept",
+    "decline": "Decline",
+    "timeLeft": "Time remaining",
+    "victory": "Victory!",
+    "defeat": "Defeat",
+    "draw": "Draw"
   }
 }

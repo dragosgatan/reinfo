@@ -15,9 +15,10 @@ from sqlalchemy.orm import selectinload
 
 from app import piston as piston_client
 from app.models.contest import Contest
+from app.models.duel import Duel, DuelStatus
 from app.models.problem import ComparisonMode, Problem
 from app.models.submission import Submission, SubmissionResult, Verdict
-from app.realtime import publish_contest_update
+from app.realtime import publish_contest_update, publish_duel_update
 
 _SNIPPET_MAX_LINES = 50
 
@@ -229,15 +230,92 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
     submission.score = total_score
     submission.judged_at = now
     await _notify_contest_if_any(session, submission)
+    await _update_duel_if_any(session, submission)
     await session.commit()
 
 
 async def _notify_contest_if_any(session: AsyncSession, submission: Submission) -> None:
-    """Emit a NOTIFY for the contest leaderboard channel, if this submission
-    belongs to a contest. Runs in the same transaction as the verdict update
-    so subscribers only see the event after commit."""
+    """Emit a NOTIFY for the contest leaderboard channel if this submission belongs to a contest."""
     if submission.contest_id is None:
         return
     slug = await session.scalar(select(Contest.slug).where(Contest.id == submission.contest_id))
     if slug:
         await publish_contest_update(session, slug)
+
+
+_ELO_K = 32
+
+
+def _elo_change(rating_a: int, rating_b: int, score_a: float) -> int:
+    """Return the rating change for player A. score_a is 1 (win), 0.5 (draw), 0 (loss)."""
+    expected = 1.0 / (1.0 + 10 ** ((rating_b - rating_a) / 400.0))
+    return round(_ELO_K * (score_a - expected))
+
+
+async def _update_duel_if_any(session: AsyncSession, submission: Submission) -> None:
+    """Update duel state after a submission is judged. Finishes the duel on AC."""
+    if submission.duel_id is None:
+        return
+
+    from datetime import UTC, datetime
+
+    from app.models.duel import DuelRatingHistory
+    from app.models.user import User
+
+    duel = await session.scalar(select(Duel).where(Duel.id == submission.duel_id))
+    if duel is None or duel.status != DuelStatus.active:
+        return
+
+    is_challenger = submission.user_id == duel.challenger_id
+    current_score = duel.challenger_score if is_challenger else duel.opponent_score
+
+    if submission.score > current_score:
+        if is_challenger:
+            duel.challenger_score = submission.score
+        else:
+            duel.opponent_score = submission.score
+
+    if submission.verdict == Verdict.AC:
+        now = datetime.now(UTC)
+        duel.status = DuelStatus.finished
+        duel.finished_at = now
+        duel.winner_id = submission.user_id
+
+        challenger = await session.get(User, duel.challenger_id)
+        opponent = await session.get(User, duel.opponent_id)
+        if challenger and opponent:
+            winner_is_challenger = submission.user_id == duel.challenger_id
+            c_change = _elo_change(
+                challenger.duel_rating, opponent.duel_rating, 1.0 if winner_is_challenger else 0.0
+            )
+            o_change = _elo_change(
+                opponent.duel_rating, challenger.duel_rating, 0.0 if winner_is_challenger else 1.0
+            )
+
+            session.add(
+                DuelRatingHistory(
+                    user_id=challenger.id,
+                    duel_id=duel.id,
+                    rating_before=challenger.duel_rating,
+                    rating_after=max(0, challenger.duel_rating + c_change),
+                )
+            )
+            session.add(
+                DuelRatingHistory(
+                    user_id=opponent.id,
+                    duel_id=duel.id,
+                    rating_before=opponent.duel_rating,
+                    rating_after=max(0, opponent.duel_rating + o_change),
+                )
+            )
+
+            challenger.duel_rating = max(0, challenger.duel_rating + c_change)
+            opponent.duel_rating = max(0, opponent.duel_rating + o_change)
+            if winner_is_challenger:
+                challenger.duel_wins += 1
+                opponent.duel_losses += 1
+            else:
+                opponent.duel_wins += 1
+                challenger.duel_losses += 1
+
+    await publish_duel_update(session, str(duel.id))

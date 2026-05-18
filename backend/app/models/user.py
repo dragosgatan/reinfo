@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, text
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, new_uuid
@@ -39,6 +39,10 @@ class User(Base, TimestampMixin):
         DateTime(timezone=True), server_default=text("now()"), nullable=False
     )
     language: Mapped[str] = mapped_column(String(8), server_default=text("'ro'"), nullable=False)
+    duel_rating: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("800"))
+    duel_wins: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    duel_losses: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    duel_draws: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
 
     sessions: Mapped[list["Session"]] = relationship(
         "Session", back_populates="user", cascade="all, delete-orphan"

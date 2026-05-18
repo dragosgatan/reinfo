@@ -3,6 +3,7 @@
     "problems": "Probleme",
     "submissions": "Submisii",
     "contests": "Concursuri",
+    "duels": "Dueluri",
     "learning": "Învățare",
     "leaderboard": "Clasament",
     "search": "Caută...",
@@ -266,5 +267,24 @@
     "theme": "Temă",
     "lightMode": "Modul clar",
     "darkMode": "Modul întunecat"
+  },
+  "duel": {
+    "title": "Duel",
+    "challenge": "Provoacă la duel",
+    "rating": "Duel Rating",
+    "wins": "Victorii",
+    "losses": "Înfrângeri",
+    "draws": "Remize",
+    "resign": "Abandon",
+    "offerDraw": "Oferă remiză",
+    "acceptDraw": "Acceptă remiza",
+    "declineDraw": "Refuză remiza",
+    "pendingRequests": "Provocări în așteptare",
+    "accept": "Acceptă",
+    "decline": "Refuză",
+    "timeLeft": "Timp rămas",
+    "victory": "Victorie!",
+    "defeat": "Înfrângere",
+    "draw": "Remiză"
   }
 }

@@ -284,3 +284,118 @@ export const TAG_LABELS: Record<string, string> = {
   combinatorica: "Combinatorică",
   "divide-cucereste": "Divide și cucerește",
 };
+
+export const DuelStatusSchema = z.enum([
+  "pending",
+  "active",
+  "resigned",
+  "drawn",
+  "finished",
+]);
+export type DuelStatus = z.infer<typeof DuelStatusSchema>;
+
+export const DuelRequestStatusSchema = z.enum([
+  "pending",
+  "accepted",
+  "declined",
+  "expired",
+]);
+export type DuelRequestStatus = z.infer<typeof DuelRequestStatusSchema>;
+
+export const DuelPlayerStateSchema = z.object({
+  user_id: z.string().uuid(),
+  username: z.string(),
+  display_name: z.string(),
+  score: z.number().int(),
+  best_verdict: VerdictSchema.nullable(),
+  duel_rating: z.number().int(),
+});
+export type DuelPlayerState = z.infer<typeof DuelPlayerStateSchema>;
+
+export const DuelReadSchema = z.object({
+  id: z.string().uuid(),
+  status: DuelStatusSchema,
+  started_at: z.string().nullable(),
+  finished_at: z.string().nullable(),
+  winner_id: z.string().uuid().nullable(),
+  time_limit_minutes: z.number().int(),
+  draw_offered_by: z.string().uuid().nullable(),
+  draw_offered_at: z.string().nullable(),
+  created_at: z.string(),
+  problem_id: z.string().uuid(),
+  problem_slug: z.string(),
+  problem_title: z.string(),
+  challenger: DuelPlayerStateSchema,
+  opponent: DuelPlayerStateSchema,
+});
+export type DuelRead = z.infer<typeof DuelReadSchema>;
+
+export const DuelRequestReadSchema = z.object({
+  id: z.string().uuid(),
+  from_id: z.string().uuid(),
+  from_username: z.string(),
+  to_id: z.string().uuid(),
+  to_username: z.string(),
+  time_limit_minutes: z.number().int(),
+  difficulty_min: z.number().int(),
+  difficulty_max: z.number().int(),
+  status: DuelRequestStatusSchema,
+  created_at: z.string(),
+  expires_at: z.string(),
+});
+export type DuelRequestRead = z.infer<typeof DuelRequestReadSchema>;
+
+export const DuelRatingHistoryEntrySchema = z.object({
+  duel_id: z.string().uuid(),
+  rating_before: z.number().int(),
+  rating_after: z.number().int(),
+  created_at: z.string(),
+});
+export type DuelRatingHistoryEntry = z.infer<typeof DuelRatingHistoryEntrySchema>;
+
+export const DuelQueueStatusSchema = z.enum(["waiting", "matched", "cancelled"]);
+export type DuelQueueStatus = z.infer<typeof DuelQueueStatusSchema>;
+
+export const QueueEntryReadSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  time_limit_minutes: z.number().int(),
+  joined_at: z.string(),
+  expires_at: z.string(),
+  status: DuelQueueStatusSchema,
+  matched_duel_id: z.string().uuid().nullable(),
+});
+export type QueueEntryRead = z.infer<typeof QueueEntryReadSchema>;
+
+export const ActiveDuelSummarySchema = z.object({
+  id: z.string().uuid(),
+  challenger_username: z.string(),
+  challenger_rating: z.number().int(),
+  opponent_username: z.string(),
+  opponent_rating: z.number().int(),
+  problem_title: z.string(),
+  time_limit_minutes: z.number().int(),
+  seconds_elapsed: z.number().int(),
+});
+export type ActiveDuelSummary = z.infer<typeof ActiveDuelSummarySchema>;
+
+export const RecentDuelSummarySchema = z.object({
+  id: z.string().uuid(),
+  challenger_username: z.string(),
+  challenger_rating: z.number().int(),
+  opponent_username: z.string(),
+  opponent_rating: z.number().int(),
+  winner_username: z.string().nullable(),
+  status: DuelStatusSchema,
+  problem_title: z.string(),
+  finished_at: z.string(),
+});
+export type RecentDuelSummary = z.infer<typeof RecentDuelSummarySchema>;
+
+export const LobbyResponseSchema = z.object({
+  queue_counts: z.record(z.string(), z.number().int()),
+  active_duels: z.array(ActiveDuelSummarySchema),
+  recent_duels: z.array(RecentDuelSummarySchema),
+  your_queue_entry: QueueEntryReadSchema.nullable(),
+});
+export type LobbyResponse = z.infer<typeof LobbyResponseSchema>;

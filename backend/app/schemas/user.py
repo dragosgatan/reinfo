@@ -55,3 +55,22 @@ class UserPublic(BaseModel):
     avatar_url: str | None
     role: UserRole
     created_at: datetime
+
+
+class UserProfileRead(BaseModel):
+    """Full public profile including duel stats."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    username: str
+    display_name: str
+    avatar_url: str | None
+    bio: str | None
+    role: UserRole
+    created_at: datetime
+    last_active_at: datetime
+    duel_rating: int
+    duel_wins: int
+    duel_losses: int
+    duel_draws: int

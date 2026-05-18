@@ -24,6 +24,7 @@ from app.config import settings
 log = logging.getLogger(__name__)
 
 LEADERBOARD_CHANNEL = "reinfo_leaderboard"
+DUEL_CHANNEL = "reinfo_duel"
 
 
 class LeaderboardHub:
@@ -66,6 +67,46 @@ class LeaderboardHub:
 hub = LeaderboardHub()
 
 
+class DuelHub:
+    """Tracks active WebSocket subscribers for duel rooms, keyed by duel_id string."""
+
+    def __init__(self) -> None:
+        self._sockets: dict[str, set[WebSocket]] = defaultdict(set)
+        self._lock = asyncio.Lock()
+
+    async def connect(self, duel_id: str, ws: WebSocket) -> None:
+        async with self._lock:
+            self._sockets[duel_id].add(ws)
+
+    async def disconnect(self, duel_id: str, ws: WebSocket) -> None:
+        async with self._lock:
+            subs = self._sockets.get(duel_id)
+            if subs is None:
+                return
+            subs.discard(ws)
+            if not subs:
+                self._sockets.pop(duel_id, None)
+
+    async def broadcast(self, duel_id: str, payload: dict[str, Any]) -> None:
+        async with self._lock:
+            targets = list(self._sockets.get(duel_id, ()))
+        dead: list[WebSocket] = []
+        for ws in targets:
+            try:
+                await ws.send_json(payload)
+            except Exception:
+                dead.append(ws)
+        if dead:
+            async with self._lock:
+                subs = self._sockets.get(duel_id)
+                if subs is not None:
+                    for ws in dead:
+                        subs.discard(ws)
+
+
+duel_hub = DuelHub()
+
+
 def _to_asyncpg_dsn(sqlalchemy_url: str) -> str:
     """Turn `postgresql+asyncpg://...` into the plain DSN asyncpg expects."""
     parsed = urlparse(sqlalchemy_url)
@@ -74,11 +115,7 @@ def _to_asyncpg_dsn(sqlalchemy_url: str) -> str:
 
 
 async def publish_contest_update(session: AsyncSession, contest_slug: str) -> None:
-    """Emit a NOTIFY for the given contest slug on the shared channel.
-
-    Runs on the same connection as the surrounding transaction so the notify
-    is only delivered when that transaction commits.
-    """
+    """Emit a NOTIFY for the given contest slug on the leaderboard channel."""
     await session.execute(
         text("SELECT pg_notify(:channel, :payload)").bindparams(
             channel=LEADERBOARD_CHANNEL, payload=contest_slug
@@ -86,10 +123,23 @@ async def publish_contest_update(session: AsyncSession, contest_slug: str) -> No
     )
 
 
+async def publish_duel_update(session: AsyncSession, duel_id: str) -> None:
+    """Emit a NOTIFY for the given duel_id on the duel channel."""
+    await session.execute(
+        text("SELECT pg_notify(:channel, :payload)").bindparams(
+            channel=DUEL_CHANNEL, payload=duel_id
+        )
+    )
+
+
 OnUpdate = Callable[[str], Awaitable[None]]
 
 
-async def run_listener(on_update: OnUpdate, stop_event: asyncio.Event) -> None:
+async def run_listener(
+    on_leaderboard_update: OnUpdate,
+    stop_event: asyncio.Event,
+    on_duel_update: OnUpdate | None = None,
+) -> None:
     """Subscribe to Postgres NOTIFY events and dispatch them locally.
 
     Re-connects on failure. Returns when `stop_event` is set.
@@ -100,16 +150,25 @@ async def run_listener(on_update: OnUpdate, stop_event: asyncio.Event) -> None:
         try:
             conn = await asyncpg.connect(dsn=dsn)
 
-            def _handler(_conn: object, _pid: int, _channel: str, payload: str) -> None:
+            def _leaderboard_handler(_conn: object, _pid: int, _channel: str, payload: str) -> None:
                 with suppress(RuntimeError):
-                    asyncio.create_task(on_update(payload))
+                    asyncio.create_task(on_leaderboard_update(payload))
 
-            await conn.add_listener(LEADERBOARD_CHANNEL, _handler)
-            log.info("leaderboard listener attached to channel %s", LEADERBOARD_CHANNEL)
+            await conn.add_listener(LEADERBOARD_CHANNEL, _leaderboard_handler)
+
+            if on_duel_update is not None:
+
+                def _duel_handler(_conn: object, _pid: int, _channel: str, payload: str) -> None:
+                    with suppress(RuntimeError):
+                        asyncio.create_task(on_duel_update(payload))
+
+                await conn.add_listener(DUEL_CHANNEL, _duel_handler)
+
+            log.info("listeners attached to channels %s, %s", LEADERBOARD_CHANNEL, DUEL_CHANNEL)
             wait_task = asyncio.create_task(stop_event.wait())
             await wait_task
         except Exception:
-            log.exception("leaderboard listener crashed; reconnecting in 2s")
+            log.exception("realtime listener crashed; reconnecting in 2s")
             await asyncio.sleep(2)
         finally:
             if conn is not None:

@@ -1,4 +1,6 @@
 import { Link } from "@/i18n/navigation";
+import { PendingDuelRequests } from "@/components/duel/pending-requests";
+import { DuelQueueWatcher } from "@/components/duel/duel-queue-watcher";
 import { SearchBar } from "./search-bar";
 import { LanguageSwitcher } from "./language-switcher";
 import { UserMenu } from "./user-menu";
@@ -16,8 +18,10 @@ export function Header() {
 
         <NavDesktop />
 
+        <DuelQueueWatcher />
         <div className="ml-auto flex items-center gap-1">
           <SearchBar />
+          <PendingDuelRequests />
           <ThemeToggle />
           <LanguageSwitcher />
           <UserMenu />

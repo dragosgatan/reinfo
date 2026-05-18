@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -37,6 +36,13 @@ import {
   MONACO_LANGUAGE_MAP,
 } from "@/lib/types";
 import type { Submission, VerdictType } from "@/lib/types";
+import {
+  useEditorPrefs,
+  EDITOR_THEME_LABELS,
+  FONT_SIZES,
+  TAB_SIZES,
+  type EditorTheme,
+} from "@/lib/use-editor-prefs";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -58,47 +64,11 @@ interface SubmissionPanelProps {
 }
 
 type PanelState = "idle" | "submitting" | "judging" | "done" | "error";
-type EditorTheme = "vs-light" | "vs-dark" | "github-dark" | "dracula";
 
 interface JudgingUpdate {
   verdict: VerdictType;
   score: number;
   job_status: string;
-}
-
-const EDITOR_THEME_LABELS: Record<EditorTheme, string> = {
-  "vs-light": "Light",
-  "vs-dark": "Dark",
-  "github-dark": "GitHub",
-  dracula: "Dracula",
-};
-
-const MONACO_THEME_ID: Record<EditorTheme, string> = {
-  "vs-light": "vs",
-  "vs-dark": "vs-dark",
-  "github-dark": "reinfo-github-dark",
-  dracula: "reinfo-dracula",
-};
-
-const FONT_SIZES = [12, 13, 14, 16, 18] as const;
-const TAB_SIZES = [2, 4] as const;
-
-function readPref<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const stored = localStorage.getItem(key);
-    return stored !== null ? (JSON.parse(stored) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writePref<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore quota errors
-  }
 }
 
 export function SubmissionPanel({
@@ -111,56 +81,48 @@ export function SubmissionPanel({
   submitUrl,
 }: SubmissionPanelProps) {
   const t = useTranslations("problems");
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [language, setLanguage] = useState("cpp");
-  const [code, setCode] = useState(DEFAULT_CODE["cpp"] ?? "");
+  const {
+    mounted,
+    language,
+    editorTheme,
+    fontSize,
+    tabSize,
+    activeMonacoTheme,
+    setLanguage: setLanguagePref,
+    setEditorTheme,
+    setFontSize,
+    setTabSize,
+  } = useEditorPrefs("python");
+  const [code, setCode] = useState(DEFAULT_CODE["python"] ?? "");
   const [state, setState] = useState<PanelState>("idle");
   const [liveUpdate, setLiveUpdate] = useState<JudgingUpdate | null>(null);
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [editorTheme, setEditorTheme] = useState<EditorTheme>("vs-dark");
-  const [fontSize, setFontSize] = useState(13);
-  const [tabSize, setTabSize] = useState(2);
   const [fullscreen, setFullscreen] = useState(false);
   const abortRef = useRef<EventSource | null>(null);
-  const submitCallbackRef = useRef<() => void>(() => {});
-
-  useEffect(() => {
-    const defaultTheme: EditorTheme =
-      resolvedTheme === "dark" ? "vs-dark" : "vs-light";
-    setEditorTheme(readPref<EditorTheme>("editor-theme", defaultTheme));
-    setFontSize(readPref<number>("editor-font-size", 13));
-    setTabSize(readPref<number>("editor-tab-size", 2));
-    setMounted(true);
-  // only run on mount; resolvedTheme may still be undefined at this point
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const submitCallbackRef = useRef<(() => void)>(() => {});
 
   const handleLanguageChange = useCallback(
     (lang: string) => {
-      setLanguage(lang);
+      setLanguagePref(lang);
       if (code === DEFAULT_CODE[language] || !code.trim()) {
         setCode(DEFAULT_CODE[lang] ?? "");
       }
     },
-    [language, code],
+    [language, code, setLanguagePref],
   );
 
   const handleThemeChange = useCallback((theme: EditorTheme) => {
     setEditorTheme(theme);
-    writePref("editor-theme", theme);
-  }, []);
+  }, [setEditorTheme]);
 
   const handleFontSizeChange = useCallback((size: number) => {
     setFontSize(size);
-    writePref("editor-font-size", size);
-  }, []);
+  }, [setFontSize]);
 
   const handleTabSizeChange = useCallback((size: number) => {
     setTabSize(size);
-    writePref("editor-tab-size", size);
-  }, []);
+  }, [setTabSize]);
 
   const fetchFullSubmission = useCallback(async (id: string) => {
     try {
@@ -289,7 +251,6 @@ export function SubmissionPanel({
   }
 
   const isDisabled = state === "submitting" || state === "judging";
-  const activeMonacoTheme = mounted ? MONACO_THEME_ID[editorTheme] : "vs";
 
   const editorNode = (
     <div

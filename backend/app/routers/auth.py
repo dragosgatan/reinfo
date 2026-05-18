@@ -9,7 +9,7 @@ from app.dependencies import SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS, get_curre
 from app.limiter import limiter
 from app.models.user import Session as DbSession
 from app.models.user import User
-from app.schemas.user import LoginRequest, UserCreate, UserRead
+from app.schemas.user import LoginRequest, UserCreate, UserProfileRead, UserRead
 from app.security import generate_token, hash_password, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -111,3 +111,15 @@ async def logout(
 async def me(user: User = Depends(get_current_user)) -> UserRead:
     """Returnează datele utilizatorului autentificat curent."""
     return UserRead.model_validate(user)
+
+
+@router.get("/users/{username}", response_model=UserProfileRead)
+async def get_user_profile(
+    username: str,
+    session: AsyncSession = Depends(get_session),
+) -> UserProfileRead:
+    """Profilul public al unui utilizator, inclusiv statisticile de duel."""
+    user = await session.scalar(select(User).where(User.username == username))
+    if user is None:
+        raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
+    return UserProfileRead.model_validate(user)

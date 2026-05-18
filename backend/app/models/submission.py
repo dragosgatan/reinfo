@@ -10,6 +10,7 @@ from app.models.base import Base, TimestampMixin, new_uuid
 
 if TYPE_CHECKING:
     from app.models.contest import Contest
+    from app.models.duel import Duel
     from app.models.problem import Problem, TestCase
     from app.models.user import User
 
@@ -42,6 +43,9 @@ class Submission(Base, TimestampMixin):
     contest_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("contests.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    duel_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("duels.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     submitted_code: Mapped[str] = mapped_column(Text, nullable=False)
     language: Mapped[str] = mapped_column(String(32), nullable=False)
     verdict: Mapped[Verdict] = mapped_column(
@@ -54,6 +58,7 @@ class Submission(Base, TimestampMixin):
     user: Mapped["User"] = relationship("User", back_populates="submissions")
     problem: Mapped["Problem"] = relationship("Problem", back_populates="submissions")
     contest: Mapped["Contest | None"] = relationship("Contest", back_populates="submissions")
+    duel: Mapped["Duel | None"] = relationship("Duel")
     results: Mapped[list["SubmissionResult"]] = relationship(
         "SubmissionResult", back_populates="submission", cascade="all, delete-orphan"
     )

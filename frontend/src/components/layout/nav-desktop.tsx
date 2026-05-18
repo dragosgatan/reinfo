@@ -8,6 +8,7 @@ const navItems = [
   { href: "/probleme", key: "problems" },
   { href: "/submisii", key: "submissions" },
   { href: "/concursuri", key: "contests" },
+  { href: "/duel", key: "duels" },
   { href: "/invatare", key: "learning" },
   { href: "/clasament", key: "leaderboard" },
 ] as const;

@@ -11,8 +11,9 @@ from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.limiter import limiter
 from app.realtime import run_listener
-from app.routers import auth, contests, problems, submissions
+from app.routers import auth, contests, duels, problems, submissions
 from app.routers.contests import dispatch_leaderboard_update
+from app.routers.duels import dispatch_duel_update
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +21,9 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     stop_event = asyncio.Event()
-    listener_task = asyncio.create_task(run_listener(dispatch_leaderboard_update, stop_event))
+    listener_task = asyncio.create_task(
+        run_listener(dispatch_leaderboard_update, stop_event, on_duel_update=dispatch_duel_update)
+    )
     try:
         yield
     finally:
@@ -55,6 +58,7 @@ app.include_router(auth.router)
 app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(contests.router)
+app.include_router(duels.router)
 
 
 @app.get("/api/health", tags=["system"])
