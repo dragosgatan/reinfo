@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyIndicator, getDifficultyLabel } from "@/components/problems/difficulty-indicator";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Code2, Trophy, Users, GraduationCap } from "lucide-react";
 import { ProblemListResponseSchema } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -84,6 +84,41 @@ export default async function HomePage() {
           </Button>
         </div>
       </section>
+
+      <div className="border-b border-border py-8">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              icon: Code2,
+              title: "Gândit pentru Python",
+              desc: "Rezolvă probleme direct în Python, limbajul ideal pentru cei care abia încep drumul în informatică.",
+            },
+            {
+              icon: Trophy,
+              title: "Dueluri 1v1",
+              desc: "Provoacă prieteni sau adversari aleatorii la dueluri temporizate cu sistem de rating Elo.",
+            },
+            {
+              icon: Users,
+              title: "Experiență socială",
+              desc: "Profiluri, listă de prieteni, clasamente și feed de activitate pentru o competiție reală.",
+            },
+            {
+              icon: GraduationCap,
+              title: "Unealtă pentru profesori",
+              desc: "Creează clase, atribuie probleme și urmărește progresul elevilor dintr-un singur loc.",
+            },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">{title}</span>
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {problems.length > 0 && (
         <section className="py-8">
