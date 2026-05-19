@@ -1,39 +1,43 @@
-import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DifficultyIndicator, getDifficultyLabel } from "@/components/problems/difficulty-indicator";
 import { ArrowRight } from "lucide-react";
+import { ProblemListResponseSchema } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("home");
   return { title: t("title") };
 }
 
-const mockProblems = [
-  { name: "Suma elementelor", difficulty: "easy" as const, tag: "vectori", solveRate: 78 },
-  { name: "Cel mai mare element", difficulty: "easy" as const, tag: "vectori", solveRate: 65 },
-  { name: "Sortare", difficulty: "medium" as const, tag: "sortare", solveRate: 52 },
-  { name: "Subsir crescator", difficulty: "medium" as const, tag: "dp", solveRate: 38 },
-  { name: "Dreptunghiuri", difficulty: "hard" as const, tag: "geometrie", solveRate: 21 },
-];
+async function fetchFeaturedProblems() {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  try {
+    const res = await fetch(`${base}/api/problems?per_page=5&sort=most_solved`, {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return ProblemListResponseSchema.parse(data).items;
+  } catch {
+    return [];
+  }
+}
 
-const difficultyLabel = {
-  easy: "Ușor",
-  medium: "Mediu",
-  hard: "Greu",
-} as const;
+function difficultyVariant(d: number): "success" | "warning" | "destructive" {
+  if (d <= 3) return "success";
+  if (d <= 6) return "warning";
+  return "destructive";
+}
 
-const difficultyVariant = {
-  easy: "success",
-  medium: "warning",
-  hard: "destructive",
-} as const;
-
-export default function HomePage() {
-  const t = useTranslations("home");
-  const tCommon = useTranslations("common");
+export default async function HomePage() {
+  const [t, tCommon, problems] = await Promise.all([
+    getTranslations("home"),
+    getTranslations("common"),
+    fetchFeaturedProblems(),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -81,69 +85,55 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="flex flex-wrap gap-x-6 gap-y-1 border-b border-border py-3 text-sm text-muted-foreground">
-        <span>
-          <span className="font-mono font-semibold text-foreground">1 200+</span>{" "}
-          {t("stats.problems")}
-        </span>
-        <span>
-          <span className="font-mono font-semibold text-foreground">8 000+</span>{" "}
-          {t("stats.users")}
-        </span>
-        <span>
-          <span className="font-mono font-semibold text-foreground">250 000+</span>{" "}
-          {t("stats.submissions")}
-        </span>
-        <span>
-          <span className="font-mono font-semibold text-foreground">45+</span>{" "}
-          {t("stats.contests")}
-        </span>
-      </div>
-
-      <section className="py-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("featuredProblems")}
-          </h2>
-          <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs">
-            <Link href="/probleme">
-              {tCommon("viewAll")}
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </Button>
-        </div>
-        <div className="overflow-hidden rounded border border-border divide-y divide-border">
-          {mockProblems.map((p, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 px-4 py-2.5 transition-colors hover:bg-muted/30"
-            >
-              <span className="w-8 shrink-0 text-right font-mono text-xs text-muted-foreground">
-                {String(i + 1).padStart(3, "0")}
-              </span>
-              <Link
-                href={`/probleme/${p.name.toLowerCase().replace(/ /g, "-")}`}
-                className="flex-1 text-sm transition-colors hover:text-primary"
-              >
-                {p.name}
+      {problems.length > 0 && (
+        <section className="py-8">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("featuredProblems")}
+            </h2>
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs">
+              <Link href="/probleme">
+                {tCommon("viewAll")}
+                <ArrowRight className="h-3 w-3" />
               </Link>
-              <Badge variant="muted" className="hidden text-xs sm:inline-flex">
-                {p.tag}
-              </Badge>
-              <Badge variant={difficultyVariant[p.difficulty]} className="shrink-0 text-xs">
-                {difficultyLabel[p.difficulty]}
-              </Badge>
-              <span className="hidden w-10 text-right font-mono text-xs text-muted-foreground md:block">
-                {p.solveRate}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
+            </Button>
+          </div>
+          <div className="overflow-hidden rounded border border-border divide-y divide-border">
+            {problems.map((p, i) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-4 px-4 py-2.5 transition-colors hover:bg-muted/30"
+              >
+                <span className="w-8 shrink-0 text-right font-mono text-xs text-muted-foreground">
+                  {String(i + 1).padStart(3, "0")}
+                </span>
+                <Link
+                  href={`/probleme/${p.slug}`}
+                  className="flex-1 text-sm transition-colors hover:text-primary"
+                >
+                  {p.title}
+                </Link>
+                {p.tags[0] && (
+                  <Badge variant="muted" className="hidden text-xs sm:inline-flex">
+                    {p.tags[0]}
+                  </Badge>
+                )}
+                <Badge variant={difficultyVariant(p.difficulty)} className="shrink-0 text-xs">
+                  {getDifficultyLabel(p.difficulty)}
+                </Badge>
+                <DifficultyIndicator difficulty={p.difficulty} className="hidden md:flex" />
+                <span className="hidden w-16 text-right font-mono text-xs text-muted-foreground md:block">
+                  {p.solve_count.toLocaleString("ro")} ac.
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="pb-8">
         <Badge variant="secondary" className="text-xs font-normal">
-          Software Educațional · InfoEducație 2025
+          Software Educațional · InfoEducație 2026
         </Badge>
       </div>
     </div>

@@ -522,6 +522,18 @@ export function ProfileTabs({
     <div className="space-y-6">
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("externalResults")}
+        </h2>
+        <ExternalResults
+          username={username}
+          initialResults={externalResults}
+          isOwnProfile={isOwnProfile}
+          isAdmin={isAdmin}
+        />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {t("activity")}
         </h2>
         <ActivityHeatmap days={activity} />
@@ -532,7 +544,6 @@ export function ProfileTabs({
           <TabsTrigger value="difficulty">{t("difficulty")}</TabsTrigger>
           <TabsTrigger value="submissions">{t("submissions")}</TabsTrigger>
           <TabsTrigger value="achievements">{t("achievements")}</TabsTrigger>
-          <TabsTrigger value="external">{t("externalResults")}</TabsTrigger>
           {isOwnProfile && <TabsTrigger value="friends">Prieteni</TabsTrigger>}
         </TabsList>
 
@@ -574,15 +585,6 @@ export function ProfileTabs({
 
         <TabsContent value="achievements" className="mt-4">
           <AchievementGrid earned={stats.achievements} />
-        </TabsContent>
-
-        <TabsContent value="external" className="mt-4">
-          <ExternalResults
-            username={username}
-            initialResults={externalResults}
-            isOwnProfile={isOwnProfile}
-            isAdmin={isAdmin}
-          />
         </TabsContent>
 
         {isOwnProfile && (
