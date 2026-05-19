@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState } from "react";
-import { Pause, Play, Radio } from "lucide-react";
+import { Pause, Play, Radio, Users } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,11 +15,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
-import { ContestDetailSchema } from "@/lib/types";
+import { ContestDetailSchema, FriendshipReadSchema } from "@/lib/types";
 import { useLiveLeaderboard } from "@/lib/use-live-leaderboard";
 import { useFlipRows } from "@/lib/use-flip";
 import { CountdownTimer } from "@/components/contests/countdown-timer";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { z } from "zod";
 
 const ORDINAL_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 
@@ -36,6 +38,8 @@ function cellTone(score: number, total: number): string {
 export default function LeaderboardClient({ slug }: Props) {
   const t = useTranslations("contests");
   const [liveEnabled, setLiveEnabled] = useState(true);
+  const [friendsOnly, setFriendsOnly] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const { data: contest } = useQuery({
     queryKey: ["contest", slug],
@@ -76,10 +80,25 @@ export default function LeaderboardClient({ slug }: Props) {
     return totals;
   }, [problemEntries]);
 
+  const { data: friends = [] } = useQuery({
+    queryKey: ["social", "friends"],
+    queryFn: () => api.get("/api/social/friends", z.array(FriendshipReadSchema)),
+    enabled: isAuthenticated && friendsOnly,
+    staleTime: 30_000,
+  });
+
+  const friendIds = useMemo(() => new Set(friends.map((f) => f.friend_id)), [friends]);
+
+  const visibleEntries = useMemo(() => {
+    const entries = board?.entries ?? [];
+    if (!friendsOnly || !isAuthenticated) return entries;
+    return entries.filter((e) => friendIds.has(e.user_id));
+  }, [board?.entries, friendsOnly, isAuthenticated, friendIds]);
+
   const rowRefs = useRef(new Map<string, HTMLTableRowElement | null>());
   const orderedKeys = useMemo(
-    () => (board?.entries ?? []).map((e) => e.user_id),
-    [board?.entries],
+    () => visibleEntries.map((e) => e.user_id),
+    [visibleEntries],
   );
 
   useFlipRows(orderedKeys, (k) => rowRefs.current.get(k) ?? null);
@@ -110,6 +129,18 @@ export default function LeaderboardClient({ slug }: Props) {
           )}
         </div>
 
+        <div className="flex items-center gap-2">
+        {isAuthenticated && (
+          <Button
+            variant={friendsOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFriendsOnly((v) => !v)}
+            className="gap-2"
+          >
+            <Users className="h-3.5 w-3.5" />
+            Prieteni
+          </Button>
+        )}
         {isOngoing && !frozen && (
           <Button
             variant="outline"
@@ -131,6 +162,7 @@ export default function LeaderboardClient({ slug }: Props) {
             <LiveDot status={liveStatus} />
           </Button>
         )}
+        </div>
       </div>
 
       {frozen ? (
@@ -140,8 +172,10 @@ export default function LeaderboardClient({ slug }: Props) {
         </div>
       ) : !board ? (
         <p className="text-sm text-muted-foreground">{t("loadingLeaderboard")}</p>
-      ) : board.entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("noEntries")}</p>
+      ) : visibleEntries.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {friendsOnly ? "Niciun prieten în clasament." : t("noEntries")}
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <Table>
@@ -162,7 +196,7 @@ export default function LeaderboardClient({ slug }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {board.entries.map((entry) => (
+              {visibleEntries.map((entry) => (
                 <TableRow
                   key={entry.user_id}
                   ref={(el) => {

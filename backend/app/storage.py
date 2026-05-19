@@ -4,6 +4,7 @@ All paths are resolved and validated against the configured data directory
 before any I/O to prevent path traversal attacks.
 """
 
+import time
 import uuid
 from pathlib import Path
 
@@ -132,7 +133,8 @@ async def save_avatar(user_id: uuid.UUID, content_type: str, data: bytes) -> str
     async with aiofiles.open(path, "wb") as fh:
         await fh.write(data)
 
-    return f"/avatars/{user_id}{ext}"
+    # Include a version timestamp so browsers always load the new image after re-upload
+    return f"/avatars/{user_id}{ext}?v={int(time.time())}"
 
 
 def avatars_directory() -> Path:

@@ -173,6 +173,21 @@ export const ContestSummarySchema = z.object({
 });
 export type ContestSummary = z.infer<typeof ContestSummarySchema>;
 
+export const ClassTestReadSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  title: z.string(),
+  description_md: z.string().nullable(),
+  start_time: z.string(),
+  end_time: z.string(),
+  status: ContestStatusSchema,
+  problem_count: z.number().int(),
+  participant_count: z.number().int(),
+  fullscreen_required: z.boolean(),
+  copy_paste_blocked: z.boolean(),
+});
+export type ClassTestRead = z.infer<typeof ClassTestReadSchema>;
+
 export const ContestDetailSchema = ContestSummarySchema.extend({
   description_md: z.string().nullable(),
   created_by: z.string().uuid().nullable(),
@@ -453,6 +468,16 @@ export const LessonListResponseSchema = z.object({
 });
 export type LessonListResponse = z.infer<typeof LessonListResponseSchema>;
 
+export const UserPublicSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  display_name: z.string(),
+  avatar_url: z.string().nullable(),
+  role: z.enum(["student", "teacher", "admin"]),
+  created_at: z.string(),
+});
+export type UserPublic = z.infer<typeof UserPublicSchema>;
+
 export const UserProfileReadSchema = z.object({
   id: z.string().uuid(),
   username: z.string(),
@@ -466,6 +491,12 @@ export const UserProfileReadSchema = z.object({
   duel_wins: z.number().int(),
   duel_losses: z.number().int(),
   duel_draws: z.number().int(),
+  github_url: z.string().nullable().optional(),
+  link_1: z.string().nullable().optional(),
+  link_2: z.string().nullable().optional(),
+  link_3: z.string().nullable().optional(),
+  privacy_show_email: z.boolean().optional(),
+  email: z.string().nullable().optional(),
 });
 export type UserProfileRead = z.infer<typeof UserProfileReadSchema>;
 
@@ -486,8 +517,34 @@ export const UserStatsReadSchema = z.object({
   total_submissions: z.number().int(),
   difficulty_distribution: DifficultyDistributionSchema,
   achievements: z.array(z.string()),
+  problem_score: z.number().int().default(0),
 });
 export type UserStatsRead = z.infer<typeof UserStatsReadSchema>;
+
+export const ProblemsLeaderboardEntrySchema = z.object({
+  rank: z.number().int(),
+  username: z.string(),
+  display_name: z.string(),
+  avatar_url: z.string().nullable(),
+  problem_score: z.number().int(),
+  total_solved: z.number().int(),
+  solved_easy: z.number().int(),
+  solved_medium: z.number().int(),
+  solved_hard: z.number().int(),
+});
+export type ProblemsLeaderboardEntry = z.infer<typeof ProblemsLeaderboardEntrySchema>;
+
+export const DuelLeaderboardEntrySchema = z.object({
+  rank: z.number().int(),
+  username: z.string(),
+  display_name: z.string(),
+  avatar_url: z.string().nullable(),
+  duel_rating: z.number().int(),
+  duel_wins: z.number().int(),
+  duel_losses: z.number().int(),
+  duel_draws: z.number().int(),
+});
+export type DuelLeaderboardEntry = z.infer<typeof DuelLeaderboardEntrySchema>;
 
 export const ExternalResultReadSchema = z.object({
   id: z.string().uuid(),
@@ -501,6 +558,170 @@ export const ExternalResultReadSchema = z.object({
   created_at: z.string(),
 });
 export type ExternalResultRead = z.infer<typeof ExternalResultReadSchema>;
+
+export const FriendStatusSchema = z.object({
+  is_friend: z.boolean(),
+  pending_sent: z.boolean(),
+  pending_received: z.boolean(),
+  request_id: z.string().uuid().nullable(),
+});
+export type FriendStatus = z.infer<typeof FriendStatusSchema>;
+
+export const FriendRequestReadSchema = z.object({
+  id: z.string().uuid(),
+  sender_id: z.string().uuid(),
+  receiver_id: z.string().uuid(),
+  status: z.enum(["pending", "accepted", "rejected"]),
+  created_at: z.string(),
+  sender_username: z.string(),
+  sender_display_name: z.string(),
+  sender_avatar_url: z.string().nullable(),
+});
+export type FriendRequestRead = z.infer<typeof FriendRequestReadSchema>;
+
+export const FriendshipReadSchema = z.object({
+  id: z.string().uuid(),
+  friend_id: z.string().uuid(),
+  friend_username: z.string(),
+  friend_display_name: z.string(),
+  friend_avatar_url: z.string().nullable(),
+  online: z.boolean(),
+  last_active_at: z.string(),
+  created_at: z.string(),
+});
+export type FriendshipRead = z.infer<typeof FriendshipReadSchema>;
+
+export const NotificationReadSchema = z.object({
+  id: z.string().uuid(),
+  type: z.enum(["friend_request", "friend_accepted"]),
+  payload: z.string(),
+  read: z.boolean(),
+  created_at: z.string(),
+});
+export type NotificationRead = z.infer<typeof NotificationReadSchema>;
+
+export const ActivityFeedItemSchema = z.object({
+  submission_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  username: z.string(),
+  display_name: z.string(),
+  avatar_url: z.string().nullable(),
+  problem_slug: z.string(),
+  problem_title: z.string(),
+  verdict: z.string(),
+  score: z.number().int(),
+  language: z.string(),
+  created_at: z.string(),
+});
+export type ActivityFeedItem = z.infer<typeof ActivityFeedItemSchema>;
+
+export const ClassMemberSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  display_name: z.string(),
+  avatar_url: z.string().nullable(),
+});
+export type ClassMember = z.infer<typeof ClassMemberSchema>;
+
+export const ClassReadSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description_md: z.string().nullable(),
+  join_code: z.string(),
+  archived: z.boolean(),
+  created_at: z.string(),
+  teacher_id: z.string().uuid(),
+  teacher_username: z.string(),
+  teacher_display_name: z.string(),
+  teacher_avatar_url: z.string().nullable(),
+  member_count: z.number().int(),
+});
+export type ClassRead = z.infer<typeof ClassReadSchema>;
+
+export const ClassDetailSchema = ClassReadSchema.extend({
+  members: z.array(ClassMemberSchema),
+});
+export type ClassDetail = z.infer<typeof ClassDetailSchema>;
+
+export const AnnouncementReadSchema = z.object({
+  id: z.string().uuid(),
+  class_id: z.string().uuid(),
+  author_id: z.string().uuid(),
+  author_username: z.string(),
+  author_display_name: z.string(),
+  author_avatar_url: z.string().nullable(),
+  title: z.string(),
+  body_md: z.string(),
+  pinned: z.boolean(),
+  created_at: z.string(),
+});
+export type AnnouncementRead = z.infer<typeof AnnouncementReadSchema>;
+
+export const AssignmentReadSchema = z.object({
+  id: z.string().uuid(),
+  class_id: z.string().uuid(),
+  homework_id: z.string().uuid().nullable(),
+  problem_id: z.string().uuid(),
+  problem_slug: z.string(),
+  problem_title: z.string(),
+  problem_difficulty: z.number().int(),
+  note_md: z.string().nullable(),
+  due_at: z.string().nullable(),
+  created_at: z.string(),
+  user_solved: z.boolean(),
+});
+export type AssignmentRead = z.infer<typeof AssignmentReadSchema>;
+
+export const HomeworkReadSchema = z.object({
+  id: z.string().uuid(),
+  class_id: z.string().uuid(),
+  title: z.string(),
+  description_md: z.string().nullable(),
+  due_at: z.string().nullable(),
+  created_at: z.string(),
+  assignments: z.array(AssignmentReadSchema),
+});
+export type HomeworkRead = z.infer<typeof HomeworkReadSchema>;
+
+export const StudentProgressSchema = z.object({
+  student_id: z.string().uuid(),
+  student_username: z.string(),
+  student_display_name: z.string(),
+  student_avatar_url: z.string().nullable(),
+  solved_problem_ids: z.array(z.string().uuid()),
+});
+
+export const HomeworkProgressSchema = z.object({
+  homework: HomeworkReadSchema,
+  members: z.array(StudentProgressSchema),
+});
+export type HomeworkProgress = z.infer<typeof HomeworkProgressSchema>;
+
+export const ClassMessageReadSchema = z.object({
+  id: z.string().uuid(),
+  class_id: z.string().uuid(),
+  author_id: z.string().uuid(),
+  author_username: z.string(),
+  author_display_name: z.string(),
+  author_avatar_url: z.string().nullable(),
+  body: z.string(),
+  created_at: z.string(),
+});
+export type ClassMessageRead = z.infer<typeof ClassMessageReadSchema>;
+
+export const DirectMessageReadSchema = z.object({
+  id: z.string().uuid(),
+  class_id: z.string().uuid(),
+  sender_id: z.string().uuid(),
+  sender_username: z.string(),
+  sender_display_name: z.string(),
+  sender_avatar_url: z.string().nullable(),
+  receiver_id: z.string().uuid(),
+  body: z.string(),
+  read: z.boolean(),
+  created_at: z.string(),
+});
+export type DirectMessageRead = z.infer<typeof DirectMessageReadSchema>;
 
 export const LessonReadSchema = z.object({
   id: z.string().uuid(),

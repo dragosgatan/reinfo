@@ -22,6 +22,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, new_uuid
 
 if TYPE_CHECKING:
+    from app.models.classroom import Class
     from app.models.problem import Problem
     from app.models.submission import Submission
     from app.models.user import User
@@ -59,6 +60,9 @@ class Contest(Base, TimestampMixin):
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    class_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("classes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
     fullscreen_required: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
@@ -68,6 +72,7 @@ class Contest(Base, TimestampMixin):
     )
 
     creator: Mapped["User | None"] = relationship("User", back_populates="contests")
+    owning_class: Mapped["Class | None"] = relationship("Class", foreign_keys=[class_id])
     contest_problems: Mapped[list["ContestProblem"]] = relationship(
         "ContestProblem",
         back_populates="contest",

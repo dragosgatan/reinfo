@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { formatDate } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/utils";
-import { CalendarDays, Pencil, Swords } from "lucide-react";
+import { CalendarDays, Github, Link as LinkIcon, Mail, Pencil, Swords } from "lucide-react";
 import { ChallengeButton } from "@/components/duel/challenge-button";
 import { RatingSparkline } from "@/components/duel/rating-sparkline";
+import { AddFriendButton } from "@/components/social/add-friend-button";
 import { ProfileTabs } from "./profile-client";
 import type {
   ActivityDay,
@@ -171,6 +172,7 @@ export default async function UserProfilePage({ params }: Props) {
     total_submissions: 0,
     difficulty_distribution: { easy: 0, medium: 0, hard: 0 },
     achievements: [],
+    problem_score: 0,
   };
 
   return (
@@ -209,15 +211,62 @@ export default async function UserProfilePage({ params }: Props) {
             <p className="mt-2 text-sm leading-relaxed max-w-prose">{profile.bio}</p>
           )}
 
+          {(profile.github_url || profile.link_1 || profile.link_2 || profile.link_3) && (
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {profile.github_url && (
+                <a
+                  href={profile.github_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Github className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate max-w-[180px]">
+                    {profile.github_url.replace(/^https?:\/\/(www\.)?github\.com\//, "")}
+                  </span>
+                </a>
+              )}
+              {([profile.link_1, profile.link_2, profile.link_3] as (string | null | undefined)[])
+                .filter(Boolean)
+                .map((link, i) => {
+                  let label: string;
+                  try {
+                    label = new URL(link!).hostname.replace(/^www\./, "");
+                  } catch {
+                    label = link!;
+                  }
+                  return (
+                    <a
+                      key={i}
+                      href={link!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate max-w-[180px]">{label}</span>
+                    </a>
+                  );
+                })}
+            </div>
+          )}
+
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <CalendarDays className="h-3.5 w-3.5" />
               {t("joinedAt")} {formatDate(profile.created_at)}
             </span>
+            {profile.email && (
+              <span className="flex items-center gap-1">
+                <Mail className="h-3.5 w-3.5" />
+                {profile.email}
+              </span>
+            )}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <ChallengeButton targetUsername={username} />
+            <AddFriendButton username={username} />
             {isOwnProfile && (
               <Button asChild variant="outline" size="sm" className="gap-1.5">
                 <Link href="/setari/profil">
@@ -255,11 +304,17 @@ export default async function UserProfilePage({ params }: Props) {
           </div>
 
           {stats && (
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2 justify-end flex-wrap">
               <div className="rounded border border-border bg-muted/20 px-3 py-2 text-center min-w-[80px]">
                 <p className="font-mono text-lg font-bold">{stats.total_solved}</p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                   {t("totalSolved")}
+                </p>
+              </div>
+              <div className="rounded border border-border bg-muted/20 px-3 py-2 text-center min-w-[80px]">
+                <p className="font-mono text-lg font-bold">{stats.problem_score}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  {t("problemScore")}
                 </p>
               </div>
               <div className="rounded border border-border bg-muted/20 px-3 py-2 text-center min-w-[80px]">

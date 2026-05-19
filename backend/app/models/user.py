@@ -52,6 +52,10 @@ class User(Base, TimestampMixin):
     privacy_show_solved: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true")
     )
+    github_url: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    link_1: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    link_2: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    link_3: Mapped[str | None] = mapped_column(String(256), nullable=True)
 
     sessions: Mapped[list["Session"]] = relationship(
         "Session", back_populates="user", cascade="all, delete-orphan"

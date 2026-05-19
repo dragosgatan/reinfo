@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.judging import _elo_change, judge_submission
+from app.models.classroom import Class as _Class  # noqa: F401
 from app.models.duel import Duel, DuelQueue, DuelQueueStatus, DuelRatingHistory, DuelStatus
 from app.models.judging_job import JobStatus, JudgingJob
 from app.models.problem import Problem, Visibility

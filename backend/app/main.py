@@ -11,8 +11,8 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.limiter import limiter
-from app.realtime import run_listener
-from app.routers import auth, contests, duels, lessons, problems, submissions
+from app.realtime import class_chat_hub, notification_hub, run_listener
+from app.routers import auth, classrooms, contests, duels, lessons, problems, social, submissions
 from app.routers import users as users_router
 from app.routers.contests import dispatch_leaderboard_update
 from app.routers.duels import dispatch_duel_update
@@ -21,11 +21,41 @@ from app.storage import avatars_directory
 log = logging.getLogger(__name__)
 
 
+async def _dispatch_notification(payload: str) -> None:
+    """Route a raw NOTIFY payload to the right user's WebSocket(s)."""
+    try:
+        import json
+
+        user_id, json_part = payload.split(":", 1)
+        data = json.loads(json_part)
+        await notification_hub.send(user_id, data)
+    except Exception:
+        log.exception("failed to dispatch notification payload: %r", payload)
+
+
+async def _dispatch_class_chat(payload: str) -> None:
+    """Route a raw class-chat NOTIFY payload to the right class room."""
+    try:
+        import json
+
+        class_id, json_part = payload.split(":", 1)
+        data = json.loads(json_part)
+        await class_chat_hub.broadcast(class_id, data)
+    except Exception:
+        log.exception("failed to dispatch class chat payload: %r", payload)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     stop_event = asyncio.Event()
     listener_task = asyncio.create_task(
-        run_listener(dispatch_leaderboard_update, stop_event, on_duel_update=dispatch_duel_update)
+        run_listener(
+            dispatch_leaderboard_update,
+            stop_event,
+            on_duel_update=dispatch_duel_update,
+            on_notification=_dispatch_notification,
+            on_class_chat=_dispatch_class_chat,
+        )
     )
     try:
         yield
@@ -65,6 +95,8 @@ app.include_router(submissions.router)
 app.include_router(contests.router)
 app.include_router(duels.router)
 app.include_router(lessons.router)
+app.include_router(social.router)
+app.include_router(classrooms.router)
 
 app.mount("/avatars", StaticFiles(directory=str(avatars_directory())), name="avatars")
 

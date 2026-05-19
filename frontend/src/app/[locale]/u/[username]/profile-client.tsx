@@ -12,42 +12,98 @@ import { Link } from "@/i18n/navigation";
 import { formatDate } from "@/lib/utils";
 import type { ActivityDay, ExternalResultRead, UserStatsRead } from "@/lib/types";
 import { toast } from "sonner";
-import { CheckCircle2, Plus, Trash2, Trophy, X } from "lucide-react";
+import {
+  Award,
+  BadgeCheck,
+  CheckCircle2,
+  Crown,
+  Flame,
+  Globe,
+  Plus,
+  Send,
+  Shield,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Swords,
+  Target,
+  Trash2,
+  TrendingUp,
+  Trophy,
+  X,
+  Zap,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { FriendsList } from "@/components/social/friends-list";
+import { FriendRequestsPanel } from "@/components/social/friend-requests-panel";
+import { cn } from "@/lib/utils";
 
-const ACHIEVEMENT_ICONS: Record<string, string> = {
-  first_submission: "📝",
-  first_ac: "✅",
-  "10_ac": "🎯",
-  "50_ac": "🔥",
-  "100_ac": "🏆",
-  first_duel: "⚔️",
-  first_duel_win: "🥇",
-  "10_duel_wins": "🗡️",
-  rating_1000: "⭐",
-  rating_1200: "🌟",
-  rating_1500: "💫",
-  first_external: "🏅",
-  verified_external: "✔️",
+type AchievementTier = "bronze" | "silver" | "gold" | "platinum" | "diamond";
+
+interface AchievementMeta {
+  key: string;
+  label: string;
+  description: string;
+  tier: AchievementTier;
+  Icon: LucideIcon;
+}
+
+const TIER_STYLES: Record<AchievementTier, { card: string; icon: string; badge: string }> = {
+  bronze: {
+    card: "border-amber-200 bg-amber-50/60 dark:border-amber-900/50 dark:bg-amber-950/20",
+    icon: "text-amber-600 dark:text-amber-500",
+    badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+  },
+  silver: {
+    card: "border-zinc-300 bg-zinc-50/60 dark:border-zinc-700/60 dark:bg-zinc-900/30",
+    icon: "text-zinc-500 dark:text-zinc-400",
+    badge: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-400",
+  },
+  gold: {
+    card: "border-yellow-300 bg-yellow-50/60 dark:border-yellow-800/50 dark:bg-yellow-950/20",
+    icon: "text-yellow-600 dark:text-yellow-500",
+    badge: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400",
+  },
+  platinum: {
+    card: "border-sky-300 bg-sky-50/60 dark:border-sky-800/50 dark:bg-sky-950/20",
+    icon: "text-sky-600 dark:text-sky-400",
+    badge: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-400",
+  },
+  diamond: {
+    card: "border-violet-300 bg-violet-50/60 dark:border-violet-800/50 dark:bg-violet-950/20",
+    icon: "text-violet-600 dark:text-violet-400",
+    badge: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400",
+  },
 };
 
-const ALL_ACHIEVEMENTS = [
-  { key: "first_submission", label: "Prima submisie", description: "Ai trimis prima submisie" },
-  { key: "first_ac", label: "Primul AC", description: "Ai rezolvat prima problemă" },
-  { key: "10_ac", label: "Consistent", description: "Ai rezolvat 10 probleme distincte" },
-  { key: "50_ac", label: "Experimentat", description: "Ai rezolvat 50 de probleme distincte" },
-  { key: "100_ac", label: "Maestru", description: "Ai rezolvat 100 de probleme distincte" },
-  { key: "first_duel", label: "Primul duel", description: "Ai participat la un duel" },
-  { key: "first_duel_win", label: "Prima victorie", description: "Ai câștigat primul duel" },
-  { key: "10_duel_wins", label: "Duelant", description: "Ai câștigat 10 dueluri" },
-  { key: "rating_1000", label: "Challenger", description: "Duel rating ≥ 1000" },
-  { key: "rating_1200", label: "Expert", description: "Duel rating ≥ 1200" },
-  { key: "rating_1500", label: "Master", description: "Duel rating ≥ 1500" },
-  { key: "first_external", label: "Competitor", description: "Ai adăugat un rezultat extern" },
-  {
-    key: "verified_external",
-    label: "Verificat",
-    description: "Un rezultat extern a fost verificat de admin",
-  },
+const TIER_LABELS: Record<AchievementTier, string> = {
+  bronze: "Bronze",
+  silver: "Silver",
+  gold: "Gold",
+  platinum: "Platinum",
+  diamond: "Diamond",
+};
+
+const ALL_ACHIEVEMENTS: AchievementMeta[] = [
+  { key: "first_submission", label: "Primul pas", description: "Ai trimis prima submisie pe platformă", tier: "bronze", Icon: Send },
+  { key: "first_ac", label: "Deblocat", description: "Ai rezolvat prima problemă", tier: "bronze", Icon: CheckCircle2 },
+  { key: "first_duel", label: "Intrat în arenă", description: "Ai participat la primul duel", tier: "bronze", Icon: Swords },
+  { key: "first_external", label: "Dincolo de platformă", description: "Ai adăugat un rezultat dintr-o competiție externă", tier: "bronze", Icon: Globe },
+  { key: "10_ac", label: "Constant", description: "Ai rezolvat 10 probleme distincte", tier: "silver", Icon: TrendingUp },
+  { key: "first_hard", label: "Apetit pentru dificultate", description: "Ai rezolvat o problemă cu dificultate ridicată (7+)", tier: "silver", Icon: Zap },
+  { key: "first_duel_win", label: "Prima sânge", description: "Ai câștigat primul duel", tier: "silver", Icon: Trophy },
+  { key: "rating_1000", label: "Calificat", description: "Rating duel ≥ 1000", tier: "silver", Icon: Star },
+  { key: "25_ac", label: "Rezolvitor", description: "Ai rezolvat 25 de probleme distincte", tier: "gold", Icon: Target },
+  { key: "50_ac", label: "Dedicat", description: "Ai rezolvat 50 de probleme distincte", tier: "gold", Icon: Flame },
+  { key: "10_duel_wins", label: "Duelant", description: "Ai câștigat 10 dueluri", tier: "gold", Icon: Shield },
+  { key: "rating_1200", label: "Expert", description: "Rating duel ≥ 1200", tier: "gold", Icon: Star },
+  { key: "verified_external", label: "Legitimat", description: "Un rezultat extern a fost verificat de admin", tier: "gold", Icon: BadgeCheck },
+  { key: "10_hard", label: "Distrugător", description: "Ai rezolvat 10 probleme cu dificultate ridicată (7+)", tier: "gold", Icon: Zap },
+  { key: "100_ac", label: "Centurion", description: "Ai rezolvat 100 de probleme distincte", tier: "platinum", Icon: Award },
+  { key: "50_duel_wins", label: "Gladiator", description: "Ai câștigat 50 de dueluri", tier: "platinum", Icon: ShieldCheck },
+  { key: "rating_1500", label: "Master", description: "Rating duel ≥ 1500", tier: "platinum", Icon: Crown },
+  { key: "250_ac", label: "Maratonist", description: "Ai rezolvat 250 de probleme distincte", tier: "diamond", Icon: Sparkles },
+  { key: "rating_1800", label: "Grandmaster", description: "Rating duel ≥ 1800", tier: "diamond", Icon: Sparkles },
 ];
 
 interface ActivityHeatmapProps {
@@ -188,24 +244,35 @@ interface AchievementGridProps {
 export function AchievementGrid({ earned }: AchievementGridProps) {
   const t = useTranslations("profile");
   const earnedSet = new Set(earned);
+  const earnedAchievements = ALL_ACHIEVEMENTS.filter((a) => earnedSet.has(a.key));
 
-  if (earnedSet.size === 0) {
+  if (earnedAchievements.length === 0) {
     return <p className="text-sm text-muted-foreground">{t("noAchievements")}</p>;
   }
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-      {ALL_ACHIEVEMENTS.filter((a) => earnedSet.has(a.key)).map((a) => (
-        <div
-          key={a.key}
-          className="flex flex-col gap-1 rounded border border-border bg-muted/20 p-3"
-          title={a.description}
-        >
-          <span className="text-xl leading-none">{ACHIEVEMENT_ICONS[a.key] ?? "🏅"}</span>
-          <span className="text-xs font-medium leading-snug">{a.label}</span>
-          <span className="text-[11px] text-muted-foreground leading-snug">{a.description}</span>
-        </div>
-      ))}
+      {earnedAchievements.map((a) => {
+        const styles = TIER_STYLES[a.tier];
+        return (
+          <div
+            key={a.key}
+            className={cn("flex flex-col gap-2 rounded border p-3", styles.card)}
+            title={a.description}
+          >
+            <div className="flex items-start justify-between gap-1">
+              <a.Icon className={cn("h-4 w-4 shrink-0 mt-0.5", styles.icon)} />
+              <span className={cn("rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider leading-none", styles.badge)}>
+                {TIER_LABELS[a.tier]}
+              </span>
+            </div>
+            <div>
+              <p className="text-xs font-semibold leading-snug">{a.label}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">{a.description}</p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -466,6 +533,7 @@ export function ProfileTabs({
           <TabsTrigger value="submissions">{t("submissions")}</TabsTrigger>
           <TabsTrigger value="achievements">{t("achievements")}</TabsTrigger>
           <TabsTrigger value="external">{t("externalResults")}</TabsTrigger>
+          {isOwnProfile && <TabsTrigger value="friends">Prieteni</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="difficulty" className="mt-4">
@@ -516,6 +584,23 @@ export function ProfileTabs({
             isAdmin={isAdmin}
           />
         </TabsContent>
+
+        {isOwnProfile && (
+          <TabsContent value="friends" className="mt-4 space-y-6">
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Cereri primite
+              </h3>
+              <FriendRequestsPanel />
+            </div>
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Prietenii mei
+              </h3>
+              <FriendsList />
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

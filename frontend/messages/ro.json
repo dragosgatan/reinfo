@@ -6,6 +6,8 @@
     "duels": "Dueluri",
     "learning": "Învățare",
     "leaderboard": "Clasament",
+    "friends": "Prieteni",
+    "classes": "Clase",
     "search": "Caută...",
     "searchPlaceholder": "Caută probleme, utilizatori..."
   },
@@ -238,10 +240,21 @@
   },
   "leaderboard": {
     "title": "Clasament",
+    "subtitle": "Topul utilizatorilor după scor și rating duel",
+    "tabProblems": "Probleme (total)",
+    "tabWeekly": "Săptămânal",
+    "tabDuels": "Dueluri",
     "rank": "Loc",
     "user": "Utilizator",
     "score": "Scor",
-    "solved": "Rezolvate"
+    "solved": "Rezolvate",
+    "rating": "Rating",
+    "wins": "V",
+    "losses": "Î",
+    "draws": "R",
+    "noEntries": "Niciun utilizator în clasament.",
+    "scoringNote": "Scor calculat: ușoare × 1 + medii × 2 + grele × 3 · E = ușoare, M = medii, G = grele",
+    "weeklyNote": "Probleme rezolvate în ultimele 7 zile · același sistem de punctaj"
   },
   "profile": {
     "editProfile": "Editează profil",
@@ -258,6 +271,7 @@
     "hard": "Grele",
     "solved": "rezolvate",
     "totalSolved": "Rezolvate",
+    "problemScore": "Scor",
     "totalSubmissions": "Submisii",
     "duelRating": "Rating Duel",
     "noActivity": "Nicio activitate în ultimul an.",
@@ -297,7 +311,14 @@
       "saveError": "A apărut o eroare. Încearcă din nou.",
       "avatarSuccess": "Fotografia de profil a fost actualizată.",
       "avatarError": "Eroare la încărcarea fotografiei.",
-      "viewProfile": "Vezi profilul public"
+      "viewProfile": "Vezi profilul public",
+      "links": "Linkuri",
+      "githubUrl": "GitHub",
+      "githubUrlPlaceholder": "https://github.com/utilizator",
+      "link1": "Link 1",
+      "link2": "Link 2",
+      "link3": "Link 3",
+      "linkPlaceholder": "https://..."
     }
   },
   "login": {

@@ -12,20 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "@/i18n/navigation";
 
-type ContestType = "competition" | "class_test";
-
-const TYPE_OPTIONS: { value: ContestType; label: string; description: string }[] = [
-  {
-    value: "competition",
-    label: "Concurs",
-    description: "Clasament public, participare liberă",
-  },
-  {
-    value: "class_test",
-    label: "Test de clasă",
-    description: "Clasament ascuns elevilor în timpul testului",
-  },
-];
+type ContestType = "competition";
 
 export default function NouConcursPage() {
   const t = useTranslations("contests");
@@ -36,7 +23,7 @@ export default function NouConcursPage() {
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [contestType, setContestType] = useState<ContestType>("competition");
+  const contestType: ContestType = "competition";
   const [fullscreenRequired, setFullscreenRequired] = useState(false);
   const [copyPasteBlocked, setCopyPasteBlocked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +54,7 @@ export default function NouConcursPage() {
           start_time: new Date(startTime).toISOString(),
           end_time: new Date(endTime).toISOString(),
           contest_type: contestType,
-          scoring_mode: contestType === "class_test" ? "test" : "sum",
+          scoring_mode: "sum",
           fullscreen_required: fullscreenRequired,
           copy_paste_blocked: copyPasteBlocked,
         },
@@ -94,35 +81,13 @@ export default function NouConcursPage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-1.5">
-          <Label>Tip</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {TYPE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setContestType(opt.value)}
-                className={[
-                  "rounded border px-3 py-3 text-left transition-colors",
-                  contestType === opt.value
-                    ? "border-foreground bg-foreground/5"
-                    : "border-input hover:border-foreground/40",
-                ].join(" ")}
-              >
-                <div className="text-sm font-medium">{opt.label}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">{opt.description}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
           <Label htmlFor="title">{t("create.name")}</Label>
           <Input
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            placeholder={contestType === "class_test" ? "Test clasa a IX-a A" : "Olimpiadă județeană"}
+            placeholder="Olimpiadă județeană"
           />
         </div>
 

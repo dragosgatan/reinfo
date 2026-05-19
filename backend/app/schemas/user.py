@@ -38,6 +38,10 @@ class UserProfileUpdate(BaseModel):
     privacy_show_email: bool | None = None
     privacy_show_activity: bool | None = None
     privacy_show_solved: bool | None = None
+    github_url: str | None = Field(default=None, max_length=256)
+    link_1: str | None = Field(default=None, max_length=256)
+    link_2: str | None = Field(default=None, max_length=256)
+    link_3: str | None = Field(default=None, max_length=256)
 
 
 class UserRead(BaseModel):
@@ -56,6 +60,10 @@ class UserRead(BaseModel):
     privacy_show_email: bool
     privacy_show_activity: bool
     privacy_show_solved: bool
+    github_url: str | None
+    link_1: str | None
+    link_2: str | None
+    link_3: str | None
 
 
 class UserPublic(BaseModel):
@@ -88,6 +96,12 @@ class UserProfileRead(BaseModel):
     duel_wins: int
     duel_losses: int
     duel_draws: int
+    github_url: str | None
+    link_1: str | None
+    link_2: str | None
+    link_3: str | None
+    privacy_show_email: bool
+    email: str | None
 
 
 class ExternalResultCreate(BaseModel):
@@ -127,9 +141,33 @@ class UserStatsRead(BaseModel):
     total_submissions: int
     difficulty_distribution: DifficultyDistribution
     achievements: list[str]
+    problem_score: int = 0
 
 
 class AchievementInfo(BaseModel):
     key: str
     label: str
     description: str
+
+
+class ProblemsLeaderboardEntry(BaseModel):
+    rank: int
+    username: str
+    display_name: str
+    avatar_url: str | None
+    problem_score: int
+    total_solved: int
+    solved_easy: int
+    solved_medium: int
+    solved_hard: int
+
+
+class DuelLeaderboardEntry(BaseModel):
+    rank: int
+    username: str
+    display_name: str
+    avatar_url: str | None
+    duel_rating: int
+    duel_wins: int
+    duel_losses: int
+    duel_draws: int

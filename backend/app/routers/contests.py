@@ -23,10 +23,12 @@ from sqlalchemy.orm import selectinload
 from app.db import async_session_factory, get_session
 from app.dependencies import get_current_user, get_optional_user, require_role
 from app.flagging import detect_flag
+from app.models.classroom import Class, ClassMember
 from app.models.contest import (
     Contest,
     ContestParticipant,
     ContestProblem,
+    ContestType,
     ContestViolation,
     ScoringMode,
 )
@@ -162,7 +164,7 @@ async def list_contests(
             selectinload(Contest.contest_problems),
             selectinload(Contest.participants),
         )
-        .where(Contest.is_public.is_(True))
+        .where(Contest.is_public.is_(True), Contest.contest_type == ContestType.competition)
         .order_by(Contest.start_time.desc())
     )
 
@@ -194,6 +196,7 @@ async def get_contest(
 ) -> ContestDetail:
     """Detalii concurs. Problemele sunt ascunse înainte de start pentru participanți obișnuiți."""
     contest = await _get_contest_or_404(slug, session)
+    await _assert_class_test_access(contest, current_user, session)
     now = datetime.now(UTC)
     is_registered = current_user is not None and any(
         p.user_id == current_user.id for p in contest.participants
@@ -208,6 +211,11 @@ async def create_contest(
     current_user: User = require_role(UserRole.teacher, UserRole.admin),
 ) -> ContestDetail:
     """Creează un concurs nou. Necesită rolul de profesor sau administrator."""
+    if data.contest_type == ContestType.class_test:
+        raise HTTPException(
+            status_code=400,
+            detail="Testele de clasă se creează din secțiunea de clase, nu din concursuri",
+        )
     base_slug = _slugify(data.title)
     slug = base_slug
     counter = 1
@@ -286,6 +294,8 @@ async def register_for_contest(
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+
+    await _assert_class_test_access(contest, current_user, session)
 
     now = datetime.now(UTC)
     status = contest_status(now, contest.start_time, contest.end_time)
@@ -404,6 +414,8 @@ async def contest_submit(
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+
+    await _assert_class_test_access(contest, current_user, session)
 
     now = datetime.now(UTC)
     status = contest_status(now, contest.start_time, contest.end_time)
@@ -607,6 +619,30 @@ async def list_flagged_submissions(
 
 def _is_staff(user: User | None) -> bool:
     return user is not None and user.role in (UserRole.teacher, UserRole.admin)
+
+
+async def _assert_class_test_access(
+    contest: Contest, user: User | None, session: AsyncSession
+) -> None:
+    """Raise 403 if contest is a class test and user is not a member of the owning class."""
+    if contest.contest_type != ContestType.class_test:
+        return
+    if user is None:
+        raise HTTPException(status_code=403, detail="Autentificare necesară")
+    if contest.class_id is None:
+        raise HTTPException(status_code=403, detail="Test fără clasă asociată")
+    cls = await session.get(Class, contest.class_id)
+    if cls is None:
+        raise HTTPException(status_code=403, detail="Clasa asociată nu există")
+    if cls.teacher_id == user.id:
+        return
+    member = await session.scalar(
+        select(ClassMember).where(
+            ClassMember.class_id == contest.class_id, ClassMember.user_id == user.id
+        )
+    )
+    if member is None:
+        raise HTTPException(status_code=403, detail="Accesul este restricționat la membrii clasei")
 
 
 def _is_frozen(contest: Contest, now: datetime, viewer: User | None) -> bool:

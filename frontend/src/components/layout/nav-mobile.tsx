@@ -14,6 +14,8 @@ const navItems = [
   { href: "/duel", key: "duels" },
   { href: "/invatare", key: "learning" },
   { href: "/clasament", key: "leaderboard" },
+  { href: "/prieteni", key: "friends" },
+  { href: "/clase", key: "classes" },
 ] as const;
 
 export function NavMobile() {

@@ -122,4 +122,7 @@ async def get_user_profile(
     user = await session.scalar(select(User).where(User.username == username))
     if user is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
-    return UserProfileRead.model_validate(user)
+    profile = UserProfileRead.model_validate(user)
+    if not user.privacy_show_email:
+        profile.email = None
+    return profile

@@ -17,6 +17,10 @@ export const UserSchema = z.object({
   privacy_show_email: z.boolean().optional(),
   privacy_show_activity: z.boolean().optional(),
   privacy_show_solved: z.boolean().optional(),
+  github_url: z.string().nullable().optional(),
+  link_1: z.string().nullable().optional(),
+  link_2: z.string().nullable().optional(),
+  link_3: z.string().nullable().optional(),
 });
 
 export type User = z.infer<typeof UserSchema>;

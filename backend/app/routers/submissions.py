@@ -65,8 +65,15 @@ async def submit(
     if problem is None:
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
 
+    contest_ended = False
+    if problem.origin_contest_id:
+        origin = await session.get(Contest, problem.origin_contest_id)
+        if origin is not None and origin.end_time < datetime.now(UTC):
+            contest_ended = True
+
     if (
         problem.visibility != Visibility.public
+        and not (problem.visibility == Visibility.contest and contest_ended)
         and current_user.role != UserRole.admin
         and problem.author_id != current_user.id
     ):

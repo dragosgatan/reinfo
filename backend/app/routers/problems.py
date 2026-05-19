@@ -75,11 +75,17 @@ async def _get_problem_or_404(slug: str, session: AsyncSession) -> Problem:
     return problem
 
 
-def _assert_can_view(problem: Problem, user: User | None, *, contest_ended: bool = False) -> None:
+def _assert_can_view(
+    problem: Problem,
+    user: User | None,
+    *,
+    contest_ended: bool = False,
+    is_contest_participant: bool = False,
+) -> None:
     """Raise 403 if user cannot see a non-public problem."""
     if problem.visibility == Visibility.public:
         return
-    if problem.visibility == Visibility.contest and contest_ended:
+    if problem.visibility == Visibility.contest and (contest_ended or is_contest_participant):
         return
     if user is None:
         raise HTTPException(status_code=403, detail="Acces interzis")
@@ -220,13 +226,46 @@ async def get_problem(
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
 
     contest_ended = False
+    is_contest_participant = False
     origin: Contest | None = None
     if problem.origin_contest_id:
         origin = await session.get(Contest, problem.origin_contest_id)
-        if origin is not None and origin.end_time < datetime.now(UTC):
-            contest_ended = True
+        if origin is not None:
+            now_ts = datetime.now(UTC)
+            if origin.end_time < now_ts:
+                contest_ended = True
+            elif current_user is not None and origin.start_time <= now_ts:
+                from app.models.classroom import Class, ClassMember
+                from app.models.contest import ContestParticipant
 
-    _assert_can_view(problem, current_user, contest_ended=contest_ended)
+                participant = await session.scalar(
+                    select(ContestParticipant).where(
+                        ContestParticipant.contest_id == origin.id,
+                        ContestParticipant.user_id == current_user.id,
+                    )
+                )
+                if participant:
+                    is_contest_participant = True
+                elif origin.class_id:
+                    cls = await session.get(Class, origin.class_id)
+                    if cls is not None:
+                        if cls.teacher_id == current_user.id:
+                            is_contest_participant = True
+                        else:
+                            member = await session.scalar(
+                                select(ClassMember).where(
+                                    ClassMember.class_id == origin.class_id,
+                                    ClassMember.user_id == current_user.id,
+                                )
+                            )
+                            is_contest_participant = member is not None
+
+    _assert_can_view(
+        problem,
+        current_user,
+        contest_ended=contest_ended,
+        is_contest_participant=is_contest_participant,
+    )
 
     solve_count = (
         await session.scalar(

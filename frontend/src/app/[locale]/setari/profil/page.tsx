@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Link } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, ExternalLink } from "lucide-react";
+import { Camera, ExternalLink, Github, Link as LinkIcon } from "lucide-react";
 
 function Toggle({
   checked,
@@ -59,6 +59,10 @@ export default function ProfileSettingsPage() {
     privacy_show_email: false,
     privacy_show_activity: true,
     privacy_show_solved: true,
+    github_url: "",
+    link_1: "",
+    link_2: "",
+    link_3: "",
   });
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -72,6 +76,10 @@ export default function ProfileSettingsPage() {
         privacy_show_email: user.privacy_show_email ?? false,
         privacy_show_activity: user.privacy_show_activity ?? true,
         privacy_show_solved: user.privacy_show_solved ?? true,
+        github_url: user.github_url ?? "",
+        link_1: user.link_1 ?? "",
+        link_2: user.link_2 ?? "",
+        link_3: user.link_3 ?? "",
       });
     }
   }, [user]);
@@ -99,6 +107,10 @@ export default function ProfileSettingsPage() {
         privacy_show_email: form.privacy_show_email,
         privacy_show_activity: form.privacy_show_activity,
         privacy_show_solved: form.privacy_show_solved,
+        github_url: form.github_url || null,
+        link_1: form.link_1 || null,
+        link_2: form.link_2 || null,
+        link_3: form.link_3 || null,
       });
       queryClient.setQueryData(["auth", "me"], updated);
       toast.success(t("saveSuccess"));
@@ -118,8 +130,7 @@ export default function ProfileSettingsPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/users/me/avatar`, {
+      const res = await fetch("/api/users/me/avatar", {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -127,7 +138,6 @@ export default function ProfileSettingsPage() {
       if (!res.ok) throw new Error("upload failed");
       const updated = (await res.json()) as User;
       queryClient.setQueryData(["auth", "me"], updated);
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       toast.success(t("avatarSuccess"));
     } catch {
       toast.error(t("avatarError"));
@@ -238,6 +248,44 @@ export default function ProfileSettingsPage() {
               <option value="en">English</option>
             </select>
           </div>
+        </section>
+
+        <section className="space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("links")}
+          </p>
+          <div className="space-y-1">
+            <Label htmlFor="github_url" className="text-sm flex items-center gap-1.5">
+              <Github className="h-3.5 w-3.5" />
+              {t("githubUrl")}
+            </Label>
+            <Input
+              id="github_url"
+              type="url"
+              value={form.github_url}
+              onChange={(e) => setForm((f) => ({ ...f, github_url: e.target.value }))}
+              placeholder={t("githubUrlPlaceholder")}
+              maxLength={256}
+              className="max-w-sm"
+            />
+          </div>
+          {(["link_1", "link_2", "link_3"] as const).map((key, i) => (
+            <div key={key} className="space-y-1">
+              <Label htmlFor={key} className="text-sm flex items-center gap-1.5">
+                <LinkIcon className="h-3.5 w-3.5" />
+                {t(`link${i + 1}` as "link1" | "link2" | "link3")}
+              </Label>
+              <Input
+                id={key}
+                type="url"
+                value={form[key]}
+                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                placeholder={t("linkPlaceholder")}
+                maxLength={256}
+                className="max-w-sm"
+              />
+            </div>
+          ))}
         </section>
 
         <section className="space-y-3">

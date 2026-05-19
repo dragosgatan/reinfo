@@ -6,6 +6,8 @@
     "duels": "Duels",
     "learning": "Learning",
     "leaderboard": "Leaderboard",
+    "friends": "Friends",
+    "classes": "Classes",
     "search": "Search...",
     "searchPlaceholder": "Search problems, users..."
   },
@@ -238,10 +240,21 @@
   },
   "leaderboard": {
     "title": "Leaderboard",
+    "subtitle": "Top users by problem score and duel rating",
+    "tabProblems": "Problems (all-time)",
+    "tabWeekly": "This week",
+    "tabDuels": "Duels",
     "rank": "Rank",
     "user": "User",
     "score": "Score",
-    "solved": "Solved"
+    "solved": "Solved",
+    "rating": "Rating",
+    "wins": "W",
+    "losses": "L",
+    "draws": "D",
+    "noEntries": "No users on the leaderboard yet.",
+    "scoringNote": "Score formula: easy × 1 + medium × 2 + hard × 3 · E = easy, M = medium, G = hard",
+    "weeklyNote": "Problems solved in the last 7 days · same scoring formula"
   },
   "profile": {
     "editProfile": "Edit profile",
@@ -258,6 +271,7 @@
     "hard": "Hard",
     "solved": "solved",
     "totalSolved": "Solved",
+    "problemScore": "Score",
     "totalSubmissions": "Submissions",
     "duelRating": "Duel Rating",
     "noActivity": "No activity in the past year.",
@@ -297,7 +311,14 @@
       "saveError": "An error occurred. Try again.",
       "avatarSuccess": "Profile picture updated.",
       "avatarError": "Error uploading picture.",
-      "viewProfile": "View public profile"
+      "viewProfile": "View public profile",
+      "links": "Links",
+      "githubUrl": "GitHub",
+      "githubUrlPlaceholder": "https://github.com/username",
+      "link1": "Link 1",
+      "link2": "Link 2",
+      "link3": "Link 3",
+      "linkPlaceholder": "https://..."
     }
   },
   "login": {
