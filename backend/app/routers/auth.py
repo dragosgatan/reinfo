@@ -4,6 +4,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.db import get_session
 from app.dependencies import SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS, get_current_user
 from app.limiter import limiter
@@ -84,6 +85,7 @@ async def login(
         max_age=_COOKIE_MAX_AGE,
         httponly=True,
         samesite="lax",
+        domain=settings.cookie_domain or None,
     )
     return UserRead.model_validate(user)
 
@@ -103,7 +105,12 @@ async def logout(
             await session.delete(db_session)
             await session.commit()
 
-    response.delete_cookie(key=SESSION_COOKIE_NAME, httponly=True, samesite="lax")
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        httponly=True,
+        samesite="lax",
+        domain=settings.cookie_domain or None,
+    )
     return {"message": "Deconectat cu succes"}
 
 

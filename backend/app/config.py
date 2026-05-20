@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     piston_url: str = "http://piston:2000"
     sentry_dsn: str = ""
+    cookie_domain: str = ""
 
 
 settings = Settings()
