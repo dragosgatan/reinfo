@@ -37,6 +37,7 @@ function cellTone(score: number, total: number): string {
 
 export default function LeaderboardClient({ slug }: Props) {
   const t = useTranslations("contests");
+  const tFriends = useTranslations("friends");
   const [liveEnabled, setLiveEnabled] = useState(true);
   const [friendsOnly, setFriendsOnly] = useState(false);
   const { isAuthenticated } = useAuth();
@@ -138,7 +139,7 @@ export default function LeaderboardClient({ slug }: Props) {
             className="gap-2"
           >
             <Users className="h-3.5 w-3.5" />
-            Prieteni
+            {tFriends("tabFriends")}
           </Button>
         )}
         {isOngoing && !frozen && (
@@ -174,7 +175,7 @@ export default function LeaderboardClient({ slug }: Props) {
         <p className="text-sm text-muted-foreground">{t("loadingLeaderboard")}</p>
       ) : visibleEntries.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {friendsOnly ? "Niciun prieten în clasament." : t("noEntries")}
+          {friendsOnly ? t("noFriendsInLeaderboard") : t("noEntries")}
         </p>
       ) : (
         <div className="overflow-x-auto">

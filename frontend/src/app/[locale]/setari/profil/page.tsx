@@ -47,6 +47,7 @@ function Toggle({
 
 export default function ProfileSettingsPage() {
   const t = useTranslations("settings.profile");
+  const tCommon = useTranslations("common");
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -191,7 +192,7 @@ export default function ProfileSettingsPage() {
                   disabled={uploadingAvatar}
                   className="text-xs"
                 >
-                  {uploadingAvatar ? "Se încarcă..." : t("changeAvatar")}
+                  {uploadingAvatar ? tCommon("loading") : t("changeAvatar")}
                 </Button>
                 <p className="mt-1 text-[11px] text-muted-foreground">{t("avatarHint")}</p>
               </div>
@@ -246,6 +247,7 @@ export default function ProfileSettingsPage() {
             >
               <option value="ro">Română</option>
               <option value="en">English</option>
+              <option value="hu">Magyar</option>
             </select>
           </div>
         </section>

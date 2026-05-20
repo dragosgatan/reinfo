@@ -450,20 +450,6 @@ export type LessonCategory = (typeof LESSON_CATEGORIES)[number];
 export const LESSON_LEVELS = ["beginner", "intermediate", "advanced"] as const;
 export type LessonLevel = (typeof LESSON_LEVELS)[number];
 
-export const LESSON_CATEGORY_LABELS: Record<LessonCategory, string> = {
-  basics: "Noțiuni de bază",
-  data_structures: "Structuri de date",
-  graphs: "Grafuri",
-  dp: "Programare dinamică",
-  math: "Matematică",
-};
-
-export const LESSON_LEVEL_LABELS: Record<LessonLevel, string> = {
-  beginner: "Începător",
-  intermediate: "Intermediar",
-  advanced: "Avansat",
-};
-
 export const QuizQuestionSchema = z.object({
   id: z.string(),
   question: z.string(),

@@ -9,8 +9,6 @@ import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import {
   LESSON_CATEGORIES,
-  LESSON_CATEGORY_LABELS,
-  LESSON_LEVEL_LABELS,
   LESSON_LEVELS,
   LessonListResponseSchema,
   type LessonCategory,
@@ -92,7 +90,7 @@ export default function InvatareClient() {
               )}
               onClick={() => setLevelFilter(lvl)}
             >
-              {LESSON_LEVEL_LABELS[lvl]}
+              {t(`levels.${lvl}` as any)}
             </button>
           ))}
         </div>
@@ -116,7 +114,7 @@ export default function InvatareClient() {
               className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
             >
               <Plus className="h-3.5 w-3.5" />
-              Lecție nouă
+              {t("newLesson")}
             </Link>
           </div>
         )}
@@ -135,7 +133,7 @@ export default function InvatareClient() {
           {activeCats.map((cat) => (
             <section key={cat}>
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                {LESSON_CATEGORY_LABELS[cat]}
+                {t(`categories.${cat}` as any)}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {byCategory[cat].map((lesson) => (
@@ -195,7 +193,7 @@ function LessonCard({
             LEVEL_COLORS[lesson.level],
           )}
         >
-          {LESSON_LEVEL_LABELS[lesson.level]}
+          {t(`levels.${lesson.level}` as any)}
         </span>
       </div>
     </Link>

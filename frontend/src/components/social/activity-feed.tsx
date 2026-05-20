@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,8 @@ import { resolveMediaUrl, formatDate } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 
 export function ActivityFeed() {
+  const t = useTranslations("friends");
+
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["social", "activity"],
     queryFn: () => api.get("/api/social/activity", z.array(ActivityFeedItemSchema)),
@@ -29,7 +32,7 @@ export function ActivityFeed() {
   if (items.length === 0) {
     return (
       <p className="py-6 text-center text-sm text-muted-foreground">
-        Nicio activitate recentă de la prieteni.
+        {t("noActivityFeed")}
       </p>
     );
   }
@@ -53,7 +56,7 @@ export function ActivityFeed() {
               <Link href={`/u/${item.username}`} className="font-medium hover:underline">
                 {item.display_name}
               </Link>{" "}
-              a rezolvat{" "}
+              {t("solvedActivity")}{" "}
               <Link
                 href={`/probleme/${item.problem_slug}`}
                 className="font-medium hover:underline text-foreground"

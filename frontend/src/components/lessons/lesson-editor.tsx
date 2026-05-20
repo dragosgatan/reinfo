@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,8 +25,6 @@ import { ProblemStatement } from "@/components/problems/problem-statement";
 import { api, ApiError } from "@/lib/api";
 import {
   LESSON_CATEGORIES,
-  LESSON_CATEGORY_LABELS,
-  LESSON_LEVEL_LABELS,
   LESSON_LEVELS,
   LessonReadSchema,
   type LessonCategory,
@@ -35,23 +34,17 @@ import {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const schema = z.object({
-  title: z.string().min(1, "Titlul este obligatoriu").max(256),
-  slug: z
-    .string()
-    .min(1, "Slug-ul este obligatoriu")
-    .max(128)
-    .regex(/^[a-z0-9-]+$/, "Doar litere mici, cifre și cratimă"),
-  category: z.enum(LESSON_CATEGORIES),
-  level: z.enum(LESSON_LEVELS),
-  ordinal: z.coerce.number().int().min(0).default(0),
-  content_md: z.string().default(""),
-  content_md_en: z.string().default(""),
-  content_md_hu: z.string().default(""),
-  teacher_notes_md: z.string().default(""),
-});
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = {
+  title: string;
+  slug: string;
+  category: LessonCategory;
+  level: LessonLevel;
+  ordinal: number;
+  content_md: string;
+  content_md_en: string;
+  content_md_hu: string;
+  teacher_notes_md: string;
+};
 
 function slugify(s: string): string {
   return s
@@ -92,13 +85,14 @@ function QuizRow({
   onChange: (draft: QuizDraft) => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations("learning");
   const set = (patch: Partial<QuizDraft>) => onChange({ ...quiz, ...patch });
 
   return (
     <div className="rounded border border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="font-mono text-xs text-muted-foreground">
-          Quiz #{index + 1} — id: <code>{quiz.id}</code>
+          Quiz #{index + 1} — {t("quizIdLabel")}: <code>{quiz.id}</code>
           <span className="ml-2 text-muted-foreground/60">
             (embed via{" "}
             <code className="rounded bg-muted px-1">{`<!-- quiz:${quiz.id} -->`}</code>)
@@ -115,7 +109,7 @@ function QuizRow({
 
       <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
         <div className="space-y-1">
-          <Label className="text-xs">ID</Label>
+          <Label className="text-xs">{t("quizIdLabel")}</Label>
           <Input
             value={quiz.id}
             onChange={(e) => set({ id: e.target.value })}
@@ -124,7 +118,7 @@ function QuizRow({
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Răspuns corect (0-indexed)</Label>
+          <Label className="text-xs">{t("quizCorrectAnswer")}</Label>
           <Input
             type="number"
             min={0}
@@ -137,7 +131,7 @@ function QuizRow({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">Întrebare</Label>
+        <Label className="text-xs">{t("quizQuestionLabel")}</Label>
         <Input
           value={quiz.question}
           onChange={(e) => set({ question: e.target.value })}
@@ -148,13 +142,13 @@ function QuizRow({
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Variante de răspuns</Label>
+          <Label className="text-xs">{t("quizOptionsLabel")}</Label>
           <button
             type="button"
             onClick={() => set({ options: [...quiz.options, ""] })}
             className="text-xs text-primary hover:underline"
           >
-            + Adaugă variantă
+            {t("quizAddOption")}
           </button>
         </div>
         <div className="space-y-1.5">
@@ -201,11 +195,11 @@ function QuizRow({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">Explicație (după răspuns)</Label>
+        <Label className="text-xs">{t("quizExplanationLabel")}</Label>
         <Input
           value={quiz.explanation}
           onChange={(e) => set({ explanation: e.target.value })}
-          placeholder="Explicația răspunsului corect..."
+          placeholder={t("quizExplanationPlaceholder")}
           className="text-sm"
         />
       </div>
@@ -218,6 +212,7 @@ interface LessonEditorProps {
 }
 
 export function LessonEditor({ initial }: LessonEditorProps) {
+  const t = useTranslations("learning");
   const router = useRouter();
   const isEdit = !!initial;
 
@@ -235,6 +230,22 @@ export function LessonEditor({ initial }: LessonEditorProps) {
     })) ?? [],
   );
   const [notesTab, setNotesTab] = useState<"edit" | "preview">("edit");
+
+  const schema = z.object({
+    title: z.string().min(1, t("titleRequired")).max(256),
+    slug: z
+      .string()
+      .min(1, t("slugRequired"))
+      .max(128)
+      .regex(/^[a-z0-9-]+$/, t("slugInvalid")),
+    category: z.enum(LESSON_CATEGORIES),
+    level: z.enum(LESSON_LEVELS),
+    ordinal: z.coerce.number().int().min(0).default(0),
+    content_md: z.string().default(""),
+    content_md_en: z.string().default(""),
+    content_md_hu: z.string().default(""),
+    teacher_notes_md: z.string().default(""),
+  });
 
   const {
     register,
@@ -296,7 +307,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
           : watchContentHu;
 
     if (!sourceText?.trim()) {
-      toast.error("Conținutul sursă este gol.");
+      toast.error(t("sourceContentEmpty"));
       return;
     }
 
@@ -312,7 +323,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
       const data = await res.json() as { results?: Record<string, string>; error?: string; model?: string };
 
       if (!res.ok || data.error) {
-        toast.error(data.error ?? "Traducerea a eșuat.");
+        toast.error(data.error ?? t("translationFailed"));
         return;
       }
 
@@ -323,13 +334,13 @@ export function LessonEditor({ initial }: LessonEditorProps) {
 
       const modelShort = (data.model ?? "").split("/").pop()?.replace(":free", "") ?? "";
       const langs = targetLangs.map((l) => l.toUpperCase()).join(", ");
-      toast.success(`Tradus în ${langs}${modelShort ? ` · ${modelShort}` : ""}`);
+      toast.success(t("translatedTo", { langs }) + (modelShort ? ` · ${modelShort}` : ""));
     } catch {
-      toast.error("Eroare la traducere.");
+      toast.error(t("translationError"));
     } finally {
       setTranslating(false);
     }
-  }, [contentLang, watchContent, watchContentEn, watchContentHu, setValue]);
+  }, [contentLang, watchContent, watchContentEn, watchContentHu, setValue, t]);
 
   const onSubmit = useCallback(
     async (values: FormValues) => {
@@ -352,29 +363,29 @@ export function LessonEditor({ initial }: LessonEditorProps) {
 
         if (isEdit) {
           await api.patch(`/api/lessons/${initial!.slug}`, payload, LessonReadSchema);
-          toast.success("Lecția a fost actualizată.");
+          toast.success(t("lessonUpdated"));
           router.push(`/invatare/${values.slug}`);
         } else {
           const lesson = await api.post("/api/lessons", payload, LessonReadSchema);
-          toast.success(publishing ? "Lecția a fost publicată." : "Ciornă salvată.");
+          toast.success(publishing ? t("lessonPublished") : t("draftSavedToast"));
           router.push(`/invatare/${lesson.slug}`);
         }
       } catch (err) {
         console.error("[LessonEditor] submit error:", err);
         const msg =
           err instanceof ApiError && err.status === 409
-            ? "Există deja o lecție cu acest slug."
+            ? t("slugConflict")
             : err instanceof ApiError
               ? err.detail
               : err instanceof Error
                 ? err.message
-                : "A apărut o eroare.";
+                : t("errorGenericToast");
         toast.error(msg);
       } finally {
         setSubmitting(false);
       }
     },
-    [quizzes, isEdit, initial, router],
+    [quizzes, isEdit, initial, router, t],
   );
 
   return (
@@ -385,11 +396,11 @@ export function LessonEditor({ initial }: LessonEditorProps) {
             href={isEdit ? `/invatare/${initial!.slug}` : "/invatare"}
             className="text-sm text-muted-foreground hover:text-foreground"
           >
-            ← {isEdit ? "Înapoi la lecție" : "Înapoi la lecții"}
+            ← {isEdit ? t("backToLesson") : t("backToLearning")}
           </Link>
           <span className="text-muted-foreground/40">·</span>
           <h1 className="text-lg font-semibold tracking-tight">
-            {isEdit ? "Editare lecție" : "Lecție nouă"}
+            {isEdit ? t("editLesson") : t("newLesson")}
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -402,7 +413,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
               onClick={() => { publishIntentRef.current = false; }}
             >
               {submitting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              Salvează ciornă
+              {t("saveDraft")}
             </Button>
           )}
           <Button
@@ -412,7 +423,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
             onClick={() => { publishIntentRef.current = true; }}
           >
             {submitting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-            {isEdit ? "Salvează" : "Publică"}
+            {isEdit ? t("saveChanges") : t("publish")}
           </Button>
         </div>
       </div>
@@ -421,12 +432,12 @@ export function LessonEditor({ initial }: LessonEditorProps) {
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="title">Titlu</Label>
+              <Label htmlFor="title">{t("titleLabel")}</Label>
               <Input
                 id="title"
                 {...register("title")}
                 onChange={handleTitleChange}
-                placeholder="Introducere în recursivitate"
+                placeholder={t("titlePlaceholder")}
                 className={cn(errors.title && "border-destructive")}
               />
               {errors.title && (
@@ -435,9 +446,9 @@ export function LessonEditor({ initial }: LessonEditorProps) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="slug">
-                Slug{" "}
+                {t("slugLabel")}{" "}
                 <span className="text-xs font-normal text-muted-foreground">
-                  {isEdit ? "(fix)" : "(auto-generat)"}
+                  {isEdit ? t("slugFixed") : t("slugAuto")}
                 </span>
               </Label>
               <Input
@@ -459,21 +470,21 @@ export function LessonEditor({ initial }: LessonEditorProps) {
 
           <div className="space-y-1.5">
             <div className="mb-2 flex items-center justify-between">
-              <Label>Conținut (Markdown + LaTeX)</Label>
+              <Label>{t("contentLabel")}</Label>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleTranslate}
                   disabled={translating}
                   className="flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
-                  title={`Traduce din ${contentLang.toUpperCase()}`}
+                  title={t("translateFrom", { lang: contentLang.toUpperCase() })}
                 >
                   {translating ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
                     <Languages className="h-3 w-3" />
                   )}
-                  Traduce din {contentLang.toUpperCase()}
+                  {t("translateFrom", { lang: contentLang.toUpperCase() })}
                 </button>
                 <div className="flex rounded border border-border text-xs">
                   <button
@@ -519,11 +530,11 @@ export function LessonEditor({ initial }: LessonEditorProps) {
               <TabsList className="mb-2">
                 <TabsTrigger value="edit">
                   <EyeOff className="mr-1.5 h-3 w-3" />
-                  Editare
+                  {t("editTab")}
                 </TabsTrigger>
                 <TabsTrigger value="preview">
                   <Eye className="mr-1.5 h-3 w-3" />
-                  Preview
+                  {t("previewTab")}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="edit">
@@ -531,7 +542,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
                   <textarea
                     {...register("content_md")}
                     rows={16}
-                    placeholder={`# Titlul secțiunii\n\nConținut markdown.\n\n\`\`\`python\nprint("Hello")\n\`\`\`\n\n<!-- quiz:q1 -->`}
+                    placeholder={t("contentPlaceholderRo")}
                     className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
@@ -539,7 +550,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
                   <textarea
                     {...register("content_md_en")}
                     rows={16}
-                    placeholder="Lesson content in English (Markdown + LaTeX). Optional."
+                    placeholder={t("contentPlaceholderEn")}
                     className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
@@ -547,7 +558,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
                   <textarea
                     {...register("content_md_hu")}
                     rows={16}
-                    placeholder="A lecke tartalma magyarul (Markdown + LaTeX). Opcionális."
+                    placeholder={t("contentPlaceholderHu")}
                     className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
@@ -569,9 +580,9 @@ export function LessonEditor({ initial }: LessonEditorProps) {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label>
-                Note profesor{" "}
+                {t("notesLabel")}{" "}
                 <span className="text-xs font-normal text-muted-foreground">
-                  (vizibil doar pentru profesori/admini)
+                  {t("notesHint")}
                 </span>
               </Label>
               <div className="flex rounded border border-border text-xs">
@@ -586,7 +597,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
                   )}
                 >
                   <EyeOff className="h-3 w-3" />
-                  Editare
+                  {t("editTab")}
                 </button>
                 <button
                   type="button"
@@ -599,7 +610,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
                   )}
                 >
                   <Eye className="h-3 w-3" />
-                  Preview
+                  {t("previewTab")}
                 </button>
               </div>
             </div>
@@ -607,7 +618,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
               <textarea
                 {...register("teacher_notes_md")}
                 rows={6}
-                placeholder="Note didactice, obiective de învățare, sfaturi pentru predare..."
+                placeholder={t("notesPlaceholder")}
                 className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               />
             ) : (
@@ -619,25 +630,25 @@ export function LessonEditor({ initial }: LessonEditorProps) {
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Întrebări quiz</Label>
+              <Label>{t("quizLabel")}</Label>
               <button
                 type="button"
                 onClick={addQuiz}
                 className="flex items-center gap-1 text-xs text-primary hover:underline"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Adaugă întrebare
+                {t("addQuestion")}
               </button>
             </div>
             {quizzes.length === 0 ? (
               <p className="rounded border border-dashed border-border py-5 text-center text-sm text-muted-foreground">
-                Nicio întrebare.{" "}
+                {t("noQuestions")}{" "}
                 <button type="button" onClick={addQuiz} className="text-primary hover:underline">
-                  Adaugă prima
+                  {t("addFirstQuestion")}
                 </button>
                 <br />
                 <span className="text-xs">
-                  Embed în conținut cu{" "}
+                  {t("quizEmbedHelp")}{" "}
                   <code className="rounded bg-muted px-1">{`<!-- quiz:q1 -->`}</code>
                 </span>
               </p>
@@ -659,7 +670,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
 
         <aside className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Categorie</Label>
+            <Label>{t("categoryLabel")}</Label>
             <Select
               defaultValue={initial?.category ?? "basics"}
               onValueChange={(v) => setValue("category", v as LessonCategory)}
@@ -670,7 +681,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
               <SelectContent>
                 {LESSON_CATEGORIES.map((cat) => (
                   <SelectItem key={cat} value={cat}>
-                    {LESSON_CATEGORY_LABELS[cat]}
+                    {t(`categories.${cat}` as any)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -678,7 +689,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Nivel</Label>
+            <Label>{t("levelLabel")}</Label>
             <Select
               defaultValue={initial?.level ?? "beginner"}
               onValueChange={(v) => setValue("level", v as LessonLevel)}
@@ -689,7 +700,7 @@ export function LessonEditor({ initial }: LessonEditorProps) {
               <SelectContent>
                 {LESSON_LEVELS.map((lvl) => (
                   <SelectItem key={lvl} value={lvl}>
-                    {LESSON_LEVEL_LABELS[lvl]}
+                    {t(`levels.${lvl}` as any)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -698,8 +709,8 @@ export function LessonEditor({ initial }: LessonEditorProps) {
 
           <div className="space-y-1.5">
             <Label htmlFor="ordinal">
-              Ordine{" "}
-              <span className="text-xs font-normal text-muted-foreground">(în categorie)</span>
+              {t("ordinalLabel")}{" "}
+              <span className="text-xs font-normal text-muted-foreground">{t("ordinalHint")}</span>
             </Label>
             <Input
               id="ordinal"
@@ -713,13 +724,13 @@ export function LessonEditor({ initial }: LessonEditorProps) {
           <Separator />
 
           <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1.5">
-            <p className="font-medium text-foreground">Sintaxă quiz</p>
+            <p className="font-medium text-foreground">{t("quizSyntaxHeading")}</p>
             <p>
-              Plasează{" "}
-              <code className="rounded bg-muted px-1">{`<!-- quiz:ID -->`}</code>{" "}
-              în conținut unde vrei să apară o întrebare.
+              {t.rich("quizSyntaxHelp1", {
+                code: () => <code className="rounded bg-muted px-1">{`<!-- quiz:ID -->`}</code>,
+              })}
             </p>
-            <p>{'ID-ul trebuie să corespundă câmpului „id" din editorul de mai jos.'}</p>
+            <p>{t("quizSyntaxHelp2")}</p>
           </div>
         </aside>
       </div>
@@ -728,10 +739,11 @@ export function LessonEditor({ initial }: LessonEditorProps) {
 }
 
 function ContentPreview({ markdown }: { markdown: string }) {
+  const t = useTranslations("learning");
   if (!markdown) {
     return (
       <div className="flex min-h-[120px] items-center justify-center rounded border border-border text-sm text-muted-foreground">
-        Scrie conținut pentru a vedea previzualizarea
+        {t("previewPlaceholder")}
       </div>
     );
   }

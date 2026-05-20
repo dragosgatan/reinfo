@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -14,6 +14,7 @@ export function DuelQueueWatcher() {
   const { user } = useAuth();
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("friends");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const redirectedRef = useRef<string | null>(null);
 
@@ -33,7 +34,7 @@ export function DuelQueueWatcher() {
           entry.matched_duel_id !== redirectedRef.current
         ) {
           redirectedRef.current = entry.matched_duel_id;
-          toast.success("Adversar găsit! Se deschide duelul…", { duration: 4000 });
+          toast.success(t("duelStarted"), { duration: 4000 });
           router.push(`/${locale}/duel/${entry.matched_duel_id}`);
         }
       } catch {
@@ -45,7 +46,7 @@ export function DuelQueueWatcher() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [user, router, locale]);
+  }, [user, router, locale, t]);
 
   return null;
 }

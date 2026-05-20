@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,18 +21,21 @@ import { api, ApiError } from "@/lib/api";
 import { UserSchema } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
-const loginSchema = z.object({
-  username: z.string().min(1, "Obligatoriu"),
-  password: z.string().min(1, "Parola este obligatorie"),
-});
-
-type LoginValues = z.infer<typeof loginSchema>;
+type LoginValues = {
+  username: string;
+  password: string;
+};
 
 export default function LoginPage() {
   const t = useTranslations("login");
   const tAuth = useTranslations("auth");
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  const loginSchema = useMemo(() => z.object({
+    username: z.string().min(1, t("validationUsernameRequired")),
+    password: z.string().min(1, t("validationPasswordRequired")),
+  }), [t]);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -58,7 +62,7 @@ export default function LoginPage() {
     <div className="flex min-h-[calc(100vh-48px)] items-center justify-center px-4">
       <div className="w-full max-w-sm">
       <div className="mb-6">
-        <p className="mb-3 font-mono text-xs text-muted-foreground">{"// autentificare"}</p>
+        <p className="mb-3 font-mono text-xs text-muted-foreground">{t("subtitle")}</p>
         <h1 className="text-xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>

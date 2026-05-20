@@ -1,4 +1,7 @@
+"use client";
+
 import { CheckCircle2, Circle, MinusCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 type UserStatus = "solved" | "attempted" | "unsolved" | null | undefined;
@@ -9,11 +12,13 @@ interface StatusIconProps {
 }
 
 export function StatusIcon({ status, className }: StatusIconProps) {
+  const t = useTranslations("problems");
+
   if (status === "solved") {
     return (
       <CheckCircle2
         className={cn("h-3.5 w-3.5 text-success", className)}
-        aria-label="Rezolvat"
+        aria-label={t("solvedAria")}
       />
     );
   }
@@ -21,14 +26,14 @@ export function StatusIcon({ status, className }: StatusIconProps) {
     return (
       <MinusCircle
         className={cn("h-3.5 w-3.5 text-warning", className)}
-        aria-label="Încercat"
+        aria-label={t("attemptedAria")}
       />
     );
   }
   return (
     <Circle
       className={cn("h-3.5 w-3.5 text-muted-foreground/25", className)}
-      aria-label="Nerezolvat"
+      aria-label={t("unsolvedAria")}
     />
   );
 }

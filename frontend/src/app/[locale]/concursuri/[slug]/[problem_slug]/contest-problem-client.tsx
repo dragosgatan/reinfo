@@ -49,6 +49,7 @@ function checkFingerprint(contestSlug: string) {
 
 export default function ContestProblemClient({ contestSlug, problemSlug }: Props) {
   const t = useTranslations("problems");
+  const tContests = useTranslations("contests");
   const { isAuthenticated } = useAuth();
   const [editorFocused, setEditorFocused] = useState(false);
 
@@ -123,17 +124,17 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
 
   if (!acknowledged) {
     const rules: string[] = [];
-    if (contest?.fullscreen_required) rules.push("Concursul se desfășoară în modul ecran complet.");
-    if (contest?.copy_paste_blocked) rules.push("Copy-paste în editor este blocat.");
-    rules.push("Activitatea browserului este monitorizată.");
-    rules.push("Codul sursă este verificat automat pentru nereguli.");
+    if (contest?.fullscreen_required) rules.push(tContests("contestRulesFullscreen"));
+    if (contest?.copy_paste_blocked) rules.push(tContests("contestRulesCopyPaste"));
+    rules.push(tContests("contestRulesMonitoring"));
+    rules.push(tContests("contestRulesSourceCheck"));
 
     return (
       <div className="mx-auto max-w-lg px-4 py-16">
         <div className="rounded border border-border bg-card p-6">
           <div className="mb-4 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
-            <h2 className="text-base font-semibold">Înainte de a intra în concurs</h2>
+            <h2 className="text-base font-semibold">{tContests("contestAckTitle")}</h2>
           </div>
           <ul className="mb-6 space-y-2 text-sm text-muted-foreground">
             {rules.map((r) => (
@@ -147,10 +148,10 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
             {contest?.fullscreen_required ? (
               <>
                 <Maximize2 className="mr-2 h-4 w-4" />
-                Înțeleg, intră în ecran complet
+                {tContests("contestAckFullscreen")}
               </>
             ) : (
-              "Înțeleg, continuă"
+              tContests("contestAckNormal")
             )}
           </Button>
         </div>
@@ -161,7 +162,7 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
   if (isLoading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-muted-foreground">
-        Se încarcă...
+        {tContests("loadingLeaderboard")}
       </div>
     );
   }
@@ -170,12 +171,12 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
     return (
       <div className="mx-auto max-w-6xl px-4 py-16 text-center">
         <AlertCircle className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Problema nu a fost găsită.</p>
+        <p className="text-sm text-muted-foreground">{t("notFoundError")}</p>
         <Link
           href={`/concursuri/${contestSlug}`}
           className="mt-4 inline-block text-sm text-primary hover:underline"
         >
-          ← Înapoi la concurs
+          {tContests("backToContestLink")}
         </Link>
       </div>
     );
@@ -188,7 +189,7 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
       {fullscreenExited && (
         <div className="mb-4 flex items-center gap-3 rounded border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>Ai ieșit din ecran complet. Acest eveniment a fost înregistrat.</span>
+          <span>{tContests("fullscreenExitWarning")}</span>
           <Button
             size="sm"
             variant="outline"
@@ -199,7 +200,7 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
             }}
           >
             <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
-            Reintră
+            {tContests("reenterFullscreen")}
           </Button>
         </div>
       )}
@@ -209,7 +210,7 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
           href={`/concursuri/${contestSlug}`}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Înapoi la concurs
+          {tContests("backToContestLink")}
         </Link>
       </div>
 

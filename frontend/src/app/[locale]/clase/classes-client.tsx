@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, LogIn, Users, BookOpen } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,8 @@ import { useRouter } from "@/i18n/navigation";
 
 export function ClassesClient() {
   const { user } = useAuth();
+  const t = useTranslations("classes");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
   const router = useRouter();
   const [joinCode, setJoinCode] = useState("");
@@ -41,10 +44,10 @@ export function ClassesClient() {
         prev ? [...prev, cls] : [cls],
       );
       setJoinCode("");
-      toast.success(`Te-ai alăturat clasei "${cls.name}"`);
+      toast.success(t("joinedClass", { name: cls.name }));
       router.push(`/clase/${cls.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Cod invalid");
+      toast.error(err instanceof Error ? err.message : t("invalidCode"));
     } finally {
       setJoining(false);
     }
@@ -62,10 +65,10 @@ export function ClassesClient() {
       );
       setForm({ name: "", description_md: "" });
       setCreating(false);
-      toast.success("Clasă creată");
+      toast.success(t("classCreated"));
       router.push(`/clase/${cls.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     }
   }
 
@@ -73,19 +76,19 @@ export function ClassesClient() {
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Clasele mele</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Alătură-te sau creează o clasă
+            {t("subtitle")}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-md border border-border p-4 space-y-3">
-          <p className="text-sm font-semibold">Alătură-te cu cod</p>
+          <p className="text-sm font-semibold">{t("joinWithCode")}</p>
           <div className="flex gap-2">
             <Input
-              placeholder="Cod invitație (ex: AB12CD34)"
+              placeholder={t("inviteCodePlaceholder")}
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && handleJoin()}
@@ -94,35 +97,35 @@ export function ClassesClient() {
             />
             <Button onClick={handleJoin} disabled={joining || !joinCode.trim()} className="gap-1.5 shrink-0">
               <LogIn className="h-3.5 w-3.5" />
-              Intră
+              {t("enter")}
             </Button>
           </div>
         </div>
 
         <div className="rounded-md border border-border p-4 space-y-3">
-          <p className="text-sm font-semibold">Creează clasă</p>
+          <p className="text-sm font-semibold">{t("createClass")}</p>
           {!creating ? (
             <Button size="sm" variant="outline" onClick={() => setCreating(true)} className="gap-1.5">
               <Plus className="h-3.5 w-3.5" />
-              Clasă nouă
+              {t("newClass")}
             </Button>
           ) : (
             <div className="space-y-2">
               <Input
-                placeholder="Nume clasă"
+                placeholder={t("classNamePlaceholder")}
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
               <textarea
                 className="w-full min-h-[60px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                placeholder="Descriere (opțional)"
+                placeholder={t("descriptionOptional")}
                 value={form.description_md}
                 onChange={(e) => setForm((f) => ({ ...f, description_md: e.target.value }))}
               />
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleCreate}>Creează</Button>
+                <Button size="sm" onClick={handleCreate}>{t("create")}</Button>
                 <Button size="sm" variant="outline" onClick={() => { setCreating(false); setForm({ name: "", description_md: "" }); }}>
-                  Anulează
+                  {tCommon("cancel")}
                 </Button>
               </div>
             </div>
@@ -139,7 +142,7 @@ export function ClassesClient() {
       ) : classes.length === 0 ? (
         <div className="py-16 text-center">
           <BookOpen className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
-          <p className="text-sm text-muted-foreground">Nu ești înscris în nicio clasă.</p>
+          <p className="text-sm text-muted-foreground">{t("noClasses")}</p>
         </div>
       ) : (
         <div className="divide-y divide-border rounded-md border border-border overflow-hidden">
@@ -152,8 +155,8 @@ export function ClassesClient() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium truncate">{cls.name}</p>
-                  {cls.archived && <Badge variant="secondary" className="text-xs">Arhivat</Badge>}
-                  {cls.teacher_id === user?.id && <Badge variant="outline" className="text-xs">Profesor</Badge>}
+                  {cls.archived && <Badge variant="secondary" className="text-xs">{t("archived")}</Badge>}
+                  {cls.teacher_id === user?.id && <Badge variant="outline" className="text-xs">{t("teacher")}</Badge>}
                 </div>
                 <div className="flex items-center gap-3 mt-0.5">
                   <div className="flex items-center gap-1.5">

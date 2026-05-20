@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   Check,
   Plus,
@@ -42,12 +43,6 @@ function difficultyColor(d: number) {
   return "text-red-600 dark:text-red-400";
 }
 
-function difficultyLabel(d: number) {
-  if (d <= 3) return "Ușor";
-  if (d <= 6) return "Mediu";
-  return "Dificil";
-}
-
 function AssignmentRow({
   a,
   isTeacher,
@@ -57,6 +52,7 @@ function AssignmentRow({
   isTeacher: boolean;
   onRemove?: () => void;
 }) {
+  const t = useTranslations("classroom.assignments");
   const overdue = a.due_at && new Date(a.due_at) < new Date() && !a.user_solved;
   return (
     <div className="flex items-center gap-3 py-2 px-3 hover:bg-muted/20 transition-colors rounded">
@@ -79,7 +75,7 @@ function AssignmentRow({
         </Link>
         <div className="flex items-center gap-2 mt-0.5">
           <span className={cn("text-xs font-mono", difficultyColor(a.problem_difficulty))}>
-            {a.problem_difficulty} · {difficultyLabel(a.problem_difficulty)}
+            {a.problem_difficulty} · {a.problem_difficulty <= 3 ? t("difficultyEasy") : a.problem_difficulty <= 6 ? t("difficultyMedium") : t("difficultyHard")}
           </span>
           {a.due_at && (
             <span
@@ -116,12 +112,13 @@ function AssignmentRow({
 }
 
 function ProgressTable({ progress }: { progress: HomeworkProgress }) {
+  const t = useTranslations("classroom.assignments");
   const { homework, members } = progress;
   const problems = homework.assignments;
 
   if (members.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-2">Niciun student înscris.</p>
+      <p className="text-sm text-muted-foreground py-2">{t("noStudents")}</p>
     );
   }
 
@@ -131,7 +128,7 @@ function ProgressTable({ progress }: { progress: HomeworkProgress }) {
         <thead>
           <tr className="border-b border-border">
             <th className="text-left font-medium text-muted-foreground py-2 pr-3 min-w-[140px]">
-              Student
+              {t("headerStudent")}
             </th>
             {problems.map((p) => (
               <th
@@ -143,7 +140,7 @@ function ProgressTable({ progress }: { progress: HomeworkProgress }) {
               </th>
             ))}
             <th className="text-center font-medium text-muted-foreground py-2 pl-2 min-w-[60px]">
-              Total
+              {t("headerTotal")}
             </th>
           </tr>
         </thead>
@@ -210,6 +207,7 @@ function HomeworkCard({
   onRemoveProblem: (assignmentId: string) => void;
   onAddProblem: (slug: string) => Promise<void>;
 }) {
+  const t = useTranslations("classroom.assignments");
   const [expanded, setExpanded] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [addingSlug, setAddingSlug] = useState("");
@@ -277,7 +275,7 @@ function HomeworkCard({
                     : "text-muted-foreground",
                 )}
               >
-                {solved}/{total} rezolvate
+                {t("solvedCount", { solved, total })}
               </span>
             )}
             {isTeacher && (
@@ -302,7 +300,7 @@ function HomeworkCard({
                 }}
               >
                 <BarChart2 className="h-3.5 w-3.5" />
-                Progres
+                {t("progress")}
               </Button>
               <Button
                 variant="ghost"
@@ -324,7 +322,7 @@ function HomeworkCard({
           )}
 
           {hw.assignments.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-1">Nicio problemă adăugată.</p>
+            <p className="text-xs text-muted-foreground py-1">{t("noProblems")}</p>
           ) : (
             hw.assignments.map((a) => (
               <AssignmentRow
@@ -346,20 +344,20 @@ function HomeworkCard({
                   onClick={() => setAddingOpen(true)}
                 >
                   <Plus className="h-3 w-3" />
-                  Adaugă problemă
+                  {t("addProblem")}
                 </Button>
               ) : (
                 <div className="flex items-center gap-2">
                   <Input
                     className="h-7 text-xs"
-                    placeholder="slug-problemă"
+                    placeholder={t("slugPlaceholder")}
                     value={addingSlug}
                     onChange={(e) => setAddingSlug(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAddProblem()}
                     autoFocus
                   />
                   <Button size="sm" className="h-7" onClick={handleAddProblem} disabled={loadingAdd}>
-                    Adaugă
+                    {t("add")}
                   </Button>
                   <Button
                     size="icon"
@@ -377,7 +375,7 @@ function HomeworkCard({
           {isTeacher && showProgress && (
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                Progres studenți
+                {t("studentProgress")}
               </p>
               {progressLoading ? (
                 <div className="space-y-2">
@@ -397,6 +395,8 @@ function HomeworkCard({
 }
 
 export function AssignmentsTab({ classId, isTeacher }: Props) {
+  const t = useTranslations("classroom.assignments");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
   const [composingHw, setComposingHw] = useState(false);
   const [hwForm, setHwForm] = useState({
@@ -443,22 +443,22 @@ export function AssignmentsTab({ classId, isTeacher }: Props) {
       );
       setHwForm({ title: "", description_md: "", due_at: "", slugs: [""] });
       setComposingHw(false);
-      toast.success("Temă creată");
+      toast.success(t("created"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     }
   }
 
   async function handleDeleteHw(hwId: string) {
-    if (!confirm("Ștergi această temă și toate problemele din ea?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     try {
       await api.delete(`/api/classes/${classId}/homework/${hwId}`);
       queryClient.setQueryData<HomeworkRead[]>(["homework", classId], (prev) =>
         prev?.filter((h) => h.id !== hwId),
       );
-      toast.success("Temă ștearsă");
+      toast.success(t("deleted"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -472,9 +472,9 @@ export function AssignmentsTab({ classId, isTeacher }: Props) {
             : h,
         ),
       );
-      toast.success("Problemă eliminată");
+      toast.success(t("problemRemoved"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -488,7 +488,7 @@ export function AssignmentsTab({ classId, isTeacher }: Props) {
         h.id === hwId ? { ...h, assignments: [...h.assignments, added] } : h,
       ),
     );
-    toast.success("Problemă adăugată");
+    toast.success(t("problemAdded"));
   }
 
   if (isLoading) {
@@ -506,25 +506,25 @@ export function AssignmentsTab({ classId, isTeacher }: Props) {
       {isTeacher && !composingHw && (
         <Button size="sm" onClick={() => setComposingHw(true)} className="gap-1.5">
           <Plus className="h-3.5 w-3.5" />
-          Temă nouă
+          {t("newHomework")}
         </Button>
       )}
 
       {composingHw && (
         <div className="rounded-md border border-border p-4 space-y-3">
           <Input
-            placeholder="Titlu temă (ex: Tema 1 - Recursivitate)"
+            placeholder={t("titlePlaceholder")}
             value={hwForm.title}
             onChange={(e) => setHwForm((f) => ({ ...f, title: e.target.value }))}
           />
           <textarea
             className="w-full min-h-[60px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-            placeholder="Descriere (opțional)"
+            placeholder={t("descriptionOptional")}
             value={hwForm.description_md}
             onChange={(e) => setHwForm((f) => ({ ...f, description_md: e.target.value }))}
           />
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Termen limită (opțional)</label>
+            <label className="text-xs text-muted-foreground">{t("dueDateOptional")}</label>
             <Input
               type="datetime-local"
               value={hwForm.due_at}
@@ -533,11 +533,11 @@ export function AssignmentsTab({ classId, isTeacher }: Props) {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Probleme (slug-uri)</label>
+            <label className="text-xs text-muted-foreground">{t("problemsLabel")}</label>
             {hwForm.slugs.map((slug, i) => (
               <div key={i} className="flex gap-2">
                 <Input
-                  placeholder={`slug-${i + 1} (ex: suma-a-doua-numere)`}
+                  placeholder={t("slugPlaceholder")}
                   value={slug}
                   onChange={(e) => setSlug(i, e.target.value)}
                 />
@@ -555,12 +555,12 @@ export function AssignmentsTab({ classId, isTeacher }: Props) {
             ))}
             <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={addSlugField}>
               <Plus className="h-3 w-3" />
-              Adaugă problemă
+              {t("addProblem")}
             </Button>
           </div>
           <div className="flex gap-2">
             <Button size="sm" onClick={handleCreateHw}>
-              Creează temă
+              {t("create")}
             </Button>
             <Button
               size="sm"
@@ -570,7 +570,7 @@ export function AssignmentsTab({ classId, isTeacher }: Props) {
                 setHwForm({ title: "", description_md: "", due_at: "", slugs: [""] });
               }}
             >
-              Anulează
+              {tCommon("cancel")}
             </Button>
           </div>
         </div>
@@ -578,7 +578,7 @@ export function AssignmentsTab({ classId, isTeacher }: Props) {
 
       {homeworks.length === 0 && !composingHw && (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          {isTeacher ? "Nicio temă creată." : "Nicio temă atribuită."}
+          {isTeacher ? t("noHomeworkTeacher") : t("noHomeworkStudent")}
         </p>
       )}
 

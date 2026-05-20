@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { LessonReadSchema } from "@/lib/types";
@@ -14,6 +15,7 @@ interface Props {
 
 export default function EditeazaLectiePage({ params }: Props) {
   const { slug } = params;
+  const t = useTranslations("learning");
   const { user, isLoading: authLoading } = useAuth();
 
   const { data: lesson, isLoading: lessonLoading } = useQuery({
@@ -35,13 +37,13 @@ export default function EditeazaLectiePage({ params }: Props) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
         <p className="text-sm text-muted-foreground">
-          Trebuie să fii profesor sau administrator pentru a edita lecții.
+          {t("permissionDeniedEdit")}
         </p>
         <Link
           href={`/invatare/${slug}`}
           className="mt-4 inline-block text-sm text-primary hover:underline"
         >
-          ← Înapoi la lecție
+          {t("backToLesson")}
         </Link>
       </div>
     );
@@ -50,9 +52,9 @@ export default function EditeazaLectiePage({ params }: Props) {
   if (!lesson) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
-        <p className="text-sm text-muted-foreground">Lecția nu a fost găsită.</p>
+        <p className="text-sm text-muted-foreground">{t("lessonNotFound")}</p>
         <Link href="/invatare" className="mt-4 inline-block text-sm text-primary hover:underline">
-          ← Înapoi la lecții
+          {t("backToLearning")}
         </Link>
       </div>
     );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations, useLocale } from "next-intl";
 import { Plus, Trash2, ExternalLink, Clock, CheckCircle2, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,13 +19,8 @@ interface Props {
   isTeacher: boolean;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  upcoming: "Planificat",
-  ongoing: "Activ",
-  past: "Încheiat",
-};
-
 function StatusBadge({ status }: { status: string }) {
+  const t = useTranslations("classroom.tests");
   return (
     <Badge
       variant={status === "ongoing" ? "default" : status === "upcoming" ? "secondary" : "outline"}
@@ -33,13 +29,13 @@ function StatusBadge({ status }: { status: string }) {
       {status === "ongoing" && <Timer className="mr-1 h-3 w-3" />}
       {status === "upcoming" && <Clock className="mr-1 h-3 w-3" />}
       {status === "past" && <CheckCircle2 className="mr-1 h-3 w-3" />}
-      {STATUS_LABELS[status] ?? status}
+      {status === "upcoming" ? t("statusUpcoming") : status === "ongoing" ? t("statusOngoing") : t("statusPast")}
     </Badge>
   );
 }
 
-function formatDt(iso: string) {
-  return new Date(iso).toLocaleString("ro-RO", {
+function formatDt(iso: string, locale: string) {
+  return new Date(iso).toLocaleString(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -49,6 +45,9 @@ function formatDt(iso: string) {
 }
 
 export function TestsTab({ classId, isTeacher }: Props) {
+  const t = useTranslations("classroom.tests");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -70,7 +69,7 @@ export function TestsTab({ classId, isTeacher }: Props) {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (new Date(endTime) <= new Date(startTime)) {
-      toast.error("Ora de final trebuie să fie după ora de start");
+      toast.error(t("validationEndAfterStart"));
       return;
     }
     setSubmitting(true);
@@ -95,24 +94,24 @@ export function TestsTab({ classId, isTeacher }: Props) {
       setFullscreen(false);
       setCopyPaste(false);
       setShowForm(false);
-      toast.success("Test creat");
+      toast.success(t("created"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDelete(slug: string) {
-    if (!confirm("Ștergi definitiv acest test? Submisiile vor fi șterse.")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     try {
       await api.delete(`/api/classes/${classId}/tests/${slug}`);
       queryClient.setQueryData<ClassTestRead[]>(["class-tests", classId], (prev) =>
         prev?.filter((t) => t.slug !== slug),
       );
-      toast.success("Test șters");
+      toast.success(t("deleted"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -133,29 +132,29 @@ export function TestsTab({ classId, isTeacher }: Props) {
           {!showForm ? (
             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowForm(true)}>
               <Plus className="h-3.5 w-3.5" />
-              Test nou
+              {t("new")}
             </Button>
           ) : (
             <form
               onSubmit={handleCreate}
               className="space-y-4 rounded-md border border-border p-4"
             >
-              <p className="text-sm font-medium">Test nou</p>
+              <p className="text-sm font-medium">{t("new")}</p>
 
               <div className="space-y-1.5">
-                <Label htmlFor="test-title">Titlu</Label>
+                <Label htmlFor="test-title">{t("title")}</Label>
                 <Input
                   id="test-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Test clasa a IX-a"
+                  placeholder={t("titlePlaceholder")}
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="test-start">Start</Label>
+                  <Label htmlFor="test-start">{t("start")}</Label>
                   <Input
                     id="test-start"
                     type="datetime-local"
@@ -165,7 +164,7 @@ export function TestsTab({ classId, isTeacher }: Props) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="test-end">Final</Label>
+                  <Label htmlFor="test-end">{t("end")}</Label>
                   <Input
                     id="test-end"
                     type="datetime-local"
@@ -178,7 +177,7 @@ export function TestsTab({ classId, isTeacher }: Props) {
 
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Securitate
+                  {t("security")}
                 </p>
                 <label className="flex cursor-pointer items-center gap-2.5">
                   <input
@@ -187,7 +186,7 @@ export function TestsTab({ classId, isTeacher }: Props) {
                     onChange={(e) => setFullscreen(e.target.checked)}
                     className="h-4 w-4 rounded border-input"
                   />
-                  <span className="text-sm">Impune ecran complet</span>
+                  <span className="text-sm">{t("requireFullscreen")}</span>
                 </label>
                 <label className="flex cursor-pointer items-center gap-2.5">
                   <input
@@ -196,13 +195,13 @@ export function TestsTab({ classId, isTeacher }: Props) {
                     onChange={(e) => setCopyPaste(e.target.checked)}
                     className="h-4 w-4 rounded border-input"
                   />
-                  <span className="text-sm">Blochează copy-paste</span>
+                  <span className="text-sm">{t("blockCopyPaste")}</span>
                 </label>
               </div>
 
               <div className="flex gap-2">
                 <Button type="submit" size="sm" disabled={submitting}>
-                  {submitting ? "Se salvează..." : "Creează"}
+                  {submitting ? t("submitSaving") : t("submitCreate")}
                 </Button>
                 <Button
                   type="button"
@@ -210,7 +209,7 @@ export function TestsTab({ classId, isTeacher }: Props) {
                   variant="ghost"
                   onClick={() => setShowForm(false)}
                 >
-                  Anulează
+                  {tCommon("cancel")}
                 </Button>
               </div>
             </form>
@@ -220,7 +219,7 @@ export function TestsTab({ classId, isTeacher }: Props) {
 
       {tests.length === 0 ? (
         <p className="text-sm text-muted-foreground py-6 text-center">
-          {isTeacher ? "Niciun test creat încă." : "Niciun test disponibil."}
+          {isTeacher ? t("noTestsTeacher") : t("noTestsStudent")}
         </p>
       ) : (
         <div className="divide-y divide-border rounded-md border border-border">
@@ -235,12 +234,12 @@ export function TestsTab({ classId, isTeacher }: Props) {
                   <StatusBadge status={test.status} />
                   {test.problem_count > 0 && (
                     <span className="text-xs text-muted-foreground">
-                      {test.problem_count} {test.problem_count === 1 ? "problemă" : "probleme"}
+                      {test.problem_count} {test.problem_count === 1 ? t("problemOne") : t("problemMany")}
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {formatDt(test.start_time)} — {formatDt(test.end_time)}
+                  {formatDt(test.start_time, locale)} — {formatDt(test.end_time, locale)}
                 </p>
               </div>
 
@@ -248,7 +247,7 @@ export function TestsTab({ classId, isTeacher }: Props) {
                 <Button asChild size="sm" variant={test.status === "ongoing" ? "default" : "outline"}>
                   <Link href={`/concursuri/${test.slug}`} className="gap-1.5">
                     <ExternalLink className="h-3.5 w-3.5" />
-                    {test.status === "ongoing" ? "Intră" : "Vezi"}
+                    {test.status === "ongoing" ? t("enter") : t("view")}
                   </Link>
                 </Button>
                 {isTeacher && (

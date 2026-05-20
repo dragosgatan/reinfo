@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { UserPlus, UserCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -13,6 +14,8 @@ interface Props {
 }
 
 export function AddFriendButton({ username }: Props) {
+  const t = useTranslations("friends");
+  const tCommon = useTranslations("common");
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
@@ -39,12 +42,12 @@ export function AddFriendButton({ username }: Props) {
           request_id: null,
         });
         queryClient.invalidateQueries({ queryKey: ["social", "friends"] });
-        toast.success("Prieten eliminat");
+        toast.success(t("friendRemoved"));
         return;
       }
 
       if (status.pending_sent) {
-        toast.info("Cererea a fost deja trimisă");
+        toast.info(t("requestAlreadySent"));
         return;
       }
 
@@ -57,7 +60,7 @@ export function AddFriendButton({ username }: Props) {
           request_id: null,
         });
         queryClient.invalidateQueries({ queryKey: ["social", "friends"] });
-        toast.success("Cerere acceptată!");
+        toast.success(t("requestAccepted"));
         return;
       }
 
@@ -67,9 +70,9 @@ export function AddFriendButton({ username }: Props) {
         pending_sent: true,
         request_id: (result as { id: string }).id ?? null,
       });
-      toast.success("Cerere trimisă!");
+      toast.success(t("requestSent"));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Eroare";
+      const msg = err instanceof Error ? err.message : tCommon("error");
       toast.error(msg);
     }
   }
@@ -78,7 +81,7 @@ export function AddFriendButton({ username }: Props) {
     return (
       <Button variant="outline" size="sm" onClick={handleClick}>
         <UserCheck className="mr-1.5 h-3.5 w-3.5" />
-        Prieten
+        {t("friendStatusFriend")}
       </Button>
     );
   }
@@ -87,7 +90,7 @@ export function AddFriendButton({ username }: Props) {
     return (
       <Button variant="outline" size="sm" disabled>
         <Clock className="mr-1.5 h-3.5 w-3.5" />
-        Cerere trimisă
+        {t("friendStatusPending")}
       </Button>
     );
   }
@@ -96,7 +99,7 @@ export function AddFriendButton({ username }: Props) {
     return (
       <Button size="sm" onClick={handleClick}>
         <UserCheck className="mr-1.5 h-3.5 w-3.5" />
-        Acceptă cererea
+        {t("friendStatusAccept")}
       </Button>
     );
   }
@@ -104,7 +107,7 @@ export function AddFriendButton({ username }: Props) {
   return (
     <Button variant="outline" size="sm" onClick={handleClick}>
       <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-      Adaugă prieten
+      {t("friendStatusAdd")}
     </Button>
   );
 }

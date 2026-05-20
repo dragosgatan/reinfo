@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Send, X } from "lucide-react";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function DmPanel({ classId, otherUsername, otherDisplayName, otherAvatarUrl, onClose }: Props) {
+  const t = useTranslations("classroom.dms");
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [body, setBody] = useState("");
@@ -56,7 +58,7 @@ export function DmPanel({ classId, otherUsername, otherDisplayName, otherAvatarU
         (prev) => (prev ? [...prev, dm] : [dm]),
       );
     } catch {
-      toast.error("Eroare la trimitere");
+      toast.error(t("sendError"));
       setBody(text);
     }
   }
@@ -100,7 +102,7 @@ export function DmPanel({ classId, otherUsername, otherDisplayName, otherAvatarU
       <div className="flex gap-2 px-3 py-2 border-t border-border shrink-0">
         <input
           className="flex-1 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          placeholder="Scrie un mesaj..."
+          placeholder={t("placeholder")}
           value={body}
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}

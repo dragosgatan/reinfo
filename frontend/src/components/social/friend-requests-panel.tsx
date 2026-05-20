@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Check, X } from "lucide-react";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +13,8 @@ import { Link } from "@/i18n/navigation";
 import { toast } from "sonner";
 
 export function FriendRequestsPanel() {
+  const t = useTranslations("friends");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
 
   const { data: requests = [], isLoading } = useQuery({
@@ -26,9 +29,9 @@ export function FriendRequestsPanel() {
       queryClient.invalidateQueries({ queryKey: ["social", "friend-requests"] });
       queryClient.invalidateQueries({ queryKey: ["social", "friends"] });
       queryClient.invalidateQueries({ queryKey: ["social", "friend-status", senderUsername] });
-      toast.success("Cerere acceptată!");
+      toast.success(t("requestAccepted"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -36,9 +39,9 @@ export function FriendRequestsPanel() {
     try {
       await api.post(`/api/social/friends/request/${id}/reject`, {});
       queryClient.invalidateQueries({ queryKey: ["social", "friend-requests"] });
-      toast.success("Cerere refuzată");
+      toast.success(t("requestDeclined"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -49,7 +52,7 @@ export function FriendRequestsPanel() {
   if (requests.length === 0) {
     return (
       <p className="py-4 text-center text-sm text-muted-foreground">
-        Nicio cerere de prietenie.
+        {t("noFriendRequests")}
       </p>
     );
   }
@@ -80,7 +83,7 @@ export function FriendRequestsPanel() {
               size="icon"
               className="h-7 w-7"
               onClick={() => accept(req.id, req.sender_username)}
-              title="Acceptă"
+              title={t("acceptRequest")}
             >
               <Check className="h-3.5 w-3.5" />
             </Button>
@@ -89,7 +92,7 @@ export function FriendRequestsPanel() {
               size="icon"
               className="h-7 w-7"
               onClick={() => reject(req.id)}
-              title="Refuză"
+              title={t("declineRequest")}
             >
               <X className="h-3.5 w-3.5" />
             </Button>

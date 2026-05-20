@@ -15,19 +15,6 @@ import { Link } from "@/i18n/navigation";
 
 type ContestType = "competition" | "class_test";
 
-const TYPE_OPTIONS: { value: ContestType; label: string; description: string }[] = [
-  {
-    value: "competition",
-    label: "Concurs",
-    description: "Clasament public, participare liberă",
-  },
-  {
-    value: "class_test",
-    label: "Test de clasă",
-    description: "Clasament ascuns elevilor în timpul testului",
-  },
-];
-
 function toLocalDatetime(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -44,6 +31,19 @@ export default function EditeazaConcursPage({
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  const TYPE_OPTIONS: { value: ContestType; label: string; description: string }[] = [
+    {
+      value: "competition",
+      label: t("typeCompetition"),
+      description: t("typeCompetitionDesc"),
+    },
+    {
+      value: "class_test",
+      label: t("typeClassTest"),
+      description: t("typeClassTestDesc"),
+    },
+  ];
 
   const { data: contest, isLoading } = useQuery({
     queryKey: ["contest", slug],
@@ -75,7 +75,7 @@ export default function EditeazaConcursPage({
       api.patch(`/api/contests/${slug}`, data, ContestDetailSchema),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ["contest", slug] });
-      toast.success("Concursul a fost actualizat.");
+      toast.success(t("contestUpdatedToast"));
       router.push(`/concursuri/${updated.slug}`);
     },
     onError: (err) => {
@@ -88,7 +88,7 @@ export default function EditeazaConcursPage({
     mutationFn: () => api.delete(`/api/contests/${slug}`),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ["contest", slug] });
-      toast.success("Concursul a fost șters.");
+      toast.success(t("contestDeletedToast"));
       router.push("/concursuri");
     },
     onError: (err) => {
@@ -102,7 +102,7 @@ export default function EditeazaConcursPage({
   if (!contest) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center text-sm text-muted-foreground">
-        Concursul nu a fost găsit.
+        {t("contestNotFound")}
       </div>
     );
   }
@@ -114,7 +114,7 @@ export default function EditeazaConcursPage({
   if (!canEdit) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center text-sm text-muted-foreground">
-        Permisiuni insuficiente.
+        {t("insufficientPermissions")}
       </div>
     );
   }
@@ -153,7 +153,7 @@ export default function EditeazaConcursPage({
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-1.5">
-          <Label>Tip</Label>
+          <Label>{t("typeLabel")}</Label>
           <div className="grid grid-cols-2 gap-2">
             {TYPE_OPTIONS.map((opt) => (
               <button
@@ -219,7 +219,7 @@ export default function EditeazaConcursPage({
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium">Securitate</p>
+          <p className="text-sm font-medium">{t("securityHeading")}</p>
           <label className="flex cursor-pointer items-center gap-3">
             <input
               type="checkbox"
@@ -227,7 +227,7 @@ export default function EditeazaConcursPage({
               onChange={(e) => setFullscreenRequired(e.target.checked)}
               className="h-4 w-4 rounded border-input"
             />
-            <span className="text-sm">Impune ecran complet</span>
+            <span className="text-sm">{t("requireFullscreen")}</span>
           </label>
           <label className="flex cursor-pointer items-center gap-3">
             <input
@@ -236,13 +236,13 @@ export default function EditeazaConcursPage({
               onChange={(e) => setCopyPasteBlocked(e.target.checked)}
               className="h-4 w-4 rounded border-input"
             />
-            <span className="text-sm">Blochează copy-paste</span>
+            <span className="text-sm">{t("blockCopyPaste")}</span>
           </label>
         </div>
 
         <div className="flex gap-3">
           <Button type="submit" disabled={updateMutation.isPending} className="flex-1">
-            {updateMutation.isPending ? "Se salvează..." : t("edit.save")}
+            {updateMutation.isPending ? t("saving") : t("edit.save")}
           </Button>
           <Button
             type="button"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { UserMinus } from "lucide-react";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function FriendsList() {
+  const t = useTranslations("friends");
   const queryClient = useQueryClient();
 
   const { data: friends = [], isLoading } = useQuery({
@@ -26,9 +28,9 @@ export function FriendsList() {
       await api.delete(`/api/social/friends/${username}`);
       queryClient.invalidateQueries({ queryKey: ["social", "friends"] });
       queryClient.invalidateQueries({ queryKey: ["social", "friend-status", username] });
-      toast.success("Prieten eliminat");
+      toast.success(t("friendRemoved"));
     } catch {
-      toast.error("Eroare la eliminarea prietenului");
+      toast.error(t("friendRemoveError"));
     }
   }
 
@@ -45,7 +47,7 @@ export function FriendsList() {
   if (friends.length === 0) {
     return (
       <p className="py-6 text-center text-sm text-muted-foreground">
-        Nu ai prieteni adăugați încă.
+        {t("noFriends")}
       </p>
     );
   }
@@ -87,7 +89,7 @@ export function FriendsList() {
             size="icon"
             className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
             onClick={() => removeFriend(f.friend_username)}
-            title="Elimină prieten"
+            title={t("removeFriend")}
           >
             <UserMinus className="h-3.5 w-3.5" />
           </Button>

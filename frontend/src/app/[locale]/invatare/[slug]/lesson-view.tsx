@@ -28,8 +28,6 @@ import {
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import {
-  LESSON_CATEGORY_LABELS,
-  LESSON_LEVEL_LABELS,
   type LessonListItem,
   type LessonRead,
   type QuizQuestion,
@@ -151,7 +149,7 @@ function RunnablePython({ code }: { code: string }) {
     } catch (err) {
       lines.push(String(err));
     }
-    setOutput(lines.join("\n") || "(fără output)");
+    setOutput(lines.join("\n") || t("noOutput"));
     setRunning(false);
   }, [code, pyodide]);
 
@@ -603,14 +601,14 @@ export function LessonView({ lesson, prevLesson, nextLesson }: LessonViewProps) 
               {t("backToLearning")}
             </Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span>{LESSON_CATEGORY_LABELS[lesson.category]}</span>
+            <span>{t(`categories.${lesson.category}` as any)}</span>
           </div>
 
           <div className="mb-8">
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                  {LESSON_LEVEL_LABELS[lesson.level]}
+                  {t(`levels.${lesson.level}` as any)}
                 </span>
                 {!lesson.published && (
                   <span className="rounded bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
@@ -624,7 +622,7 @@ export function LessonView({ lesson, prevLesson, nextLesson }: LessonViewProps) 
                   className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
                 >
                   <Pencil className="h-3 w-3" />
-                  Editează
+                  {t("editBtn")}
                 </Link>
               )}
             </div>

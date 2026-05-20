@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
 import { Trophy, Users, CheckCircle, Plus, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ interface Props {
 
 export default function ContestDetailClient({ slug }: Props) {
   const t = useTranslations("contests");
+  const locale = useLocale();
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
@@ -52,7 +53,7 @@ export default function ContestDetailClient({ slug }: Props) {
   if (isLoading || !contest) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 text-sm text-muted-foreground">
-        Se încarcă...
+        {t("loadingLeaderboard")}
       </div>
     );
   }
@@ -114,7 +115,7 @@ export default function ContestDetailClient({ slug }: Props) {
               <Link href={`/concursuri/${slug}/monitorizare`}>
                 <Button variant="outline" size="sm">
                   <ShieldAlert className="mr-2 h-4 w-4" />
-                  Monitorizare
+                  {t("monitoring")}
                 </Button>
               </Link>
               <Link href={`/concursuri/${slug}/editeaza`}>
@@ -154,12 +155,12 @@ export default function ContestDetailClient({ slug }: Props) {
           {contest.participant_count} {t("participants")}
         </span>
         <span>
-          {new Date(contest.start_time).toLocaleString("ro-RO", {
+          {new Date(contest.start_time).toLocaleString(locale, {
             dateStyle: "medium",
             timeStyle: "short",
           })}{" "}
           →{" "}
-          {new Date(contest.end_time).toLocaleString("ro-RO", {
+          {new Date(contest.end_time).toLocaleString(locale, {
             dateStyle: "medium",
             timeStyle: "short",
           })}

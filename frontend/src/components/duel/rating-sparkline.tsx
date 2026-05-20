@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { type DuelRatingHistoryEntry } from "@/lib/types";
 
 interface RatingSparklineProps {
@@ -9,6 +10,8 @@ interface RatingSparklineProps {
 }
 
 export function RatingSparkline({ history, currentRating, className }: RatingSparklineProps) {
+  const t = useTranslations("duel");
+
   const points =
     history.length === 0
       ? [{ rating: currentRating }]
@@ -17,7 +20,7 @@ export function RatingSparkline({ history, currentRating, className }: RatingSpa
   if (points.length < 2) {
     return (
       <div className={className}>
-        <span className="text-xs text-muted-foreground font-mono">— (fără dueluri)</span>
+        <span className="text-xs text-muted-foreground font-mono">{t("noRecentDuels")}</span>
       </div>
     );
   }

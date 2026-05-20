@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Pin, PinOff, Pencil, Trash2, Plus, X, Check } from "lucide-react";
 import { z } from "zod";
 import ReactMarkdown from "react-markdown";
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export function AnnouncementsTab({ classId, isTeacher }: Props) {
+  const t = useTranslations("classroom.announcements");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
   const [composing, setComposing] = useState(false);
   const [form, setForm] = useState({ title: "", body_md: "" });
@@ -41,9 +44,9 @@ export function AnnouncementsTab({ classId, isTeacher }: Props) {
       );
       setForm({ title: "", body_md: "" });
       setComposing(false);
-      toast.success("Anunț publicat");
+      toast.success(t("published"));
     } catch {
-      toast.error("Eroare la publicare");
+      toast.error(t("errorPublishing"));
     }
   }
 
@@ -53,9 +56,9 @@ export function AnnouncementsTab({ classId, isTeacher }: Props) {
       queryClient.setQueryData<AnnouncementRead[]>(["announcements", classId], (prev) =>
         prev?.filter((a) => a.id !== id),
       );
-      toast.success("Anunț șters");
+      toast.success(t("deleted"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -69,7 +72,7 @@ export function AnnouncementsTab({ classId, isTeacher }: Props) {
         prev?.map((a) => (a.id === ann.id ? updated : a)),
       );
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -83,9 +86,9 @@ export function AnnouncementsTab({ classId, isTeacher }: Props) {
         prev?.map((a) => (a.id === id ? updated : a)),
       );
       setEditingId(null);
-      toast.success("Anunț actualizat");
+      toast.success(t("updated"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -98,34 +101,34 @@ export function AnnouncementsTab({ classId, isTeacher }: Props) {
       {isTeacher && !composing && (
         <Button size="sm" onClick={() => setComposing(true)} className="gap-1.5">
           <Plus className="h-3.5 w-3.5" />
-          Anunț nou
+          {t("new")}
         </Button>
       )}
 
       {composing && (
         <div className="rounded-md border border-border p-4 space-y-3">
           <Input
-            placeholder="Titlu anunț"
+            placeholder={t("titlePlaceholder")}
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
           />
           <textarea
             className="w-full min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
-            placeholder="Conținut (Markdown suportat)"
+            placeholder={t("contentPlaceholder")}
             value={form.body_md}
             onChange={(e) => setForm((f) => ({ ...f, body_md: e.target.value }))}
           />
           <div className="flex gap-2">
-            <Button size="sm" onClick={handleCreate}>Publică</Button>
+            <Button size="sm" onClick={handleCreate}>{t("publish")}</Button>
             <Button size="sm" variant="outline" onClick={() => { setComposing(false); setForm({ title: "", body_md: "" }); }}>
-              Anulează
+              {tCommon("cancel")}
             </Button>
           </div>
         </div>
       )}
 
       {announcements.length === 0 && !composing && (
-        <p className="py-8 text-center text-sm text-muted-foreground">Niciun anunț încă.</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t("noAnnouncements")}</p>
       )}
 
       {announcements.map((ann) => (
@@ -155,7 +158,7 @@ export function AnnouncementsTab({ classId, isTeacher }: Props) {
                 </div>
                 {isTeacher && (
                   <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePin(ann)} title={ann.pinned ? "Desprinde" : "Fixează"}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePin(ann)} title={ann.pinned ? t("unpin") : t("pin")}>
                       {ann.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
                     </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingId(ann.id); setEditForm({ title: ann.title, body_md: ann.body_md }); }}>

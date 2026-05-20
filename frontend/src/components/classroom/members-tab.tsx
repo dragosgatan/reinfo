@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { UserX, MessageSquare, Copy, RefreshCw } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export function MembersTab({ cls, isTeacher, onClassUpdate }: Props) {
+  const t = useTranslations("classroom");
+  const tCommon = useTranslations("common");
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dmTarget, setDmTarget] = useState<ClassMember | null>(null);
@@ -28,9 +31,9 @@ export function MembersTab({ cls, isTeacher, onClassUpdate }: Props) {
     try {
       await api.delete(`/api/classes/${cls.id}/members/${memberId}`);
       onClassUpdate({ ...cls, members: cls.members.filter((m) => m.id !== memberId) });
-      toast.success(`${username} a fost eliminat`);
+      toast.success(t("memberKicked", { username }));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -39,15 +42,15 @@ export function MembersTab({ cls, isTeacher, onClassUpdate }: Props) {
       const updated = await api.post<ClassDetail>(`/api/classes/${cls.id}/regenerate-code`, {});
       queryClient.setQueryData(["class", cls.id], updated);
       onClassUpdate({ ...cls, join_code: updated.join_code });
-      toast.success("Cod regenerat");
+      toast.success(t("codeRegenerated"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
   function copyCode() {
     navigator.clipboard.writeText(cls.join_code);
-    toast.success("Cod copiat");
+    toast.success(t("codeCopied"));
   }
 
   const teacher: ClassMember = {
@@ -64,13 +67,13 @@ export function MembersTab({ cls, isTeacher, onClassUpdate }: Props) {
       <div className="space-y-4">
         {isTeacher && (
           <div className="rounded-md border border-border bg-muted/20 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Cod invitație</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{t("inviteCode")}</p>
             <div className="flex items-center gap-2">
               <code className="font-mono text-lg font-bold tracking-widest">{cls.join_code}</code>
-              <Button variant="outline" size="icon" className="h-7 w-7" onClick={copyCode} title="Copiază">
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={copyCode} title={t("copy")}>
                 <Copy className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleRegenerateCode} title="Regenerează">
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleRegenerateCode} title={t("regenerate")}>
                 <RefreshCw className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -78,7 +81,7 @@ export function MembersTab({ cls, isTeacher, onClassUpdate }: Props) {
         )}
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Profesor</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{t("teacher")}</p>
           <MemberRow
             member={teacher}
             canKick={false}
@@ -90,10 +93,10 @@ export function MembersTab({ cls, isTeacher, onClassUpdate }: Props) {
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-            Elevi ({cls.members.length})
+            {t("students")} ({cls.members.length})
           </p>
           {cls.members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Niciun elev înscris.</p>
+            <p className="text-sm text-muted-foreground">{t("noStudents")}</p>
           ) : (
             <ul className="divide-y divide-border rounded-md border border-border overflow-hidden">
               {cls.members.map((m) => (
@@ -139,6 +142,8 @@ function MemberRow({
   onKick: () => void;
   onDm: () => void;
 }) {
+  const t = useTranslations("classroom");
+
   return (
     <li className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 transition-colors">
       <Link href={`/u/${member.username}`} className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -153,12 +158,12 @@ function MemberRow({
       </Link>
       <div className="flex gap-1 shrink-0">
         {canDm && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDm} title="Mesaj privat">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDm} title={t("privateMessage")}>
             <MessageSquare className="h-3.5 w-3.5" />
           </Button>
         )}
         {canKick && (
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onKick} title="Elimină din clasă">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onKick} title={t("removeFromClass")}>
             <UserX className="h-3.5 w-3.5" />
           </Button>
         )}

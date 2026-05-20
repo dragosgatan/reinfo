@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { ShieldAlert, Flag } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Table,
   TableBody,
@@ -20,29 +21,16 @@ interface Props {
   slug: string;
 }
 
-const FLAG_LABELS: Record<string, string> = {
-  diacritics: "Diacritice în cod",
-  emoji: "Emoji în cod",
-  impossibly_fast: "Prea rapid (< 10s)",
-};
-
-const VIOLATION_LABELS: Record<string, string> = {
-  fingerprint_mismatch: "Fingerprint schimbat",
-  contest_entry: "Intrare concurs",
-  fullscreen_exit: "Ieșire ecran complet",
-  paste_attempt: "Tentativă copy-paste",
-};
-
-function FlagBadge({ reason }: { reason: string }) {
+function FlagBadge({ reason, labels }: { reason: string; labels: Record<string, string> }) {
   return (
     <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
       <Flag className="h-3 w-3" />
-      {FLAG_LABELS[reason] ?? reason}
+      {labels[reason] ?? reason}
     </span>
   );
 }
 
-function ViolationBadge({ type }: { type: string }) {
+function ViolationBadge({ type, labels }: { type: string; labels: Record<string, string> }) {
   const isEntry = type === "contest_entry";
   return (
     <span
@@ -54,13 +42,28 @@ function ViolationBadge({ type }: { type: string }) {
       ].join(" ")}
     >
       <ShieldAlert className="h-3 w-3" />
-      {VIOLATION_LABELS[type] ?? type}
+      {labels[type] ?? type}
     </span>
   );
 }
 
 export default function MonitorizareClient({ slug }: Props) {
+  const t = useTranslations("contests");
   const { user } = useAuth();
+  const locale = useLocale();
+
+  const FLAG_LABELS: Record<string, string> = {
+    diacritics: t("flagDiacritics"),
+    emoji: t("flagEmoji"),
+    impossibly_fast: t("flagImpossiblyFast"),
+  };
+
+  const VIOLATION_LABELS: Record<string, string> = {
+    fingerprint_mismatch: t("violationFingerprint"),
+    contest_entry: t("violationContestEntry"),
+    fullscreen_exit: t("violationFullscreenExit"),
+    paste_attempt: t("violationPasteAttempt"),
+  };
 
   const { data: contest } = useQuery({
     queryKey: ["contest", slug],
@@ -89,7 +92,7 @@ export default function MonitorizareClient({ slug }: Props) {
   if (!user) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center text-sm text-muted-foreground">
-        Trebuie să fii autentificat.
+        {t("loadingLeaderboard")}
       </div>
     );
   }
@@ -97,7 +100,7 @@ export default function MonitorizareClient({ slug }: Props) {
   if (contest && !canView) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center text-sm text-muted-foreground">
-        Permisiuni insuficiente.
+        {t("insufficientPermissions")}
       </div>
     );
   }
@@ -115,28 +118,27 @@ export default function MonitorizareClient({ slug }: Props) {
 
       <div className="mb-1 flex items-center gap-2">
         <ShieldAlert className="h-5 w-5" />
-        <h1 className="text-xl font-semibold tracking-tight">Monitorizare</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("monitoring")}</h1>
       </div>
       <p className="mb-8 text-sm text-muted-foreground">
-        Submisii marcate automat și evenimente de securitate din browser. Niciun verdict nu este
-        afectat.
+        {t("monitoringDesc")}
       </p>
 
       <section className="mb-10">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Submisii marcate ({flaggedLoading ? "…" : flagged.length})
+          {t("flaggedSubmissions")} ({flaggedLoading ? "…" : flagged.length})
         </h2>
         {flagged.length === 0 && !flaggedLoading ? (
-          <p className="text-sm text-muted-foreground">Nicio submisie marcată.</p>
+          <p className="text-sm text-muted-foreground">{t("noFlaggedSubmissions")}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Utilizator</TableHead>
-                <TableHead>Problemă</TableHead>
-                <TableHead>Motiv</TableHead>
-                <TableHead>Limbaj</TableHead>
-                <TableHead>Timp</TableHead>
+                <TableHead>{t("columnUser")}</TableHead>
+                <TableHead>{t("columnProblem")}</TableHead>
+                <TableHead>{t("columnReason")}</TableHead>
+                <TableHead>{t("columnLanguage")}</TableHead>
+                <TableHead>{t("columnTime")}</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -146,11 +148,11 @@ export default function MonitorizareClient({ slug }: Props) {
                   <TableCell className="font-mono text-sm">{sub.user_id.slice(0, 8)}</TableCell>
                   <TableCell className="font-medium">{sub.problem_title}</TableCell>
                   <TableCell>
-                    {sub.flag_reason && <FlagBadge reason={sub.flag_reason} />}
+                    {sub.flag_reason && <FlagBadge reason={sub.flag_reason} labels={FLAG_LABELS} />}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{sub.language}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(sub.created_at).toLocaleTimeString("ro-RO", {
+                    {new Date(sub.created_at).toLocaleTimeString(locale, {
                       hour: "2-digit",
                       minute: "2-digit",
                       second: "2-digit",
@@ -161,7 +163,7 @@ export default function MonitorizareClient({ slug }: Props) {
                       href={`/submisii/${sub.id}`}
                       className="text-xs text-primary hover:underline"
                     >
-                      Detalii
+                      {t("detailsLink")}
                     </Link>
                   </TableCell>
                 </TableRow>
@@ -173,18 +175,18 @@ export default function MonitorizareClient({ slug }: Props) {
 
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Evenimente browser ({violationsLoading ? "…" : violations.length})
+          {t("browserEvents")} ({violationsLoading ? "…" : violations.length})
         </h2>
         {violations.length === 0 && !violationsLoading ? (
-          <p className="text-sm text-muted-foreground">Niciun eveniment înregistrat.</p>
+          <p className="text-sm text-muted-foreground">{t("noBrowserEvents")}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Utilizator</TableHead>
-                <TableHead>Tip</TableHead>
-                <TableHead>Detalii</TableHead>
-                <TableHead>Timp</TableHead>
+                <TableHead>{t("columnUser")}</TableHead>
+                <TableHead>{t("columnType")}</TableHead>
+                <TableHead>{t("columnDetails")}</TableHead>
+                <TableHead>{t("columnTime")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -192,13 +194,13 @@ export default function MonitorizareClient({ slug }: Props) {
                 <TableRow key={v.id}>
                   <TableCell className="font-mono text-sm">{v.user_id.slice(0, 8)}</TableCell>
                   <TableCell>
-                    <ViolationBadge type={v.violation_type} />
+                    <ViolationBadge type={v.violation_type} labels={VIOLATION_LABELS} />
                   </TableCell>
                   <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
                     {v.details ? JSON.stringify(v.details) : "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(v.created_at).toLocaleTimeString("ro-RO", {
+                    {new Date(v.created_at).toLocaleTimeString(locale, {
                       hour: "2-digit",
                       minute: "2-digit",
                       second: "2-digit",

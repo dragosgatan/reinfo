@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Bell, Swords } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -28,12 +29,13 @@ function DuelRequestItem({
   onAccept: () => void;
   onDecline: () => void;
 }) {
+  const t = useTranslations("friends");
   return (
     <div className="px-3 py-2.5 hover:bg-muted transition-colors">
       <div className="flex items-center gap-2 mb-1.5">
         <Swords className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <p className="text-sm">
-          <span className="font-medium">{req.from_username}</span> te provoacă la duel
+          {t("duelRequestNotification", { username: req.from_username })}
         </p>
       </div>
       <p className="text-xs text-muted-foreground mb-2">
@@ -41,10 +43,10 @@ function DuelRequestItem({
       </p>
       <div className="flex gap-1.5">
         <Button size="sm" className="h-6 text-xs" onClick={onAccept}>
-          Acceptă
+          {t("acceptRequest")}
         </Button>
         <Button size="sm" variant="outline" className="h-6 text-xs" onClick={onDecline}>
-          Refuză
+          {t("declineRequest")}
         </Button>
       </div>
     </div>
@@ -58,6 +60,7 @@ function SocialNotificationItem({
   notif: NotificationRead;
   onRead: () => void;
 }) {
+  const t = useTranslations("friends");
   let payload: Record<string, string> = {};
   try {
     payload = JSON.parse(notif.payload);
@@ -67,8 +70,8 @@ function SocialNotificationItem({
 
   const label =
     notif.type === "friend_request"
-      ? `${payload.from_display_name ?? payload.from_username} ți-a trimis o cerere de prietenie`
-      : `${payload.from_display_name ?? payload.from_username} ți-a acceptat cererea de prietenie`;
+      ? t("friendRequestNotification", { name: payload.from_display_name ?? payload.from_username })
+      : t("friendAcceptedNotification", { name: payload.from_display_name ?? payload.from_username });
 
   const href =
     notif.type === "friend_request" || notif.type === "friend_accepted"
@@ -96,6 +99,8 @@ function SocialNotificationItem({
 }
 
 export function NotificationBell() {
+  const t = useTranslations("friends");
+  const tCommon = useTranslations("common");
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -130,12 +135,12 @@ export function NotificationBell() {
   async function handleAcceptDuel(requestId: string) {
     try {
       const duel = await api.post<{ id: string }>(`/api/duels/requests/${requestId}/accept`, {});
-      toast.success("Duel început!");
+      toast.success(t("duelStarted"));
       setDuelRequests((prev) => prev.filter((r) => r.id !== requestId));
       setOpen(false);
       router.push(`/duel/${duel.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     }
   }
 
@@ -143,9 +148,9 @@ export function NotificationBell() {
     try {
       await api.post(`/api/duels/requests/${requestId}/decline`, {});
       setDuelRequests((prev) => prev.filter((r) => r.id !== requestId));
-      toast.success("Provocare refuzată.");
+      toast.success(t("challengeDeclined"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     }
   }
 
@@ -185,13 +190,13 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between px-3 py-2 border-b">
-          <span className="text-sm font-medium">Notificări</span>
+          <span className="text-sm font-medium">{t("notificationBell")}</span>
           {unreadSocial > 0 && (
             <button
               onClick={markAllRead}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              Marchează toate citite
+              {t("markAllRead")}
             </button>
           )}
         </div>
@@ -199,7 +204,7 @@ export function NotificationBell() {
         <div className="max-h-96 overflow-y-auto">
           {!hasItems ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-              Nicio notificare
+              {t("noNotifications")}
             </p>
           ) : (
             <>
@@ -207,7 +212,7 @@ export function NotificationBell() {
                 <div>
                   {duelRequests.length > 0 && notifications.length > 0 && (
                     <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Dueluri
+                      {t("duelsSection")}
                     </p>
                   )}
                   <div className="divide-y divide-border">
@@ -226,7 +231,7 @@ export function NotificationBell() {
                 <div>
                   {duelRequests.length > 0 && (
                     <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Activitate
+                      {t("activitySection")}
                     </p>
                   )}
                   {notifications.map((n) => (

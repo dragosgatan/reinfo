@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SubmissionDetailClient } from "./submission-detail-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getTranslations } from "next-intl/server";
 
 interface Props {
   params: Promise<{ id: string; locale: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  return { title: `Submisia ${id.slice(0, 8)}` };
+  const { id, locale } = await params;
+  const t = await getTranslations({ locale, namespace: "submissions" });
+  return { title: t("submissionTitle", { id: id.slice(0, 8) }) };
 }
 
 function DetailSkeleton() {

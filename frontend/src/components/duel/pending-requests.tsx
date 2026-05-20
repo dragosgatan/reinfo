@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,9 @@ import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 
 export function PendingDuelRequests() {
+  const t = useTranslations("friends");
+  const tDuel = useTranslations("duel");
+  const tCommon = useTranslations("common");
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [requests, setRequests] = useState<DuelRequestRead[]>([]);
@@ -45,11 +49,11 @@ export function PendingDuelRequests() {
         `/api/duels/requests/${requestId}/accept`,
         {},
       );
-      toast.success("Duel început!");
+      toast.success(t("duelStarted"));
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
       router.push(`/duel/${duel.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     }
   };
 
@@ -57,9 +61,9 @@ export function PendingDuelRequests() {
     try {
       await api.post(`/api/duels/requests/${requestId}/decline`, {});
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
-      toast.success("Provocare refuzată.");
+      toast.success(t("challengeDeclined"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     }
   };
 
@@ -82,7 +86,7 @@ export function PendingDuelRequests() {
       <PopoverContent className="w-72 p-0" align="end">
         <div className="border-b border-border px-3 py-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Provocări la duel
+            {t("pendingChallenges")}
           </p>
         </div>
         <div className="divide-y divide-border">
@@ -90,7 +94,7 @@ export function PendingDuelRequests() {
             <div key={req.id} className="px-3 py-2.5">
               <p className="text-sm">
                 <span className="font-mono font-semibold">{req.from_username}</span>{" "}
-                te provoacă
+                {t("challengesYou")}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {req.time_limit_minutes} min · dif. {req.difficulty_min}–{req.difficulty_max}
@@ -101,7 +105,7 @@ export function PendingDuelRequests() {
                   className="h-6 text-xs"
                   onClick={() => handleAccept(req.id)}
                 >
-                  Acceptă
+                  {tDuel("accept")}
                 </Button>
                 <Button
                   size="sm"
@@ -109,7 +113,7 @@ export function PendingDuelRequests() {
                   className="h-6 text-xs"
                   onClick={() => handleDecline(req.id)}
                 >
-                  Refuză
+                  {tDuel("decline")}
                 </Button>
               </div>
             </div>

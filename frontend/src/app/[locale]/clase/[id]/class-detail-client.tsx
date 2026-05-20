@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Trash2, Archive, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,23 +20,25 @@ import { cn } from "@/lib/utils";
 
 type Tab = "announcements" | "assignments" | "tests" | "members" | "chat";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "announcements", label: "Anunțuri" },
-  { id: "assignments", label: "Probleme" },
-  { id: "tests", label: "Teste" },
-  { id: "members", label: "Membri" },
-  { id: "chat", label: "Chat" },
-];
-
 interface Props {
   classId: string;
 }
 
 export function ClassDetailClient({ classId }: Props) {
   const { user } = useAuth();
+  const t = useTranslations("classes");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>("announcements");
+
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "announcements", label: t("tabAnnouncements") },
+    { id: "assignments", label: t("tabAssignments") },
+    { id: "tests", label: t("tabTests") },
+    { id: "members", label: t("tabMembers") },
+    { id: "chat", label: t("tabChat") },
+  ];
 
   const { data: cls, isLoading, error } = useQuery({
     queryKey: ["class", classId],
@@ -48,16 +51,16 @@ export function ClassDetailClient({ classId }: Props) {
   }
 
   async function handleLeave() {
-    if (!confirm("Ești sigur că vrei să părăsești această clasă?")) return;
+    if (!confirm(t("leaveConfirm"))) return;
     try {
       await api.delete(`/api/classes/${classId}/leave`);
       queryClient.setQueryData<ClassDetail[] | undefined>(["classes"], (prev) =>
         prev?.filter((c) => c.id !== classId),
       );
-      toast.success("Ai părăsit clasa");
+      toast.success(t("leftClass"));
       router.push("/clase");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     }
   }
 
@@ -68,23 +71,23 @@ export function ClassDetailClient({ classId }: Props) {
         archived: !cls.archived,
       });
       handleClassUpdate(updated);
-      toast.success(cls.archived ? "Clasă reactivată" : "Clasă arhivată");
+      toast.success(cls.archived ? t("classReactivated") : t("classArchived"));
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
   async function handleDelete() {
-    if (!confirm("Ștergi definitiv această clasă? Acțiunea nu poate fi anulată.")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     try {
       await api.delete(`/api/classes/${classId}`);
       queryClient.setQueryData<ClassDetail[] | undefined>(["classes"], (prev) =>
         prev?.filter((c) => c.id !== classId),
       );
-      toast.success("Clasă ștearsă");
+      toast.success(t("classDeleted"));
       router.push("/clase");
     } catch {
-      toast.error("Eroare");
+      toast.error(tCommon("error"));
     }
   }
 
@@ -101,9 +104,9 @@ export function ClassDetailClient({ classId }: Props) {
   if (error || !cls) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <p className="text-sm text-muted-foreground">Clasa nu a fost găsită sau nu ai acces.</p>
+        <p className="text-sm text-muted-foreground">{t("classNotFound")}</p>
         <Button asChild variant="outline" size="sm" className="mt-4">
-          <Link href="/clase">Înapoi la clase</Link>
+          <Link href="/clase">{t("backToClasses")}</Link>
         </Button>
       </div>
     );
@@ -123,8 +126,8 @@ export function ClassDetailClient({ classId }: Props) {
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold tracking-tight truncate">{cls.name}</h1>
-              {cls.archived && <Badge variant="secondary">Arhivat</Badge>}
-              {isTeacher && <Badge variant="outline">Profesor</Badge>}
+              {cls.archived && <Badge variant="secondary">{t("archived")}</Badge>}
+              {isTeacher && <Badge variant="outline">{t("teacher")}</Badge>}
             </div>
             {cls.description_md && (
               <p className="text-sm text-muted-foreground mt-0.5 truncate">{cls.description_md}</p>
@@ -142,7 +145,7 @@ export function ClassDetailClient({ classId }: Props) {
                 onClick={handleArchive}
               >
                 <Archive className="h-3.5 w-3.5" />
-                {cls.archived ? "Reactivează" : "Arhivează"}
+                {cls.archived ? t("reactivate") : t("archive")}
               </Button>
               <Button
                 variant="ghost"
@@ -151,7 +154,7 @@ export function ClassDetailClient({ classId }: Props) {
                 onClick={handleDelete}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                Șterge
+                {tCommon("delete")}
               </Button>
             </>
           ) : (
@@ -162,14 +165,14 @@ export function ClassDetailClient({ classId }: Props) {
               onClick={handleLeave}
             >
               <LogOut className="h-3.5 w-3.5" />
-              Părăsește
+              {t("leave")}
             </Button>
           )}
         </div>
       </div>
 
       <div className="border-b border-border">
-        <nav className="flex gap-0" aria-label="Secțiuni clasă">
+        <nav className="flex gap-0" aria-label={t("classSections")}>
           {TABS.map(({ id, label }) => (
             <button
               key={id}

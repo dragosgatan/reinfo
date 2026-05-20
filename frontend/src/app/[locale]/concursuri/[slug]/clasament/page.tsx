@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { Skeleton } from "@/components/ui/skeleton";
 import LeaderboardClient from "./leaderboard-client";
 
-export async function generateMetadata(): Promise<Metadata> {
-  return { title: "Clasament" };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "contests" });
+  return { title: t("leaderboard") };
 }
 
 export default async function LeaderboardPage({
