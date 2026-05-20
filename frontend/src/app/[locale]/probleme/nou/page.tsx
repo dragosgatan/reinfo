@@ -183,7 +183,7 @@ export default function NouProblemPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: sourceText, sourceLang: statementLang, targetLangs }),
       });
-      const data = await res.json() as { results?: Record<string, string>; error?: string };
+      const data = await res.json() as { results?: Record<string, string>; error?: string; model?: string };
 
       if (!res.ok || data.error) {
         toast.error(data.error ?? "Traducerea a eșuat.");
