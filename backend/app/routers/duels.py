@@ -605,7 +605,10 @@ async def _build_lobby(session: AsyncSession, current_user: User | None) -> Lobb
     recent_rows = (
         await session.scalars(
             select(Duel)
-            .where(Duel.status.in_([DuelStatus.finished, DuelStatus.resigned, DuelStatus.drawn]))
+            .where(
+                Duel.status.in_([DuelStatus.finished, DuelStatus.resigned, DuelStatus.drawn]),
+                Duel.finished_at.is_not(None),
+            )
             .options(
                 selectinload(Duel.challenger),
                 selectinload(Duel.opponent),
