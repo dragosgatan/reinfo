@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
           messages: [
             {
               role: "system",
-              content: `You are a translator. Translate the following text to ${langName}. Preserve all technical terms, variable names, mathematical notation, and formatting exactly as they appear. Output only the translated text, nothing else.`,
+              content: `You are a translator for a competitive programming platform. Translate the following Markdown document to ${langName}. Rules you must follow without exception:\n1. Output the COMPLETE document — never truncate, summarize, or omit any part.\n2. Preserve ALL Markdown structure exactly: headings, bullet lists, numbered lists, bold/italic, tables, blockquotes, horizontal rules.\n3. Preserve ALL code blocks verbatim (content between triple backticks or indented). Do not translate code, variable names, or identifiers inside code blocks.\n4. Preserve ALL LaTeX math exactly as written (inline $...$ and display $$...$$). Do not translate or reformat math.\n5. Preserve ALL HTML comments (e.g. <!-- quiz:q1 -->) verbatim.\n6. Preserve ALL URLs, slugs, and file paths verbatim.\n7. Only translate the natural-language prose — headings, paragraph text, list item text.\n8. Output only the translated Markdown, nothing else. No explanations, no preamble.`,
             },
             { role: "user", content: text },
           ],

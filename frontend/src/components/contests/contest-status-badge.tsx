@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import type { ContestStatus } from "@/lib/types";
 
@@ -5,13 +8,13 @@ interface Props {
   status: ContestStatus;
 }
 
-const CONFIG: Record<ContestStatus, { label: string; variant: "default" | "secondary" | "outline" }> = {
-  upcoming: { label: "Viitor", variant: "secondary" },
-  ongoing: { label: "Activ", variant: "default" },
-  past: { label: "Trecut", variant: "outline" },
+const VARIANT: Record<ContestStatus, "default" | "secondary" | "outline"> = {
+  upcoming: "secondary",
+  ongoing: "default",
+  past: "outline",
 };
 
 export function ContestStatusBadge({ status }: Props) {
-  const { label, variant } = CONFIG[status];
-  return <Badge variant={variant}>{label}</Badge>;
+  const t = useTranslations("contests");
+  return <Badge variant={VARIANT[status]}>{t(status as Parameters<typeof t>[0])}</Badge>;
 }

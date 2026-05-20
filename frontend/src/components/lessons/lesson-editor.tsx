@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2, Plus, Trash2, X } from "lucide-react";
+import { Eye, EyeOff, Languages, Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,8 @@ const schema = z.object({
   level: z.enum(LESSON_LEVELS),
   ordinal: z.coerce.number().int().min(0).default(0),
   content_md: z.string().default(""),
+  content_md_en: z.string().default(""),
+  content_md_hu: z.string().default(""),
   teacher_notes_md: z.string().default(""),
 });
 
@@ -219,6 +222,8 @@ export function LessonEditor({ initial }: LessonEditorProps) {
   const isEdit = !!initial;
 
   const [submitting, setSubmitting] = useState(false);
+  const [contentLang, setContentLang] = useState<"ro" | "en" | "hu">("ro");
+  const [translating, setTranslating] = useState(false);
   const publishIntentRef = useRef<boolean>(initial?.published ?? false);
   const [quizzes, setQuizzes] = useState<QuizDraft[]>(
     (initial?.quizzes as QuizQuestion[] | undefined)?.map((q) => ({
@@ -229,7 +234,6 @@ export function LessonEditor({ initial }: LessonEditorProps) {
       explanation: q.explanation,
     })) ?? [],
   );
-  const [contentTab, setContentTab] = useState<"edit" | "preview">("edit");
   const [notesTab, setNotesTab] = useState<"edit" | "preview">("edit");
 
   const {
@@ -247,6 +251,8 @@ export function LessonEditor({ initial }: LessonEditorProps) {
       level: initial?.level ?? "beginner",
       ordinal: initial?.ordinal ?? 0,
       content_md: initial?.content_md ?? "",
+      content_md_en: initial?.content_md_en ?? "",
+      content_md_hu: initial?.content_md_hu ?? "",
       teacher_notes_md: initial?.teacher_notes_md ?? "",
     },
   });
@@ -254,6 +260,8 @@ export function LessonEditor({ initial }: LessonEditorProps) {
   const watchTitle = watch("title");
   const watchSlug = watch("slug");
   const watchContent = watch("content_md");
+  const watchContentEn = watch("content_md_en");
+  const watchContentHu = watch("content_md_hu");
   const watchNotes = watch("teacher_notes_md");
 
   const handleTitleChange = useCallback(
@@ -279,6 +287,50 @@ export function LessonEditor({ initial }: LessonEditorProps) {
     setQuizzes((prev) => prev.map((q, j) => (j === i ? draft : q)));
   }, []);
 
+  const handleTranslate = useCallback(async () => {
+    const sourceText =
+      contentLang === "ro"
+        ? watchContent
+        : contentLang === "en"
+          ? watchContentEn
+          : watchContentHu;
+
+    if (!sourceText?.trim()) {
+      toast.error("Conținutul sursă este gol.");
+      return;
+    }
+
+    const targetLangs = (["ro", "en", "hu"] as const).filter((l) => l !== contentLang);
+
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sourceText, sourceLang: contentLang, targetLangs }),
+      });
+      const data = await res.json() as { results?: Record<string, string>; error?: string; model?: string };
+
+      if (!res.ok || data.error) {
+        toast.error(data.error ?? "Traducerea a eșuat.");
+        return;
+      }
+
+      const results = data.results ?? {};
+      if (results.ro !== undefined) setValue("content_md", results.ro);
+      if (results.en !== undefined) setValue("content_md_en", results.en);
+      if (results.hu !== undefined) setValue("content_md_hu", results.hu);
+
+      const modelShort = (data.model ?? "").split("/").pop()?.replace(":free", "") ?? "";
+      const langs = targetLangs.map((l) => l.toUpperCase()).join(", ");
+      toast.success(`Tradus în ${langs}${modelShort ? ` · ${modelShort}` : ""}`);
+    } catch {
+      toast.error("Eroare la traducere.");
+    } finally {
+      setTranslating(false);
+    }
+  }, [contentLang, watchContent, watchContentEn, watchContentHu, setValue]);
+
   const onSubmit = useCallback(
     async (values: FormValues) => {
       setSubmitting(true);
@@ -291,6 +343,8 @@ export function LessonEditor({ initial }: LessonEditorProps) {
           level: values.level,
           ordinal: values.ordinal,
           content_md: values.content_md,
+          content_md_en: values.content_md_en || null,
+          content_md_hu: values.content_md_hu || null,
           teacher_notes_md: values.teacher_notes_md || null,
           quizzes: quizzes.filter((q) => q.question.trim()),
           published: publishing,
@@ -404,47 +458,112 @@ export function LessonEditor({ initial }: LessonEditorProps) {
           </div>
 
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between">
               <Label>Conținut (Markdown + LaTeX)</Label>
-              <div className="flex rounded border border-border text-xs">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setContentTab("edit")}
-                  className={cn(
-                    "flex items-center gap-1 px-2.5 py-1 transition-colors",
-                    contentTab === "edit"
-                      ? "bg-muted font-medium"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
+                  onClick={handleTranslate}
+                  disabled={translating}
+                  className="flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
+                  title={`Traduce din ${contentLang.toUpperCase()}`}
                 >
-                  <EyeOff className="h-3 w-3" />
-                  Editare
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setContentTab("preview")}
-                  className={cn(
-                    "flex items-center gap-1 px-2.5 py-1 transition-colors",
-                    contentTab === "preview"
-                      ? "bg-muted font-medium"
-                      : "text-muted-foreground hover:text-foreground",
+                  {translating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Languages className="h-3 w-3" />
                   )}
-                >
-                  <Eye className="h-3 w-3" />
-                  Preview
+                  Traduce din {contentLang.toUpperCase()}
                 </button>
+                <div className="flex rounded border border-border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setContentLang("ro")}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      contentLang === "ro"
+                        ? "bg-muted font-medium"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    RO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContentLang("en")}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      contentLang === "en"
+                        ? "bg-muted font-medium"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    EN
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContentLang("hu")}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      contentLang === "hu"
+                        ? "bg-muted font-medium"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    HU
+                  </button>
+                </div>
               </div>
             </div>
-            {contentTab === "edit" ? (
-              <textarea
-                {...register("content_md")}
-                rows={16}
-                placeholder={`# Titlul secțiunii\n\nConținut markdown.\n\n\`\`\`python\nprint("Hello")\n\`\`\`\n\n<!-- quiz:q1 -->`}
-                className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            ) : (
-              <ContentPreview markdown={watchContent ?? ""} />
-            )}
+            <Tabs defaultValue="edit">
+              <TabsList className="mb-2">
+                <TabsTrigger value="edit">
+                  <EyeOff className="mr-1.5 h-3 w-3" />
+                  Editare
+                </TabsTrigger>
+                <TabsTrigger value="preview">
+                  <Eye className="mr-1.5 h-3 w-3" />
+                  Preview
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="edit">
+                <div className={cn(contentLang !== "ro" && "hidden")}>
+                  <textarea
+                    {...register("content_md")}
+                    rows={16}
+                    placeholder={`# Titlul secțiunii\n\nConținut markdown.\n\n\`\`\`python\nprint("Hello")\n\`\`\`\n\n<!-- quiz:q1 -->`}
+                    className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+                <div className={cn(contentLang !== "en" && "hidden")}>
+                  <textarea
+                    {...register("content_md_en")}
+                    rows={16}
+                    placeholder="Lesson content in English (Markdown + LaTeX). Optional."
+                    className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+                <div className={cn(contentLang !== "hu" && "hidden")}>
+                  <textarea
+                    {...register("content_md_hu")}
+                    rows={16}
+                    placeholder="A lecke tartalma magyarul (Markdown + LaTeX). Opcionális."
+                    className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+              </TabsContent>
+              <TabsContent value="preview">
+                <ContentPreview
+                  markdown={
+                    (contentLang === "ro"
+                      ? watchContent
+                      : contentLang === "en"
+                        ? watchContentEn
+                        : watchContentHu) ?? ""
+                  }
+                />
+              </TabsContent>
+            </Tabs>
           </div>
 
           <div className="space-y-1.5">

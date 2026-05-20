@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import {
@@ -16,13 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Swords, Clock, Users, Trophy, X } from "lucide-react";
-
-const TIME_CONTROLS = [
-  { minutes: 15, label: "Rapid", description: "15 min" },
-  { minutes: 30, label: "Standard", description: "30 min" },
-  { minutes: 45, label: "Lung", description: "45 min" },
-  { minutes: 60, label: "Maraton", description: "60 min" },
-];
 
 function formatElapsed(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -93,15 +86,14 @@ function ActiveDuelRow({ duel }: { duel: ActiveDuelSummary }) {
 }
 
 function RecentDuelRow({ duel }: { duel: RecentDuelSummary }) {
+  const t = useTranslations("duel");
   const locale = useLocale();
 
   const resultLabel =
     duel.status === "drawn"
-      ? "Remiză"
+      ? t("draw")
       : duel.winner_username
-        ? duel.winner_username === duel.challenger_username
-          ? `${duel.challenger_username} câștigă`
-          : `${duel.opponent_username} câștigă`
+        ? t("winsLabel", { username: duel.winner_username })
         : "—";
 
   return (
@@ -146,7 +138,7 @@ function QueueCard({
   joining,
   leaving,
 }: {
-  tc: (typeof TIME_CONTROLS)[number];
+  tc: { minutes: number; label: string; description: string };
   count: number;
   inQueue: boolean;
   myEntry: QueueEntryRead | null;
@@ -155,6 +147,7 @@ function QueueCard({
   joining: boolean;
   leaving: boolean;
 }) {
+  const t = useTranslations("duel");
   const isMyTimeControl = myEntry?.time_limit_minutes === tc.minutes;
 
   return (
@@ -180,7 +173,7 @@ function QueueCard({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Căutăm adversar…
+            {t("searching")}
           </div>
           <Button
             variant="ghost"
@@ -194,7 +187,7 @@ function QueueCard({
             ) : (
               <X className="w-3 h-3" />
             )}
-            Anulează
+            {t("cancel")}
           </Button>
         </div>
       ) : (
@@ -206,7 +199,7 @@ function QueueCard({
           disabled={inQueue || joining}
         >
           {joining ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-          {inQueue ? "Ocupat" : "Intră în coadă"}
+          {inQueue ? t("busy") : t("joinQueue")}
         </Button>
       )}
     </div>
@@ -214,9 +207,17 @@ function QueueCard({
 }
 
 export default function DuelLobbyPage() {
+  const t = useTranslations("duel");
   const { user } = useAuth();
   const router = useRouter();
   const locale = useLocale();
+
+  const TIME_CONTROLS = [
+    { minutes: 15, label: t("timeRapid"), description: "15 min" },
+    { minutes: 30, label: t("timeStandard"), description: "30 min" },
+    { minutes: 45, label: t("timeLong"), description: "45 min" },
+    { minutes: 60, label: t("timeMarathon"), description: "60 min" },
+  ];
 
   const [lobby, setLobby] = useState<LobbyResponse | null>(null);
   const [joining, setJoining] = useState(false);
@@ -230,7 +231,6 @@ export default function DuelLobbyPage() {
       const parsed = LobbyResponseSchema.safeParse(raw);
       if (parsed.success) {
         setLobby(parsed.data);
-        // Redirect if matched
         if (parsed.data.your_queue_entry?.status === "matched") {
           const duelId = parsed.data.your_queue_entry.matched_duel_id;
           if (duelId) {
@@ -291,17 +291,15 @@ export default function DuelLobbyPage() {
       <div className="flex items-center gap-3">
         <Swords className="w-6 h-6 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dueluri</h1>
-          <p className="text-sm text-muted-foreground">
-            Provoacă un adversar de nivel similar la o problemă de programare
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
       </div>
 
       {/* Time controls */}
       <div>
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
-          Timp de gândire
+          {t("thinkingTime")}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {TIME_CONTROLS.map((tc) => (
@@ -324,9 +322,9 @@ export default function DuelLobbyPage() {
               href={`/${locale}/auth/login`}
               className="underline underline-offset-2"
             >
-              Autentifică-te
+              {t("loginToQueue")}
             </Link>{" "}
-            pentru a intra în coadă.
+            {t("loginToQueueSuffix")}
           </p>
         )}
       </div>
@@ -337,7 +335,7 @@ export default function DuelLobbyPage() {
           <div className="flex items-center gap-2 mb-3">
             <Clock className="w-4 h-4 text-muted-foreground" />
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Dueluri active
+              {t("activeDuels")}
             </h2>
             {lobby && (
               <Badge variant="outline" className="text-xs ml-auto">
@@ -349,11 +347,11 @@ export default function DuelLobbyPage() {
             {lobby === null ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Se încarcă…
+                {t("loading")}
               </div>
             ) : lobby.active_duels.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4">
-                Niciun duel activ momentan.
+                {t("noActiveDuels")}
               </p>
             ) : (
               lobby.active_duels.map((d) => (
@@ -368,18 +366,18 @@ export default function DuelLobbyPage() {
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="w-4 h-4 text-muted-foreground" />
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Dueluri recente
+              {t("recentDuels")}
             </h2>
           </div>
           <div className="space-y-2">
             {lobby === null ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Se încarcă…
+                {t("loading")}
               </div>
             ) : lobby.recent_duels.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4">
-                Niciun duel finalizat încă.
+                {t("noRecentDuels")}
               </p>
             ) : (
               lobby.recent_duels.map((d) => (

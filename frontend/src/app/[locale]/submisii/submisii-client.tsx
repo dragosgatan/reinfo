@@ -36,11 +36,6 @@ const EMPTY_FILTERS: Filters = {
   date_to: "",
 };
 
-const FLAG_LABELS: Record<string, string> = {
-  diacritics: "Diacritice",
-  emoji: "Emoji",
-  impossibly_fast: "Prea rapid",
-};
 
 function buildQuery(filters: Filters, page: number, tab: Tab): string {
   const params = new URLSearchParams();
@@ -106,10 +101,10 @@ export function SubmisiiClient() {
   }
 
   const TABS: { value: Tab; label: string }[] = [
-    { value: "mine", label: "Ale mele" },
+    { value: "mine", label: t("tabMine") },
     ...(isAdmin ? [
-      { value: "all" as Tab, label: "Toate" },
-      { value: "flagged" as Tab, label: "Marcate" },
+      { value: "all" as Tab, label: t("tabAll") },
+      { value: "flagged" as Tab, label: t("tabFlagged") },
     ] : []),
   ];
 
@@ -250,11 +245,11 @@ export function SubmisiiClient() {
                     <span className="block truncate font-medium">{sub.problem_title}</span>
                     {sub.flag_reason && (
                       <span
-                        title={FLAG_LABELS[sub.flag_reason] ?? sub.flag_reason}
+                        title={t(`flagLabels.${sub.flag_reason}` as Parameters<typeof t>[0]) ?? sub.flag_reason}
                         className="inline-flex shrink-0 items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-400"
                       >
                         <Flag className="h-2.5 w-2.5" />
-                        {FLAG_LABELS[sub.flag_reason] ?? sub.flag_reason}
+                        {t(`flagLabels.${sub.flag_reason}` as Parameters<typeof t>[0]) ?? sub.flag_reason}
                       </span>
                     )}
                   </div>

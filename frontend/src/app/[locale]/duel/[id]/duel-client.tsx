@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -191,6 +192,7 @@ function PlayerPanel({
   label: string;
   isMe: boolean;
 }) {
+  const t = useTranslations("duel");
   return (
     <div
       className={cn(
@@ -210,7 +212,7 @@ function PlayerPanel({
         <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-mono">{player.duel_rating} Elo</span>
           <span>·</span>
-          <span>{player.score} pct</span>
+          <span>{player.score} {t("points")}</span>
         </div>
       </div>
       <div>
@@ -233,6 +235,7 @@ function FinishedOverlay({
   myUserId: string;
   onClose: () => void;
 }) {
+  const t = useTranslations("duel");
   const isChallenger = duel.challenger.user_id === myUserId;
   const me = isChallenger ? duel.challenger : duel.opponent;
   const them = isChallenger ? duel.opponent : duel.challenger;
@@ -240,13 +243,13 @@ function FinishedOverlay({
   let resultText = "";
   let resultClass = "";
   if (duel.status === "drawn") {
-    resultText = "Remiză";
+    resultText = t("draw");
     resultClass = "text-warning";
   } else if (duel.winner_id === myUserId) {
-    resultText = "Victorie!";
+    resultText = t("victory");
     resultClass = "text-success";
   } else {
-    resultText = "Înfrângere";
+    resultText = t("defeat");
     resultClass = "text-destructive";
   }
 
@@ -270,17 +273,17 @@ function FinishedOverlay({
 
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Tu ({me.username})</span>
-            <span className="font-mono font-semibold">{me.score} pct</span>
+            <span className="text-muted-foreground">{t("youLabel")} ({me.username})</span>
+            <span className="font-mono font-semibold">{me.score} {t("points")}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Adversar ({them.username})</span>
-            <span className="font-mono font-semibold">{them.score} pct</span>
+            <span className="text-muted-foreground">{t("opponentLabel")} ({them.username})</span>
+            <span className="font-mono font-semibold">{them.score} {t("points")}</span>
           </div>
         </div>
 
         <div className="mt-4 border-t border-border pt-4 text-center">
-          <p className="text-xs text-muted-foreground">Rating-ul Elo s-a actualizat</p>
+          <p className="text-xs text-muted-foreground">{t("eloUpdated")}</p>
           <p className="mt-1 text-lg font-mono font-bold">{me.duel_rating}</p>
         </div>
       </div>
@@ -289,6 +292,7 @@ function FinishedOverlay({
 }
 
 export function DuelClient({ duelId }: DuelClientProps) {
+  const t = useTranslations("duel");
   const { user } = useAuth();
   const { duel, secondsRemaining, status } = useDuelWs(duelId);
 
@@ -350,9 +354,9 @@ export function DuelClient({ duelId }: DuelClientProps) {
 
   useEffect(() => {
     if (duel?.draw_offered_by && user && duel.draw_offered_by !== user.id) {
-      toast.info("Adversarul tău a oferit remiză — răspunde în 60s.");
+      toast.info(t("drawOfferedToast"));
     }
-  }, [duel?.draw_offered_by, user]);
+  }, [duel?.draw_offered_by, t, user]);
 
   // Countdown for the draw offer timer
   useEffect(() => {
@@ -378,13 +382,13 @@ export function DuelClient({ duelId }: DuelClientProps) {
         `/api/duels/${duelId}/submit`,
         { source_code: code, language },
       );
-      toast.success(`Cod trimis! ID: ${result.submission_id.slice(0, 8)}…`);
+      toast.success(t("codeSent", { id: result.submission_id.slice(0, 8) + "…" }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare la trimitere");
+      toast.error(err instanceof Error ? err.message : t("sendError"));
     } finally {
       setSubmitting(false);
     }
-  }, [code, duelId, language, submitting]);
+  }, [code, duelId, language, submitting, t]);
 
   useEffect(() => {
     submitCallbackRef.current = handleSubmit;
@@ -395,19 +399,19 @@ export function DuelClient({ duelId }: DuelClientProps) {
       await api.post(`/api/duels/${duelId}/resign`, {});
       setShowResignDialog(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : t("sendError"));
     }
-  }, [duelId]);
+  }, [duelId, t]);
 
   const handleOfferDraw = useCallback(async () => {
     try {
       await api.post(`/api/duels/${duelId}/offer-draw`, {});
       setShowDrawDialog(false);
-      toast.info("Ofertă de remiză trimisă.");
+      toast.info(t("drawSent"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare");
+      toast.error(err instanceof Error ? err.message : t("sendError"));
     }
-  }, [duelId]);
+  }, [duelId, t]);
 
   const handleRespondDraw = useCallback(
     async (accept: boolean) => {
@@ -415,10 +419,10 @@ export function DuelClient({ duelId }: DuelClientProps) {
         await api.post(`/api/duels/${duelId}/respond-draw`, { accept });
         setShowDrawDialog(false);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Eroare");
+        toast.error(err instanceof Error ? err.message : t("sendError"));
       }
     },
-    [duelId],
+    [duelId, t],
   );
 
   const handleBeforeMount = useCallback(
@@ -462,7 +466,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
   if (!duel) {
     return (
       <div className="flex h-[calc(100vh-3.5rem)] items-center justify-center text-muted-foreground text-sm">
-        Duelul nu a fost găsit sau nu ai acces.
+        {t("notFound")}
       </div>
     );
   }
@@ -492,17 +496,15 @@ export function DuelClient({ duelId }: DuelClientProps) {
       <Dialog open={showResignDialog} onOpenChange={setShowResignDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Abandonezi duelul?</DialogTitle>
-            <DialogDescription>
-              Adversarul tău va câștiga imediat. Această acțiune este ireversibilă.
-            </DialogDescription>
+            <DialogTitle>{t("resignTitle")}</DialogTitle>
+            <DialogDescription>{t("resignDesc")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowResignDialog(false)}>
-              Anulează
+              {t("resignCancel")}
             </Button>
             <Button variant="destructive" onClick={handleResign}>
-              Abandonează
+              {t("resignConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -511,27 +513,27 @@ export function DuelClient({ duelId }: DuelClientProps) {
       <Dialog open={showDrawDialog} onOpenChange={setShowDrawDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ofertă de remiză</DialogTitle>
+            <DialogTitle>{t("drawTitle")}</DialogTitle>
             <DialogDescription>
               {theyOfferedDraw
-                ? `${them.username} îți propune remiză. Accepti?`
-                : "Ești sigur că vrei să oferi remiză?"}
+                ? t("drawPropose", { username: them.username })
+                : t("drawConfirm")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             {theyOfferedDraw ? (
               <>
                 <Button variant="outline" onClick={() => handleRespondDraw(false)}>
-                  Refuză
+                  {t("drawDecline")}
                 </Button>
-                <Button onClick={() => handleRespondDraw(true)}>Acceptă</Button>
+                <Button onClick={() => handleRespondDraw(true)}>{t("drawAccept")}</Button>
               </>
             ) : (
               <>
                 <Button variant="outline" onClick={() => setShowDrawDialog(false)}>
-                  Anulează
+                  {t("resignCancel")}
                 </Button>
-                <Button onClick={handleOfferDraw}>Trimite oferta</Button>
+                <Button onClick={handleOfferDraw}>{t("drawSendOffer")}</Button>
               </>
             )}
           </DialogFooter>
@@ -565,10 +567,10 @@ export function DuelClient({ duelId }: DuelClientProps) {
           {isFinished && (
             <Badge variant="secondary" className="font-mono text-xs">
               {duel.status === "drawn"
-                ? "Remiză"
+                ? t("statusDrawn")
                 : duel.winner_id === user?.id
-                  ? "Câștigat"
-                  : "Pierdut"}
+                  ? t("statusWon")
+                  : t("statusLost")}
             </Badge>
           )}
 
@@ -578,7 +580,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted-foreground hidden sm:inline">
                     <Handshake className="inline h-3 w-3 mr-1" />
-                    Remiză propusă
+                    {t("drawProposed")}
                     {drawSecondsLeft !== null && (
                       <span className={cn("ml-1 font-mono", drawSecondsLeft <= 10 && "text-destructive")}>
                         ({drawSecondsLeft}s)
@@ -591,7 +593,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
                     className="h-7 text-xs text-success border-success/40 hover:bg-success/10 hover:text-success"
                     onClick={() => handleRespondDraw(true)}
                   >
-                    Acceptă
+                    {t("drawAccept")}
                   </Button>
                   <Button
                     size="sm"
@@ -599,13 +601,13 @@ export function DuelClient({ duelId }: DuelClientProps) {
                     className="h-7 text-xs text-destructive hover:text-destructive"
                     onClick={() => handleRespondDraw(false)}
                   >
-                    Refuză
+                    {t("drawDecline")}
                   </Button>
                 </div>
               ) : iOfferedDraw ? (
                 <Badge variant="outline" className="text-xs text-muted-foreground gap-1">
                   <Handshake className="h-3 w-3" />
-                  Remiză oferită
+                  {t("drawOfferedBadge")}
                   {drawSecondsLeft !== null && (
                     <span className={cn("font-mono", drawSecondsLeft <= 10 && "text-destructive")}>
                       {drawSecondsLeft}s
@@ -620,7 +622,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
                   onClick={() => setShowDrawDialog(true)}
                 >
                   <Handshake className="h-3.5 w-3.5" />
-                  Remiză
+                  {t("offerDraw")}
                 </Button>
               )}
               <Button
@@ -630,7 +632,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
                 onClick={() => setShowResignDialog(true)}
               >
                 <Flag className="h-3.5 w-3.5" />
-                Abandon
+                {t("resign")}
               </Button>
             </div>
           )}
@@ -642,8 +644,8 @@ export function DuelClient({ duelId }: DuelClientProps) {
           <div className="flex w-[42%] shrink-0 flex-col border-r border-border">
             {/* Players */}
             <div className="shrink-0 p-4 space-y-2 border-b border-border">
-              <PlayerPanel player={me} label="Tu" isMe />
-              <PlayerPanel player={them} label="Adversar" isMe={false} />
+              <PlayerPanel player={me} label={t("youLabel")} isMe />
+              <PlayerPanel player={them} label={t("opponentLabel")} isMe={false} />
             </div>
 
             {/* Timer warning */}
@@ -651,8 +653,8 @@ export function DuelClient({ duelId }: DuelClientProps) {
               <div className="shrink-0 mx-4 mt-3 flex items-center gap-2 rounded border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                 {secondsRemaining <= 60
-                  ? "Mai puțin de 1 minut!"
-                  : "Mai puțin de 5 minute!"}
+                  ? t("timeCritical1min")
+                  : t("timeCritical5min")}
               </div>
             )}
 
@@ -671,7 +673,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
               ) : (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Se încarcă enunțul…
+                  {t("loadingStatement")}
                 </div>
               )}
             </div>
@@ -772,7 +774,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
                 ) : (
                   <Send className="h-3.5 w-3.5" />
                 )}
-                Trimite
+                {t("submitBtn")}
                 <span className="ml-1 font-mono text-[10px] opacity-60 hidden sm:inline">Ctrl+Enter</span>
               </Button>
             </div>

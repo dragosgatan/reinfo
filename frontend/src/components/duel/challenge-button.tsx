@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Swords } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,31 +25,16 @@ import { api } from "@/lib/api";
 import { DuelRequestReadSchema } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 
-const TIME_OPTIONS = [
-  { label: "15 minute", value: 15 },
-  { label: "30 minute", value: 30 },
-  { label: "45 minute", value: 45 },
-  { label: "60 minute", value: 60 },
-];
+const TIME_VALUES = [15, 30, 45, 60];
 
-const DIFFICULTY_OPTIONS = [
-  { label: "1 (Ușor)", value: 1 },
-  { label: "2", value: 2 },
-  { label: "3", value: 3 },
-  { label: "4", value: 4 },
-  { label: "5 (Mediu)", value: 5 },
-  { label: "6", value: 6 },
-  { label: "7", value: 7 },
-  { label: "8", value: 8 },
-  { label: "9", value: 9 },
-  { label: "10 (Expert)", value: 10 },
-];
+const DIFFICULTY_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 interface ChallengeButtonProps {
   targetUsername: string;
 }
 
 export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
+  const t = useTranslations("duel");
   const { user, isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [timeLimit, setTimeLimit] = useState(30);
@@ -57,6 +43,13 @@ export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
   const [loading, setLoading] = useState(false);
 
   if (!isAuthenticated || user?.username === targetUsername) return null;
+
+  function getDifficultyLabel(value: number): string {
+    if (value === 1) return `1 (${t("diffEasy")})`;
+    if (value === 5) return `5 (${t("diffMedium")})`;
+    if (value === 10) return `10 (${t("diffExpert")})`;
+    return String(value);
+  }
 
   const handleChallenge = async () => {
     setLoading(true);
@@ -71,10 +64,10 @@ export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
         },
         DuelRequestReadSchema,
       );
-      toast.success(`Provocare trimisă lui ${targetUsername}!`);
+      toast.success(t("challengeSent", { username: targetUsername }));
       setOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Eroare la trimitere");
+      toast.error(err instanceof Error ? err.message : t("challengeError"));
     } finally {
       setLoading(false);
     }
@@ -89,22 +82,21 @@ export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
         onClick={() => setOpen(true)}
       >
         <Swords className="h-3.5 w-3.5" />
-        Provoacă la duel
+        {t("challengeBtn")}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Provoacă la duel</DialogTitle>
+            <DialogTitle>{t("challengeTitle")}</DialogTitle>
             <DialogDescription>
-              Trimite o provocare lui <span className="font-mono font-semibold">{targetUsername}</span>.
-              Dacă acceptă, veți primi amândoi o problemă aleatorie din dificultatea aleasă.
+              {t("challengeDesc", { username: targetUsername })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Limită de timp</Label>
+              <Label className="text-xs">{t("timeLimitLabel")}</Label>
               <Select
                 value={String(timeLimit)}
                 onValueChange={(v) => setTimeLimit(Number(v))}
@@ -113,9 +105,9 @@ export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIME_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={String(o.value)}>
-                      {o.label}
+                  {TIME_VALUES.map((v) => (
+                    <SelectItem key={v} value={String(v)}>
+                      {v} {t("minutes")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -124,7 +116,7 @@ export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Dificultate min</Label>
+                <Label className="text-xs">{t("diffMinLabel")}</Label>
                 <Select
                   value={String(diffMin)}
                   onValueChange={(v) => setDiffMin(Number(v))}
@@ -133,16 +125,16 @@ export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {DIFFICULTY_OPTIONS.filter((o) => o.value <= diffMax).map((o) => (
-                      <SelectItem key={o.value} value={String(o.value)}>
-                        {o.label}
+                    {DIFFICULTY_VALUES.filter((v) => v <= diffMax).map((v) => (
+                      <SelectItem key={v} value={String(v)}>
+                        {getDifficultyLabel(v)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Dificultate max</Label>
+                <Label className="text-xs">{t("diffMaxLabel")}</Label>
                 <Select
                   value={String(diffMax)}
                   onValueChange={(v) => setDiffMax(Number(v))}
@@ -151,9 +143,9 @@ export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {DIFFICULTY_OPTIONS.filter((o) => o.value >= diffMin).map((o) => (
-                      <SelectItem key={o.value} value={String(o.value)}>
-                        {o.label}
+                    {DIFFICULTY_VALUES.filter((v) => v >= diffMin).map((v) => (
+                      <SelectItem key={v} value={String(v)}>
+                        {getDifficultyLabel(v)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -164,10 +156,10 @@ export function ChallengeButton({ targetUsername }: ChallengeButtonProps) {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Anulează
+              {t("cancelBtn")}
             </Button>
             <Button onClick={handleChallenge} disabled={loading}>
-              {loading ? "Se trimite..." : "Trimite provocarea"}
+              {loading ? t("sending") : t("sendChallenge")}
             </Button>
           </DialogFooter>
         </DialogContent>

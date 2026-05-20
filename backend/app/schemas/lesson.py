@@ -27,6 +27,8 @@ class LessonCreate(BaseModel):
     category: LessonCategory
     level: LessonLevel
     content_md: str = ""
+    content_md_en: str | None = None
+    content_md_hu: str | None = None
     teacher_notes_md: str | None = None
     quizzes: list[dict[str, Any]] = []
     ordinal: int = Field(default=0, ge=0)
@@ -38,6 +40,8 @@ class LessonUpdate(BaseModel):
     category: LessonCategory | None = None
     level: LessonLevel | None = None
     content_md: str | None = None
+    content_md_en: str | None = None
+    content_md_hu: str | None = None
     teacher_notes_md: str | None = None
     quizzes: list[dict[str, Any]] | None = None
     ordinal: int | None = Field(default=None, ge=0)
@@ -70,6 +74,8 @@ class LessonRead(BaseModel):
     category: LessonCategory
     level: LessonLevel
     content_md: str
+    content_md_en: str | None
+    content_md_hu: str | None
     teacher_notes_md: str | None
     quizzes: list[dict[str, Any]]
     ordinal: int

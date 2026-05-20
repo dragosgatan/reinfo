@@ -26,19 +26,20 @@ import { ProblemStatement } from "@/components/problems/problem-statement";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { ProblemReadSchema, ALL_TAGS, getTagLabel } from "@/lib/types";
+import { getDifficultyLabel } from "@/components/problems/difficulty-indicator";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 
 const schema = z.object({
-  title: z.string().min(1, "Titlul este obligatoriu").max(256),
+  title: z.string().min(1, "Title is required").max(256),
   slug: z
     .string()
-    .min(1, "Slug-ul este obligatoriu")
+    .min(1, "Slug is required")
     .max(128)
-    .regex(/^[a-z0-9-]+$/, "Doar litere mici, cifre și cratimă"),
+    .regex(/^[a-z0-9-]+$/, "Only lowercase letters, digits and hyphens"),
   difficulty: z.coerce.number().int().min(1).max(10),
   problem_type: z.enum(["standard", "quiz"]).default("standard"),
-  statement_md: z.string().min(1, "Enunțul în română este obligatoriu"),
+  statement_md: z.string().min(1, "Statement (Romanian) is required"),
   statement_md_en: z.string().default(""),
   statement_md_hu: z.string().default(""),
   input_format: z.string().default(""),
@@ -53,8 +54,8 @@ const schema = z.object({
   testCases: z
     .array(
       z.object({
-        input_content: z.string().min(1, "Input obligatoriu"),
-        output_content: z.string().min(1, "Output obligatoriu"),
+        input_content: z.string().min(1, "Input required"),
+        output_content: z.string().min(1, "Output required"),
         score: z.coerce.number().int().min(0).default(10),
         is_sample: z.boolean().default(false),
       }),
@@ -63,7 +64,7 @@ const schema = z.object({
   quizOptions: z
     .array(
       z.object({
-        text_md: z.string().min(1, "Textul opțiunii este obligatoriu"),
+        text_md: z.string().min(1, "Option text is required"),
         is_correct: z.boolean().default(false),
         explanation_md: z.string().default(""),
       }),
@@ -172,7 +173,7 @@ export default function NouProblemPage() {
           : watchStatementHu;
 
     if (!sourceText?.trim()) {
-      toast.error("Scrie enunțul înainte de a traduce.");
+      toast.error(t("translateErrorEmpty"));
       return;
     }
 
@@ -188,7 +189,7 @@ export default function NouProblemPage() {
       const data = await res.json() as { results?: Record<string, string>; error?: string; model?: string };
 
       if (!res.ok || data.error) {
-        toast.error(data.error ?? "Traducerea a eșuat.");
+        toast.error(data.error ?? t("translateErrorFailed"));
         return;
       }
 
@@ -198,13 +199,14 @@ export default function NouProblemPage() {
       if (results.hu !== undefined) setValue("statement_md_hu", results.hu);
 
       const modelShort = (data.model ?? "").split("/").pop()?.replace(":free", "") ?? "";
-      toast.success(`Tradus în ${targetLangs.map((l) => l.toUpperCase()).join(" și ")}${modelShort ? ` · ${modelShort}` : ""}`);
+      const langs = targetLangs.map((l) => l.toUpperCase()).join(", ");
+      toast.success(`${t("translatedTo", { langs })}${modelShort ? ` · ${modelShort}` : ""}`);
     } catch {
-      toast.error("Eroare la traducere.");
+      toast.error(t("translateErrorGeneric"));
     } finally {
       setTranslating(false);
     }
-  }, [statementLang, watchStatement, watchStatementEn, watchStatementHu, setValue]);
+  }, [statementLang, watchStatement, watchStatementEn, watchStatementHu, setValue, t]);
 
   const onSubmit = useCallback(
     async (values: FormValues) => {
@@ -291,27 +293,25 @@ export default function NouProblemPage() {
             `/api/contests/${contestSlug}/problems?problem_slug=${problem.slug}`,
             {},
           );
-          toast.success("Problema a fost adăugată la concurs.");
+          toast.success(t("addedToContest"));
           router.push(`/concursuri/${contestSlug}`);
         } else {
-          toast.success(
-            publishMode === "public" ? "Problema a fost publicată." : "Ciornă salvată.",
-          );
+          toast.success(publishMode === "public" ? t("problemPublished") : t("draftSaved"));
           router.push(`/probleme/${problem.slug}`);
         }
       } catch (err) {
         const msg =
           err instanceof ApiError && err.status === 409
-            ? "Există deja o problemă cu acest slug."
+            ? t("slugConflict")
             : err instanceof Error
               ? err.message
-              : "A apărut o eroare.";
+              : t("errorGeneric");
         toast.error(msg);
       } finally {
         setSubmitting(false);
       }
     },
-    [publishMode, contestSlug, router],
+    [publishMode, contestSlug, router, t],
   );
 
   if (isLoading) return null;
@@ -319,11 +319,9 @@ export default function NouProblemPage() {
   if (!user || (user.role !== "teacher" && user.role !== "admin")) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
-        <p className="text-sm text-muted-foreground">
-          Trebuie să fii profesor sau administrator pentru a adăuga probleme.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("permissionDeniedProblem")}</p>
         <Link href="/probleme" className="mt-4 inline-block text-sm text-primary hover:underline">
-          ← Înapoi la probleme
+          {t("backToProblemsLink")}
         </Link>
       </div>
     );
@@ -340,13 +338,13 @@ export default function NouProblemPage() {
             href={`/concursuri/${contestSlug}`}
             className="text-sm text-muted-foreground hover:text-foreground"
           >
-            ← Înapoi la concurs
+            {t("backToContestLink")}
           </Link>
         </div>
       )}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">
-          {contestSlug ? "Problemă nouă pentru concurs" : "Problemă nouă"}
+          {contestSlug ? t("newProblemForContest") : t("newProblem")}
         </h1>
         <div className="flex items-center gap-2">
           {contestSlug ? (
@@ -355,7 +353,7 @@ export default function NouProblemPage() {
                 {submitting ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : null}
-                Adaugă la concurs
+                {t("addToContest")}
               </Button>
               <Button
                 type="button"
@@ -363,7 +361,7 @@ export default function NouProblemPage() {
                 size="sm"
                 className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                 onClick={() => router.push(`/concursuri/${contestSlug}`)}
-                aria-label="Închide"
+                aria-label={t("closeLabel")}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -380,7 +378,7 @@ export default function NouProblemPage() {
                 {submitting && publishMode === "draft" ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : null}
-                Salvează ciornă
+                {t("saveDraft")}
               </Button>
               <Button
                 type="submit"
@@ -391,7 +389,7 @@ export default function NouProblemPage() {
                 {submitting && publishMode === "public" ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : null}
-                Publică
+                {t("publish")}
               </Button>
               <Button
                 type="button"
@@ -399,7 +397,7 @@ export default function NouProblemPage() {
                 size="sm"
                 className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                 onClick={() => router.push("/probleme")}
-                aria-label="Închide"
+                aria-label={t("closeLabel")}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -412,7 +410,7 @@ export default function NouProblemPage() {
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="title">Titlu</Label>
+              <Label htmlFor="title">{t("titleLabel")}</Label>
               <Input
                 id="title"
                 {...register("title")}
@@ -426,9 +424,9 @@ export default function NouProblemPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="slug">
-                Slug{" "}
+                {t("slugLabel")}{" "}
                 <span className="text-xs font-normal text-muted-foreground">
-                  (auto-generat)
+                  {t("slugAuto")}
                 </span>
               </Label>
               <Input
@@ -445,21 +443,21 @@ export default function NouProblemPage() {
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <Label>Enunț</Label>
+              <Label>{t("statement")}</Label>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleTranslate}
                   disabled={translating}
                   className="flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
-                  title={`Traduce din ${statementLang.toUpperCase()} în celelalte limbi`}
+                  title={t("translateFrom", { lang: statementLang.toUpperCase() })}
                 >
                   {translating ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
                     <Languages className="h-3 w-3" />
                   )}
-                  Traduce din {statementLang.toUpperCase()}
+                  {t("translateFrom", { lang: statementLang.toUpperCase() })}
                 </button>
                 <div className="flex rounded border border-border text-xs">
                   <button
@@ -505,11 +503,11 @@ export default function NouProblemPage() {
               <TabsList className="mb-2">
                 <TabsTrigger value="edit">
                   <EyeOff className="mr-1.5 h-3 w-3" />
-                  Editare
+                  {t("editTab")}
                 </TabsTrigger>
                 <TabsTrigger value="preview">
                   <Eye className="mr-1.5 h-3 w-3" />
-                  Previzualizare
+                  {t("previewTab")}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="edit">
@@ -517,7 +515,7 @@ export default function NouProblemPage() {
                   <textarea
                     {...register("statement_md")}
                     rows={10}
-                    placeholder="Enunțul problemei în română (Markdown + LaTeX)."
+                    placeholder={t("statementPlaceholderRo")}
                     className={cn(
                       "w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
                       errors.statement_md && "border-destructive",
@@ -553,7 +551,7 @@ export default function NouProblemPage() {
                   </div>
                 ) : (
                   <div className="flex min-h-[200px] items-center justify-center rounded border border-border text-sm text-muted-foreground">
-                    Scrie enunțul pentru a vedea previzualizarea
+                    {t("previewPlaceholder")}
                   </div>
                 )}
               </TabsContent>
@@ -563,22 +561,22 @@ export default function NouProblemPage() {
           {watchProblemType !== "quiz" && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="input_format">Format date de intrare</Label>
+                <Label htmlFor="input_format">{t("inputFormatLabel")}</Label>
                 <textarea
                   id="input_format"
                   {...register("input_format")}
                   rows={4}
-                  placeholder="Descrierea datelor de intrare (Markdown)"
+                  placeholder={t("inputFormatPlaceholder")}
                   className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="output_format">Format date de ieșire</Label>
+                <Label htmlFor="output_format">{t("outputFormatLabel")}</Label>
                 <textarea
                   id="output_format"
                   {...register("output_format")}
                   rows={4}
-                  placeholder="Descrierea datelor de ieșire (Markdown)"
+                  placeholder={t("outputFormatPlaceholder")}
                   className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
@@ -590,7 +588,7 @@ export default function NouProblemPage() {
           {watchProblemType === "quiz" ? (
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <Label>Opțiuni quiz</Label>
+                <Label>{t("quizOptionsLabel")}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -601,16 +599,16 @@ export default function NouProblemPage() {
                   }
                 >
                   <Plus className="h-3 w-3" />
-                  Adaugă opțiune
+                  {t("addOption")}
                 </Button>
               </div>
               <p className="mb-3 text-xs text-muted-foreground">
-                Bifează &quot;Corect&quot; pentru una sau mai multe răspunsuri corecte.
+                {t("quizCorrectHint")}
               </p>
 
               {quizOptionFields.length === 0 ? (
                 <p className="rounded border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
-                  Nu ai adăugat opțiuni.{" "}
+                  {t("noOptions")}{" "}
                   <button
                     type="button"
                     className="text-primary hover:underline"
@@ -618,7 +616,7 @@ export default function NouProblemPage() {
                       appendQuizOption({ text_md: "", is_correct: false, explanation_md: "" })
                     }
                   >
-                    Adaugă prima
+                    {t("addFirstOption")}
                   </button>
                 </p>
               ) : (
@@ -638,7 +636,7 @@ export default function NouProblemPage() {
           ) : (
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <Label>Cazuri de test</Label>
+                <Label>{t("testCasesLabel")}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -649,13 +647,13 @@ export default function NouProblemPage() {
                   }
                 >
                   <Plus className="h-3 w-3" />
-                  Adaugă
+                  {t("addProblem")}
                 </Button>
               </div>
 
               {testCaseFields.length === 0 ? (
                 <p className="rounded border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
-                  Nu ai adăugat cazuri de test.{" "}
+                  {t("noTestCases")}{" "}
                   <button
                     type="button"
                     className="text-primary hover:underline"
@@ -668,7 +666,7 @@ export default function NouProblemPage() {
                       })
                     }
                   >
-                    Adaugă primul
+                    {t("addFirstTestCase")}
                   </button>
                 </p>
               ) : (
@@ -691,7 +689,7 @@ export default function NouProblemPage() {
 
         <aside className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Tip problemă</Label>
+            <Label>{t("typeLabel")}</Label>
             <Select
               defaultValue="standard"
               onValueChange={(v) => setValue("problem_type", v as "standard" | "quiz")}
@@ -700,14 +698,14 @@ export default function NouProblemPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="standard">Standard (cod)</SelectItem>
-                <SelectItem value="quiz">Quiz (alegere multiplă)</SelectItem>
+                <SelectItem value="standard">{t("typeStandardDesc")}</SelectItem>
+                <SelectItem value="quiz">{t("typeQuizDesc")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Dificultate</Label>
+            <Label>{t("difficulty")}</Label>
             <Select
               defaultValue="3"
               onValueChange={(v) => setValue("difficulty", Number(v))}
@@ -719,13 +717,7 @@ export default function NouProblemPage() {
                 {Array.from({ length: 10 }, (_, i) => (
                   <SelectItem key={i + 1} value={String(i + 1)}>
                     {i + 1} —{" "}
-                    {i < 3
-                      ? "Ușor"
-                      : i < 6
-                        ? "Mediu"
-                        : i < 8
-                          ? "Greu"
-                          : "Foarte greu"}
+                    {getDifficultyLabel(i + 1, t as (key: string) => string)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -735,7 +727,7 @@ export default function NouProblemPage() {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
               <Label htmlFor="time_limit_ms" className="text-xs">
-                Timp (ms)
+                {t("timeLimitLabel")}
               </Label>
               <Input
                 id="time_limit_ms"
@@ -746,7 +738,7 @@ export default function NouProblemPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="memory_limit_kb" className="text-xs">
-                Memorie (KB)
+                {t("memoryLimitLabel")}
               </Label>
               <Input
                 id="memory_limit_kb"
@@ -758,7 +750,7 @@ export default function NouProblemPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Mod comparare</Label>
+            <Label>{t("comparisonModeLabel")}</Label>
             <Select
               defaultValue="exact"
               onValueChange={(v) =>
@@ -769,9 +761,9 @@ export default function NouProblemPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="exact">Exact</SelectItem>
-                <SelectItem value="whitespace_insensitive">Ignoră spații</SelectItem>
-                <SelectItem value="float_epsilon">Float epsilon</SelectItem>
+                <SelectItem value="exact">{t("comparisonExact")}</SelectItem>
+                <SelectItem value="whitespace_insensitive">{t("comparisonWhitespace")}</SelectItem>
+                <SelectItem value="float_epsilon">{t("comparisonFloat")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -779,7 +771,7 @@ export default function NouProblemPage() {
           {watchComparisonMode === "float_epsilon" && (
             <div className="space-y-1.5">
               <Label htmlFor="float_epsilon" className="text-xs">
-                Epsilon
+                {t("epsilonLabel")}
               </Label>
               <Input
                 id="float_epsilon"
@@ -795,7 +787,7 @@ export default function NouProblemPage() {
           <Separator />
 
           <div>
-            <Label className="mb-2 block">Etichete</Label>
+            <Label className="mb-2 block">{t("tagsLabel")}</Label>
             <div className="flex flex-wrap gap-1">
               {ALL_TAGS.map((tag) => (
                 <button

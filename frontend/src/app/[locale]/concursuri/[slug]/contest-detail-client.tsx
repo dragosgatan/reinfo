@@ -180,7 +180,7 @@ export default function ContestDetailClient({ slug }: Props) {
           <Link href={`/probleme/nou?contest_slug=${slug}`}>
             <Button variant="outline" size="sm">
               <Plus className="mr-2 h-4 w-4" />
-              Adaugă problemă
+              {t("addProblem")}
             </Button>
           </Link>
         )}

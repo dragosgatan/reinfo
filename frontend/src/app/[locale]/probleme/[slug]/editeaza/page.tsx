@@ -35,14 +35,15 @@ import { ProblemStatement } from "@/components/problems/problem-statement";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { ProblemReadSchema, TestCaseListSchema, ALL_TAGS, getTagLabel } from "@/lib/types";
+import { getDifficultyLabel } from "@/components/problems/difficulty-indicator";
 import type { TestCaseRead } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 
 const schema = z.object({
-  title: z.string().min(1, "Titlul este obligatoriu").max(256),
+  title: z.string().min(1, "Title is required").max(256),
   difficulty: z.coerce.number().int().min(1).max(10),
-  statement_md: z.string().min(1, "Enunțul este obligatoriu"),
+  statement_md: z.string().min(1, "Statement (Romanian) is required"),
   statement_md_en: z.string().default(""),
   statement_md_hu: z.string().default(""),
   input_format: z.string().default(""),
@@ -113,8 +114,8 @@ export default function EditProblemPage() {
         });
         setLoaded(true);
       })
-      .catch(() => setLoadError("Nu s-a putut încărca problema."));
-  }, [authLoading, user, slug, reset]);
+      .catch(() => setLoadError(t("loadErrorProblem")));
+  }, [authLoading, user, slug, reset, t]);
 
   const toggleTag = useCallback(
     (tag: string) => {
@@ -136,7 +137,7 @@ export default function EditProblemPage() {
           : watchStatementHu;
 
     if (!sourceText?.trim()) {
-      toast.error("Scrie enunțul înainte de a traduce.");
+      toast.error(t("translateErrorEmpty"));
       return;
     }
 
@@ -152,7 +153,7 @@ export default function EditProblemPage() {
       const data = await res.json() as { results?: Record<string, string>; error?: string; model?: string };
 
       if (!res.ok || data.error) {
-        toast.error(data.error ?? "Traducerea a eșuat.");
+        toast.error(data.error ?? t("translateErrorFailed"));
         return;
       }
 
@@ -162,13 +163,14 @@ export default function EditProblemPage() {
       if (results.hu !== undefined) setValue("statement_md_hu", results.hu);
 
       const modelShort = (data.model ?? "").split("/").pop()?.replace(":free", "") ?? "";
-      toast.success(`Tradus în ${targetLangs.map((l) => l.toUpperCase()).join(" și ")}${modelShort ? ` · ${modelShort}` : ""}`);
+      const langs = targetLangs.map((l) => l.toUpperCase()).join(", ");
+      toast.success(`${t("translatedTo", { langs })}${modelShort ? ` · ${modelShort}` : ""}`);
     } catch {
-      toast.error("Eroare la traducere.");
+      toast.error(t("translateErrorGeneric"));
     } finally {
       setTranslating(false);
     }
-  }, [statementLang, watchStatement, watchStatementEn, watchStatementHu, setValue]);
+  }, [statementLang, watchStatement, watchStatementEn, watchStatementHu, setValue, t]);
 
   const onSubmit = useCallback(
     async (values: FormValues) => {
@@ -194,15 +196,15 @@ export default function EditProblemPage() {
           },
           ProblemReadSchema,
         );
-        toast.success("Modificările au fost salvate.");
+        toast.success(t("changesSaved"));
         router.push(`/probleme/${slug}`);
       } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : "A apărut o eroare.");
+        toast.error(err instanceof ApiError ? err.message : t("errorGeneric"));
       } finally {
         setSubmitting(false);
       }
     },
-    [slug, router],
+    [slug, router, t],
   );
 
   const handleDelete = useCallback(async () => {
@@ -210,24 +212,24 @@ export default function EditProblemPage() {
     try {
       await api.delete(`/api/problems/${slug}`);
       await queryClient.invalidateQueries({ queryKey: ["problems"] });
-      toast.success("Problema a fost ștearsă.");
+      toast.success(t("problemDeleted"));
       router.push("/probleme");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "A apărut o eroare.");
+      toast.error(err instanceof ApiError ? err.message : t("errorGeneric"));
       setDeleteOpen(false);
     } finally {
       setDeleting(false);
     }
-  }, [slug, router, queryClient]);
+  }, [slug, router, queryClient, t]);
 
   if (authLoading) return null;
 
   if (!user || (user.role !== "teacher" && user.role !== "admin")) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
-        <p className="text-sm text-muted-foreground">Acces interzis.</p>
+        <p className="text-sm text-muted-foreground">{t("accessDeniedProblem")}</p>
         <Link href={`/probleme/${slug}`} className="mt-4 inline-block text-sm text-primary hover:underline">
-          ← Înapoi la problemă
+          {t("backToProblemLink")}
         </Link>
       </div>
     );
@@ -238,7 +240,7 @@ export default function EditProblemPage() {
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
         <p className="text-sm text-muted-foreground">{loadError}</p>
         <Link href={`/probleme/${slug}`} className="mt-4 inline-block text-sm text-primary hover:underline">
-          ← Înapoi la problemă
+          {t("backToProblemLink")}
         </Link>
       </div>
     );
@@ -262,15 +264,15 @@ export default function EditProblemPage() {
             className="mb-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" />
-            Înapoi la problemă
+            {t("backToProblemLink")}
           </Link>
-          <h1 className="text-xl font-bold tracking-tight">Editează problema</h1>
+          <h1 className="text-xl font-bold tracking-tight">{t("editProblemTitle")}</h1>
           <p className="mt-0.5 font-mono text-xs text-muted-foreground">{slug}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button type="submit" size="sm" disabled={submitting}>
             {submitting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-            Salvează
+            {t("saveChanges")}
           </Button>
           <Button
             type="button"
@@ -278,7 +280,7 @@ export default function EditProblemPage() {
             size="sm"
             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => router.push(`/probleme/${slug}`)}
-            aria-label="Închide"
+            aria-label={t("closeLabel")}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -288,7 +290,7 @@ export default function EditProblemPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <div className="space-y-5">
           <div className="space-y-1.5">
-            <Label htmlFor="title">Titlu</Label>
+            <Label htmlFor="title">{t("titleLabel")}</Label>
             <Input
               id="title"
               {...register("title")}
@@ -301,21 +303,21 @@ export default function EditProblemPage() {
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <Label>Enunț</Label>
+              <Label>{t("statement")}</Label>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleTranslate}
                   disabled={translating}
                   className="flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
-                  title={`Traduce din ${statementLang.toUpperCase()} în celelalte limbi`}
+                  title={t("translateFrom", { lang: statementLang.toUpperCase() })}
                 >
                   {translating ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
                     <Languages className="h-3 w-3" />
                   )}
-                  Traduce din {statementLang.toUpperCase()}
+                  {t("translateFrom", { lang: statementLang.toUpperCase() })}
                 </button>
                 <div className="flex rounded border border-border text-xs">
                   <button
@@ -361,11 +363,11 @@ export default function EditProblemPage() {
               <TabsList className="mb-2">
                 <TabsTrigger value="edit">
                   <EyeOff className="mr-1.5 h-3 w-3" />
-                  Editare
+                  {t("editTab")}
                 </TabsTrigger>
                 <TabsTrigger value="preview">
                   <Eye className="mr-1.5 h-3 w-3" />
-                  Previzualizare
+                  {t("previewTab")}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="edit">
@@ -408,7 +410,7 @@ export default function EditProblemPage() {
                   </div>
                 ) : (
                   <div className="flex min-h-[200px] items-center justify-center rounded border border-border text-sm text-muted-foreground">
-                    Scrie enunțul pentru a vedea previzualizarea
+                    {t("previewPlaceholder")}
                   </div>
                 )}
               </TabsContent>
@@ -417,7 +419,7 @@ export default function EditProblemPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="input_format">Format date de intrare</Label>
+              <Label htmlFor="input_format">{t("inputFormatLabel")}</Label>
               <textarea
                 id="input_format"
                 {...register("input_format")}
@@ -426,7 +428,7 @@ export default function EditProblemPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="output_format">Format date de ieșire</Label>
+              <Label htmlFor="output_format">{t("outputFormatLabel")}</Label>
               <textarea
                 id="output_format"
                 {...register("output_format")}
@@ -439,7 +441,7 @@ export default function EditProblemPage() {
 
         <aside className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Dificultate</Label>
+            <Label>{t("difficulty")}</Label>
             <Select
               value={String(watch("difficulty") ?? 3)}
               onValueChange={(v) => setValue("difficulty", Number(v))}
@@ -451,7 +453,7 @@ export default function EditProblemPage() {
                 {Array.from({ length: 10 }, (_, i) => (
                   <SelectItem key={i + 1} value={String(i + 1)}>
                     {i + 1} —{" "}
-                    {i < 3 ? "Ușor" : i < 6 ? "Mediu" : i < 8 ? "Greu" : "Foarte greu"}
+                    {getDifficultyLabel(i + 1, t as (key: string) => string)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -460,7 +462,7 @@ export default function EditProblemPage() {
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
-              <Label htmlFor="time_limit_ms" className="text-xs">Timp (ms)</Label>
+              <Label htmlFor="time_limit_ms" className="text-xs">{t("timeLimitLabel")}</Label>
               <Input
                 id="time_limit_ms"
                 type="number"
@@ -469,7 +471,7 @@ export default function EditProblemPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="memory_limit_kb" className="text-xs">Memorie (KB)</Label>
+              <Label htmlFor="memory_limit_kb" className="text-xs">{t("memoryLimitLabel")}</Label>
               <Input
                 id="memory_limit_kb"
                 type="number"
@@ -480,7 +482,7 @@ export default function EditProblemPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Mod comparare</Label>
+            <Label>{t("comparisonModeLabel")}</Label>
             <Select
               value={watchComparisonMode ?? "exact"}
               onValueChange={(v) => setValue("comparison_mode", v as FormValues["comparison_mode"])}
@@ -489,16 +491,16 @@ export default function EditProblemPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="exact">Exact</SelectItem>
-                <SelectItem value="whitespace_insensitive">Ignoră spații</SelectItem>
-                <SelectItem value="float_epsilon">Float epsilon</SelectItem>
+                <SelectItem value="exact">{t("comparisonExact")}</SelectItem>
+                <SelectItem value="whitespace_insensitive">{t("comparisonWhitespace")}</SelectItem>
+                <SelectItem value="float_epsilon">{t("comparisonFloat")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {watchComparisonMode === "float_epsilon" && (
             <div className="space-y-1.5">
-              <Label htmlFor="float_epsilon" className="text-xs">Epsilon</Label>
+              <Label htmlFor="float_epsilon" className="text-xs">{t("epsilonLabel")}</Label>
               <Input
                 id="float_epsilon"
                 type="number"
@@ -511,10 +513,10 @@ export default function EditProblemPage() {
           )}
 
           <div className="space-y-1.5">
-            <Label>Vizibilitate</Label>
+            <Label>{t("visibilityLabel")}</Label>
             {watchVisibility === "contest" ? (
               <div className="rounded border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-                Gestionată de concurs
+                {t("visibilityContest")}
               </div>
             ) : (
               <Select
@@ -525,9 +527,9 @@ export default function EditProblemPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="draft">Ciornă</SelectItem>
-                  <SelectItem value="public">Publică</SelectItem>
-                  <SelectItem value="private">Privată</SelectItem>
+                  <SelectItem value="draft">{t("visibilityDraft")}</SelectItem>
+                  <SelectItem value="public">{t("visibilityPublic")}</SelectItem>
+                  <SelectItem value="private">{t("visibilityPrivate")}</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -538,7 +540,7 @@ export default function EditProblemPage() {
               <Separator />
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-destructive/70">
-                  Zonă periculoasă
+                  {t("dangerZone")}
                 </p>
                 <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                   <DialogTrigger asChild>
@@ -549,14 +551,14 @@ export default function EditProblemPage() {
                       className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                      Șterge problema
+                      {t("deleteProblem")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-sm">
                     <DialogHeader>
-                      <DialogTitle>Șterge problema</DialogTitle>
+                      <DialogTitle>{t("deleteProblem")}</DialogTitle>
                       <DialogDescription>
-                        Problema va fi ascunsă și nu va mai fi accesibilă utilizatorilor. Această acțiune poate fi anulată manual.
+                        {t("deleteConfirmation")}
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -567,7 +569,7 @@ export default function EditProblemPage() {
                         onClick={() => setDeleteOpen(false)}
                         disabled={deleting}
                       >
-                        Anulează
+                        {t("cancelDelete")}
                       </Button>
                       <Button
                         type="button"
@@ -577,7 +579,7 @@ export default function EditProblemPage() {
                         disabled={deleting}
                       >
                         {deleting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                        Confirmă ștergerea
+                        {t("confirmDelete")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -589,7 +591,7 @@ export default function EditProblemPage() {
           <Separator />
 
           <div>
-            <Label className="mb-2 block">Etichete</Label>
+            <Label className="mb-2 block">{t("tagsLabel")}</Label>
             <div className="flex flex-wrap gap-1">
               {ALL_TAGS.map((tag) => (
                 <button
@@ -627,6 +629,8 @@ export default function EditProblemPage() {
 }
 
 function TestCaseManager({ slug }: { slug: string }) {
+  const t = useTranslations("problems");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [deletingOrdinal, setDeletingOrdinal] = useState<number | null>(null);
@@ -656,14 +660,14 @@ function TestCaseManager({ slug }: { slug: string }) {
       try {
         await api.delete(`/api/problems/${slug}/test-cases/${tc.ordinal}`);
         await invalidate();
-        toast.success(`Cazul de test #${tc.ordinal} a fost șters.`);
+        toast.success(t("tcDeleted", { n: tc.ordinal }));
       } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : "A apărut o eroare.");
+        toast.error(err instanceof ApiError ? err.message : t("errorGeneric"));
       } finally {
         setDeletingOrdinal(null);
       }
     },
-    [slug, invalidate],
+    [slug, invalidate, t],
   );
 
   const submitFormData = useCallback(
@@ -685,7 +689,7 @@ function TestCaseManager({ slug }: { slug: string }) {
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (ordinal === "") {
-        toast.error("Introdu ordinalul cazului de test.");
+        toast.error(t("tcOrdinalMissing"));
         return;
       }
 
@@ -694,7 +698,7 @@ function TestCaseManager({ slug }: { slug: string }) {
 
       if (mode === "text") {
         if (!inText.trim() && !outText.trim()) {
-          toast.error("Completează cel puțin datele de intrare.");
+          toast.error(t("tcFillData"));
           return;
         }
         inBlob = new Blob([inText], { type: "text/plain" });
@@ -703,7 +707,7 @@ function TestCaseManager({ slug }: { slug: string }) {
         const inFile = inRef.current?.files?.[0];
         const outFile = outRef.current?.files?.[0];
         if (!inFile || !outFile) {
-          toast.error("Selectează ambele fișiere (.in și .out).");
+          toast.error(t("tcSelectFiles"));
           return;
         }
         inBlob = inFile;
@@ -721,7 +725,7 @@ function TestCaseManager({ slug }: { slug: string }) {
         fd.append("output_file", outBlob, `${ordinal}.out`);
         await submitFormData(fd);
         await invalidate();
-        toast.success(`Cazul de test #${ordinal} a fost adăugat.`);
+        toast.success(t("tcAdded", { n: ordinal }));
         setOrdinal("");
         setScore("10");
         setIsSample(false);
@@ -730,29 +734,29 @@ function TestCaseManager({ slug }: { slug: string }) {
         if (inRef.current) inRef.current.value = "";
         if (outRef.current) outRef.current.value = "";
       } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : "A apărut o eroare.");
+        toast.error(err instanceof ApiError ? err.message : t("errorGeneric"));
       } finally {
         setUploading(false);
       }
     },
-    [mode, inText, outText, ordinal, score, isSample, invalidate, submitFormData],
+    [mode, inText, outText, ordinal, score, isSample, invalidate, submitFormData, t],
   );
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-10 sm:px-6">
       <Separator className="my-8" />
-      <h2 className="mb-4 text-base font-semibold tracking-tight">Cazuri de test</h2>
+      <h2 className="mb-4 text-base font-semibold tracking-tight">{t("testCasesSection")}</h2>
 
       {isLoading ? (
-        <p className="text-xs text-muted-foreground">Se încarcă...</p>
+        <p className="text-xs text-muted-foreground">{tCommon("loading")}</p>
       ) : testCases && testCases.length > 0 ? (
         <div className="mb-6 overflow-hidden rounded border border-border">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border bg-muted/40">
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground">#</th>
-                <th className="px-3 py-2 text-left font-medium text-muted-foreground">Scor</th>
-                <th className="px-3 py-2 text-left font-medium text-muted-foreground">Tip</th>
+                <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("scoreLabel")}</th>
+                <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("typeLabel")}</th>
                 <th className="w-8 px-3 py-2" />
               </tr>
             </thead>
@@ -762,14 +766,14 @@ function TestCaseManager({ slug }: { slug: string }) {
                   <td className="px-3 py-2 font-mono">{tc.ordinal}</td>
                   <td className="px-3 py-2 font-mono">{tc.score}p</td>
                   <td className="px-3 py-2 text-muted-foreground">
-                    {tc.is_sample ? "exemplu" : "ascuns"}
+                    {tc.is_sample ? t("tcSampleLabel") : t("outputHidden")}
                   </td>
                   <td className="px-3 py-2">
                     <button
                       onClick={() => handleDelete(tc)}
                       disabled={deletingOrdinal === tc.ordinal}
                       className="flex items-center text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40"
-                      aria-label={`Șterge cazul de test ${tc.ordinal}`}
+                      aria-label={t("tcDeleted", { n: tc.ordinal })}
                     >
                       {deletingOrdinal === tc.ordinal ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -784,13 +788,13 @@ function TestCaseManager({ slug }: { slug: string }) {
           </table>
         </div>
       ) : (
-        <p className="mb-6 text-xs text-muted-foreground">Niciun caz de test adăugat.</p>
+        <p className="mb-6 text-xs text-muted-foreground">{t("noTestCasesAdded")}</p>
       )}
 
       <form onSubmit={handleSubmit} className="rounded border border-border p-4">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Adaugă caz de test
+            {t("addTestCase")}
           </p>
           <div className="flex rounded border border-border text-xs">
             <button
@@ -798,14 +802,14 @@ function TestCaseManager({ slug }: { slug: string }) {
               onClick={() => setMode("text")}
               className={cn("px-2.5 py-1 transition-colors", mode === "text" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground")}
             >
-              Text
+              {t("textMode")}
             </button>
             <button
               type="button"
               onClick={() => setMode("file")}
               className={cn("px-2.5 py-1 transition-colors", mode === "file" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground")}
             >
-              Fișier
+              {t("fileMode")}
             </button>
           </div>
         </div>
@@ -813,7 +817,7 @@ function TestCaseManager({ slug }: { slug: string }) {
         {mode === "text" ? (
           <div className="mb-3 grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label className="text-xs">Date de intrare (.in)</Label>
+              <Label className="text-xs">{t("tcInputData")}</Label>
               <textarea
                 value={inText}
                 onChange={(e) => setInText(e.target.value)}
@@ -823,7 +827,7 @@ function TestCaseManager({ slug }: { slug: string }) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Date de ieșire (.out)</Label>
+              <Label className="text-xs">{t("tcOutputData")}</Label>
               <textarea
                 value={outText}
                 onChange={(e) => setOutText(e.target.value)}
@@ -836,11 +840,11 @@ function TestCaseManager({ slug }: { slug: string }) {
         ) : (
           <div className="mb-3 grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label className="text-xs">Fișier .in</Label>
+              <Label className="text-xs">{t("tcFileIn")}</Label>
               <input ref={inRef} type="file" accept=".in,text/*" className="block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border file:border-border file:bg-muted file:px-2 file:py-1 file:text-xs file:text-foreground" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Fișier .out</Label>
+              <Label className="text-xs">{t("tcFileOut")}</Label>
               <input ref={outRef} type="file" accept=".out,text/*" className="block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border file:border-border file:bg-muted file:px-2 file:py-1 file:text-xs file:text-foreground" />
             </div>
           </div>
@@ -852,16 +856,16 @@ function TestCaseManager({ slug }: { slug: string }) {
             <Input id="tc-ordinal" type="number" min={0} value={ordinal} onChange={(e) => setOrdinal(e.target.value)} className="h-8 w-24 text-sm" placeholder="0" />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="tc-score" className="text-xs">Scor</Label>
+            <Label htmlFor="tc-score" className="text-xs">{t("scoreLabel")}</Label>
             <Input id="tc-score" type="number" min={0} value={score} onChange={(e) => setScore(e.target.value)} className="h-8 w-20 text-sm" />
           </div>
           <label className="flex items-center gap-1.5 pb-1 text-xs text-muted-foreground">
             <input type="checkbox" checked={isSample} onChange={(e) => setIsSample(e.target.checked)} className="h-3 w-3" />
-            Exemplu
+            {t("tcSampleLabel")}
           </label>
           <Button type="submit" size="sm" disabled={uploading} className="h-8">
             {uploading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1.5 h-3.5 w-3.5" />}
-            Adaugă
+            {t("addProblem")}
           </Button>
         </div>
       </form>

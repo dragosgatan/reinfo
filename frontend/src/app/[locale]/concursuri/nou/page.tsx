@@ -33,7 +33,7 @@ export default function NouConcursPage() {
   if (!user || (user.role !== "teacher" && user.role !== "admin")) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center text-sm text-muted-foreground">
-        Permisiuni insuficiente.
+        {t("insufficientPermissions")}
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function NouConcursPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            placeholder="Olimpiadă județeană"
+            placeholder={t("create.titlePlaceholder")}
           />
         </div>
 
@@ -98,7 +98,7 @@ export default function NouConcursPage() {
             value={description}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
             rows={4}
-            placeholder="Descriere opțională în Markdown..."
+            placeholder={t("create.descriptionPlaceholder")}
             className="flex min-h-[80px] w-full rounded border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
@@ -127,7 +127,7 @@ export default function NouConcursPage() {
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium">Securitate</p>
+          <p className="text-sm font-medium">{t("security")}</p>
           <label className="flex cursor-pointer items-center gap-3">
             <input
               type="checkbox"
@@ -135,7 +135,7 @@ export default function NouConcursPage() {
               onChange={(e) => setFullscreenRequired(e.target.checked)}
               className="h-4 w-4 rounded border-input"
             />
-            <span className="text-sm">Impune ecran complet</span>
+            <span className="text-sm">{t("requireFullscreen")}</span>
           </label>
           <label className="flex cursor-pointer items-center gap-3">
             <input
@@ -144,12 +144,12 @@ export default function NouConcursPage() {
               onChange={(e) => setCopyPasteBlocked(e.target.checked)}
               className="h-4 w-4 rounded border-input"
             />
-            <span className="text-sm">Blochează copy-paste</span>
+            <span className="text-sm">{t("blockCopyPaste")}</span>
           </label>
         </div>
 
         <Button type="submit" disabled={submitting} className="w-full">
-          {submitting ? "Se salvează..." : t("create.save")}
+          {submitting ? t("saving") : t("create.save")}
         </Button>
       </form>
     </div>

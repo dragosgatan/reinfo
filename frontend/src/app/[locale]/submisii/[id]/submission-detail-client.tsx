@@ -129,7 +129,7 @@ function SubmissionDetail({ submission }: { submission: Submission }) {
         <>
           <div className="mb-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
             <span className="font-medium">
-              {passedCount}/{results.length} teste trecute
+              {t("testsPassed", { passed: passedCount, total: results.length })}
             </span>
             {maxTimeMs !== null && maxTimeMs > 0 && (
               <span className="flex items-center gap-1">

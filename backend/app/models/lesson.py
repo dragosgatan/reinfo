@@ -52,6 +52,8 @@ class Lesson(Base, TimestampMixin):
         Enum(LessonLevel, name="lessonlevel"), nullable=False
     )
     content_md: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("''"))
+    content_md_en: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content_md_hu: Mapped[str | None] = mapped_column(Text, nullable=True)
     teacher_notes_md: Mapped[str | None] = mapped_column(Text, nullable=True)
     quizzes: Mapped[list[Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")

@@ -57,6 +57,8 @@ def _lesson_to_read(lesson: Lesson, *, is_completed: bool, show_teacher_notes: b
         category=lesson.category,
         level=lesson.level,
         content_md=lesson.content_md,
+        content_md_en=lesson.content_md_en,
+        content_md_hu=lesson.content_md_hu,
         teacher_notes_md=lesson.teacher_notes_md if show_teacher_notes else None,
         quizzes=lesson.quizzes or [],
         ordinal=lesson.ordinal,

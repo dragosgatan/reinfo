@@ -753,6 +753,8 @@ export const LessonReadSchema = z.object({
   category: z.enum(LESSON_CATEGORIES),
   level: z.enum(LESSON_LEVELS),
   content_md: z.string(),
+  content_md_en: z.string().nullable(),
+  content_md_hu: z.string().nullable(),
   teacher_notes_md: z.string().nullable(),
   quizzes: z.array(z.record(z.unknown())),
   ordinal: z.number().int(),
