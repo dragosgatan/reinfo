@@ -58,6 +58,7 @@ export default function ProblemeClient() {
   const status = params.get("status") ?? "";
   const sort = (params.get("sort") ?? "oldest") as string;
   const page = Number(params.get("page") ?? "1");
+  const problemType = params.get("type") ?? "";
 
   const setParam = useCallback(
     (key: string, value: string | null) => {
@@ -112,17 +113,18 @@ export default function ProblemeClient() {
     activeTags.forEach((t) => p.append("tags", t));
     if (status && isAuthenticated) p.set("status", status);
     p.set("sort", sort);
+    if (problemType) p.set("problem_type", problemType);
     return p.toString();
   };
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["problems", q, diffMin, diffMax, activeTags.join(","), status, sort, page],
+    queryKey: ["problems", q, diffMin, diffMax, activeTags.join(","), status, sort, page, problemType],
     queryFn: () => api.get(`/api/problems/?${buildQuery()}`, ProblemListResponseSchema),
     placeholderData: (prev) => prev,
     staleTime: 30 * 1000,
   });
 
-  const hasFilters = q || diffMin || diffMax || activeTags.length > 0 || status;
+  const hasFilters = q || diffMin || diffMax || activeTags.length > 0 || status || problemType;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
@@ -244,6 +246,28 @@ export default function ProblemeClient() {
               </div>
             </div>
           )}
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Tip
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {(["", "standard", "quiz"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setParam("type", t)}
+                  className={cn(
+                    "rounded border px-2 py-1 text-xs transition-colors",
+                    problemType === t
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                  )}
+                >
+                  {t === "" ? "Toate" : t === "standard" ? "Standard" : "Quiz"}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -424,12 +448,19 @@ function ProblemRow({
         {String(index).padStart(4, "0")}
       </TableCell>
       <TableCell>
-        <Link
-          href={`/probleme/${problem.slug}`}
-          className="font-medium transition-colors hover:text-primary"
-        >
-          {problem.title}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/probleme/${problem.slug}`}
+            className="font-medium transition-colors hover:text-primary"
+          >
+            {problem.title}
+          </Link>
+          {problem.problem_type === "quiz" && (
+            <span className="rounded border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-xs text-blue-600 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400">
+              quiz
+            </span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-center">
         <DifficultyIndicator difficulty={problem.difficulty} className="mx-auto" />

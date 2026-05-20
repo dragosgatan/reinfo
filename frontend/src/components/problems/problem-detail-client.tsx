@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DifficultyIndicator, getDifficultyLabel } from "./difficulty-indicator";
 import { ProblemStatement } from "./problem-statement";
+import { QuizPanel } from "./quiz-panel";
 import { SubmissionPanel } from "./submission-panel";
 import { VerdictBadge } from "./verdict-badge";
 import { Link } from "@/i18n/navigation";
@@ -73,11 +74,13 @@ export function ProblemDetailClient({ slug }: ProblemDetailClientProps) {
     staleTime: 2 * 60 * 1000,
   });
 
+  const isQuiz = problem?.problem_type === "quiz";
+
   const { data: submissionsData } = useQuery({
     queryKey: ["submissions", slug, user?.id],
     queryFn: () =>
       api.get(`/api/submissions?problem_slug=${slug}&per_page=20`, SubmissionListResponseSchema),
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isQuiz,
     staleTime: 30 * 1000,
   });
 
@@ -137,6 +140,7 @@ function ProblemDetailLayout({
   const canEdit = user?.role === "teacher" || user?.role === "admin";
   const memoryMb = Math.round(problem.memory_limit_kb / 1024);
   const [editorFocused, setEditorFocused] = useState(false);
+  const isQuiz = problem.problem_type === "quiz";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -198,9 +202,11 @@ function ProblemDetailLayout({
           <Tabs defaultValue="statement">
             <TabsList className="mb-4">
               <TabsTrigger value="statement">{t("enunt")}</TabsTrigger>
-              <TabsTrigger value="submissions">
-                {t("trimiteri")}{submissions.length > 0 && ` (${submissions.length})`}
-              </TabsTrigger>
+              {!isQuiz && (
+                <TabsTrigger value="submissions">
+                  {t("trimiteri")}{submissions.length > 0 && ` (${submissions.length})`}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="discussion">{t("discutie")}</TabsTrigger>
             </TabsList>
 
@@ -247,12 +253,16 @@ function ProblemDetailLayout({
                 </>
               )}
 
-              <Separator className="my-5" />
-              <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/30 dark:bg-amber-950/20">
-                <p className="text-xs text-amber-800 dark:text-amber-300">
-                  {t("ioNote")}
-                </p>
-              </div>
+              {!isQuiz && (
+                <>
+                  <Separator className="my-5" />
+                  <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/30 dark:bg-amber-950/20">
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                      {t("ioNote")}
+                    </p>
+                  </div>
+                </>
+              )}
             </TabsContent>
 
             <TabsContent value="submissions" className="mt-0">
@@ -279,43 +289,49 @@ function ProblemDetailLayout({
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <div className="rounded border border-border p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("submitTitle")}
+              {isQuiz ? "Răspunde" : t("submitTitle")}
             </p>
-            <SubmissionPanel
-              slug={problem.slug}
-              scoreTotal={problem.score_total}
-              bestScore={bestScore}
-              isAuthenticated={isAuthenticated}
-              editorFocused={editorFocused}
-              onToggleEditorFocus={() => setEditorFocused((v) => !v)}
-            />
+            {isQuiz ? (
+              <QuizPanel slug={problem.slug} options={problem.quiz_options} />
+            ) : (
+              <SubmissionPanel
+                slug={problem.slug}
+                scoreTotal={problem.score_total}
+                bestScore={bestScore}
+                isAuthenticated={isAuthenticated}
+                editorFocused={editorFocused}
+                onToggleEditorFocus={() => setEditorFocused((v) => !v)}
+              />
+            )}
           </div>
 
-          <div className="rounded border border-border p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("restrictions")}
-            </p>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" />
-                  {t("timeLimit")}
-                </span>
-                <span className="font-mono text-xs">
-                  {problem.time_limit_ms >= 1000
-                    ? `${problem.time_limit_ms / 1000}s`
-                    : `${problem.time_limit_ms}ms`}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <MemoryStick className="h-3.5 w-3.5" />
-                  {t("memoryLimit")}
-                </span>
-                <span className="font-mono text-xs">{memoryMb} MB</span>
+          {!isQuiz && (
+            <div className="rounded border border-border p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("restrictions")}
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    {t("timeLimit")}
+                  </span>
+                  <span className="font-mono text-xs">
+                    {problem.time_limit_ms >= 1000
+                      ? `${problem.time_limit_ms / 1000}s`
+                      : `${problem.time_limit_ms}ms`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <MemoryStick className="h-3.5 w-3.5" />
+                    {t("memoryLimit")}
+                  </span>
+                  <span className="font-mono text-xs">{memoryMb} MB</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </aside>
       </div>
     </div>

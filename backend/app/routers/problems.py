@@ -16,7 +16,7 @@ from sqlalchemy.orm import selectinload
 from app.db import get_session
 from app.dependencies import get_current_user, get_optional_user
 from app.models.contest import Contest
-from app.models.problem import Problem, TestCase, Visibility
+from app.models.problem import Problem, ProblemType, QuizOption, TestCase, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
 from app.schemas.problem import (
@@ -27,6 +27,11 @@ from app.schemas.problem import (
     ProblemListResponse,
     ProblemRead,
     ProblemUpdate,
+    QuizAttemptRequest,
+    QuizAttemptResult,
+    QuizOptionCreate,
+    QuizOptionRead,
+    QuizOptionWithAnswer,
     TestCaseRead,
     TestCaseSummary,
     UserProblemStatus,
@@ -111,6 +116,7 @@ async def list_problems(
     difficulty_max: int | None = Query(None, ge=1, le=10),
     status: Literal["solved", "attempted", "unsolved"] | None = Query(None),
     sort: Literal["newest", "oldest", "easiest", "hardest", "most_solved"] = Query("oldest"),
+    problem_type: Literal["standard", "quiz"] | None = Query(None),
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ProblemListResponse:
@@ -170,6 +176,8 @@ async def list_problems(
         stmt = stmt.where(Problem.difficulty <= difficulty_max)
     if status is not None and user_sq is not None:
         stmt = stmt.where(func.coalesce(user_sq.c.user_status, "unsolved") == status)
+    if problem_type is not None:
+        stmt = stmt.where(Problem.problem_type == ProblemType(problem_type))
 
     # count before pagination
     total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
@@ -205,6 +213,7 @@ async def list_problems(
                 tags=problem.tags,
                 solve_count=solve_count,
                 user_status=UserProblemStatus(raw_status) if raw_status else None,
+                problem_type=problem.problem_type,
             )
         )
 
@@ -220,7 +229,9 @@ async def get_problem(
 ) -> ProblemDetail:
     """Detalii complete ale problemei, inclusiv cazurile de test eșantion."""
     problem = await session.scalar(
-        select(Problem).where(Problem.slug == slug).options(selectinload(Problem.test_cases))
+        select(Problem)
+        .where(Problem.slug == slug)
+        .options(selectinload(Problem.test_cases), selectinload(Problem.quiz_options))
     )
     if problem is None:
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
@@ -277,12 +288,14 @@ async def get_problem(
     )
 
     sample_tcs = [TestCaseSummary.model_validate(tc) for tc in problem.test_cases if tc.is_sample]
+    quiz_opts = [QuizOptionRead.model_validate(o) for o in problem.quiz_options]
 
     pr = ProblemRead.model_validate(problem)
     return ProblemDetail(
         **pr.model_dump(),
         solve_count=solve_count,
         sample_test_cases=sample_tcs,
+        quiz_options=quiz_opts,
         origin_contest=OriginContest(slug=origin.slug, title=origin.title) if origin else None,
     )
 
@@ -483,4 +496,73 @@ async def download_input(
         content=content,
         media_type="text/plain; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{ordinal}.in"'},
+    )
+
+
+@router.put("/{slug}/quiz-options", response_model=list[QuizOptionRead], status_code=200)
+async def set_quiz_options(
+    slug: str,
+    options: list[QuizOptionCreate],
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> list[QuizOptionRead]:
+    """Înlocuiește toate opțiunile quiz ale problemei. Autorul sau administratorul."""
+    problem = await _get_problem_or_404(slug, session)
+    _assert_can_edit(problem, current_user)
+
+    if problem.problem_type != ProblemType.quiz:
+        raise HTTPException(status_code=400, detail="Problema nu este de tip quiz")
+
+    await session.execute(sa_delete(QuizOption).where(QuizOption.problem_id == problem.id))
+
+    new_options = [
+        QuizOption(
+            problem_id=problem.id,
+            ordinal=opt.ordinal,
+            text_md=opt.text_md,
+            text_md_en=opt.text_md_en,
+            is_correct=opt.is_correct,
+            explanation_md=opt.explanation_md,
+            explanation_md_en=opt.explanation_md_en,
+        )
+        for opt in options
+    ]
+    session.add_all(new_options)
+    await session.commit()
+
+    saved = (
+        await session.scalars(
+            select(QuizOption)
+            .where(QuizOption.problem_id == problem.id)
+            .order_by(QuizOption.ordinal)
+        )
+    ).all()
+    return [QuizOptionRead.model_validate(o) for o in saved]
+
+
+@router.post("/{slug}/quiz-attempt", response_model=QuizAttemptResult)
+async def quiz_attempt(
+    slug: str,
+    body: QuizAttemptRequest,
+    session: AsyncSession = Depends(get_session),
+    current_user: User | None = Depends(get_optional_user),
+) -> QuizAttemptResult:
+    """Verifică răspunsul la un quiz. Returnează corectitudinea și explicațiile."""
+    problem = await session.scalar(
+        select(Problem).where(Problem.slug == slug).options(selectinload(Problem.quiz_options))
+    )
+    if problem is None:
+        raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
+    if problem.problem_type != ProblemType.quiz:
+        raise HTTPException(status_code=400, detail="Problema nu este de tip quiz")
+
+    _assert_can_view(problem, current_user)
+
+    correct_ids = {o.id for o in problem.quiz_options if o.is_correct}
+    selected = set(body.selected_option_ids)
+    is_correct = selected == correct_ids and len(correct_ids) > 0
+
+    return QuizAttemptResult(
+        correct=is_correct,
+        options=[QuizOptionWithAnswer.model_validate(o) for o in problem.quiz_options],
     )

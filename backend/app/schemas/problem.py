@@ -4,7 +4,50 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.problem import ComparisonMode, Visibility
+from app.models.problem import ComparisonMode, ProblemType, Visibility
+
+
+class QuizOptionRead(BaseModel):
+    """Quiz option as shown to users before answering — no answers revealed."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    ordinal: int
+    text_md: str
+    text_md_en: str | None
+
+
+class QuizOptionWithAnswer(BaseModel):
+    """Quiz option returned after an attempt — includes correct flag and explanation."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    ordinal: int
+    text_md: str
+    text_md_en: str | None
+    is_correct: bool
+    explanation_md: str | None
+    explanation_md_en: str | None
+
+
+class QuizOptionCreate(BaseModel):
+    ordinal: int
+    text_md: str = Field(min_length=1)
+    text_md_en: str | None = None
+    is_correct: bool = False
+    explanation_md: str | None = None
+    explanation_md_en: str | None = None
+
+
+class QuizAttemptRequest(BaseModel):
+    selected_option_ids: list[uuid.UUID]
+
+
+class QuizAttemptResult(BaseModel):
+    correct: bool
+    options: list[QuizOptionWithAnswer]
 
 
 class ProblemCreate(BaseModel):
@@ -12,8 +55,8 @@ class ProblemCreate(BaseModel):
     title: str = Field(min_length=1, max_length=256)
     statement_md: str
     statement_md_en: str | None = None
-    input_format: str
-    output_format: str
+    input_format: str = ""
+    output_format: str = ""
     difficulty: int = Field(ge=1, le=10)
     tags: list[str] = []
     visibility: Visibility = Visibility.draft
@@ -22,6 +65,7 @@ class ProblemCreate(BaseModel):
     score_total: int = Field(default=100, ge=1)
     comparison_mode: ComparisonMode = ComparisonMode.exact
     float_epsilon: float | None = None
+    problem_type: ProblemType = ProblemType.standard
 
 
 class ProblemUpdate(BaseModel):
@@ -37,6 +81,7 @@ class ProblemUpdate(BaseModel):
     memory_limit_kb: int | None = Field(default=None, ge=4096, le=524288)
     comparison_mode: ComparisonMode | None = None
     float_epsilon: float | None = None
+    problem_type: ProblemType | None = None
 
 
 class ProblemRead(BaseModel):
@@ -60,6 +105,7 @@ class ProblemRead(BaseModel):
     score_total: int
     comparison_mode: ComparisonMode
     float_epsilon: float | None
+    problem_type: ProblemType
 
 
 class ProblemSummary(BaseModel):
@@ -118,6 +164,7 @@ class ProblemListItem(BaseModel):
     tags: list[str]
     solve_count: int
     user_status: UserProblemStatus | None
+    problem_type: ProblemType
 
 
 class ProblemListResponse(BaseModel):
@@ -154,6 +201,8 @@ class ProblemDetail(BaseModel):
     score_total: int
     comparison_mode: ComparisonMode
     float_epsilon: float | None
+    problem_type: ProblemType
     solve_count: int
     sample_test_cases: list[TestCaseSummary]
+    quiz_options: list[QuizOptionRead] = []
     origin_contest: OriginContest | None = None

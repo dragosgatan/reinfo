@@ -36,6 +36,7 @@ const schema = z.object({
     .max(128)
     .regex(/^[a-z0-9-]+$/, "Doar litere mici, cifre și cratimă"),
   difficulty: z.coerce.number().int().min(1).max(10),
+  problem_type: z.enum(["standard", "quiz"]).default("standard"),
   statement_md: z.string().min(1, "Enunțul în română este obligatoriu"),
   statement_md_en: z.string().default(""),
   input_format: z.string().default(""),
@@ -54,6 +55,15 @@ const schema = z.object({
         output_content: z.string().min(1, "Output obligatoriu"),
         score: z.coerce.number().int().min(0).default(10),
         is_sample: z.boolean().default(false),
+      }),
+    )
+    .default([]),
+  quizOptions: z
+    .array(
+      z.object({
+        text_md: z.string().min(1, "Textul opțiunii este obligatoriu"),
+        is_correct: z.boolean().default(false),
+        explanation_md: z.string().default(""),
       }),
     )
     .default([]),
@@ -91,11 +101,13 @@ export default function NouProblemPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       difficulty: 3,
+      problem_type: "standard",
       time_limit_ms: 1000,
       memory_limit_kb: 65536,
       comparison_mode: "exact",
       tags: [],
       testCases: [],
+      quizOptions: [],
       statement_md_en: "",
     },
   });
@@ -105,12 +117,19 @@ export default function NouProblemPage() {
     name: "testCases",
   });
 
+  const {
+    fields: quizOptionFields,
+    append: appendQuizOption,
+    remove: removeQuizOption,
+  } = useFieldArray({ control, name: "quizOptions" });
+
   const watchTitle = watch("title");
   const watchSlug = watch("slug");
   const watchStatement = watch("statement_md");
   const watchStatementEn = watch("statement_md_en");
   const watchTags = watch("tags");
   const watchComparisonMode = watch("comparison_mode");
+  const watchProblemType = watch("problem_type");
 
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,6 +163,8 @@ export default function NouProblemPage() {
       try {
         const visibility = contestSlug ? "contest" : publishMode === "public" ? "public" : "draft";
 
+        const isQuiz = values.problem_type === "quiz";
+
         const problem = await api.post(
           "/api/problems/",
           {
@@ -151,14 +172,17 @@ export default function NouProblemPage() {
             title: values.title,
             statement_md: values.statement_md,
             statement_md_en: values.statement_md_en || null,
-            input_format: values.input_format ?? "",
-            output_format: values.output_format ?? "",
+            input_format: isQuiz ? "" : (values.input_format ?? ""),
+            output_format: isQuiz ? "" : (values.output_format ?? ""),
             difficulty: values.difficulty,
             tags: values.tags,
             visibility,
+            problem_type: values.problem_type,
             time_limit_ms: values.time_limit_ms,
             memory_limit_kb: values.memory_limit_kb,
-            score_total: values.testCases.reduce((sum, tc) => sum + (tc.score ?? 0), 0) || 100,
+            score_total: isQuiz
+              ? 100
+              : values.testCases.reduce((sum, tc) => sum + (tc.score ?? 0), 0) || 100,
             comparison_mode: values.comparison_mode,
             float_epsilon:
               values.comparison_mode === "float_epsilon" ? values.float_epsilon : null,
@@ -166,35 +190,49 @@ export default function NouProblemPage() {
           ProblemReadSchema,
         );
 
-        for (let i = 0; i < values.testCases.length; i++) {
-          const tc = values.testCases[i];
-          const formData = new FormData();
-          formData.append("ordinal", String(i));
-          formData.append("score", String(tc.score));
-          formData.append("is_sample", String(tc.is_sample));
-          formData.append("is_hidden", String(!tc.is_sample));
-          formData.append(
-            "input_file",
-            new Blob([tc.input_content], { type: "text/plain" }),
-            `${i}.in`,
+        if (isQuiz && values.quizOptions.length > 0) {
+          await api.put(
+            `/api/problems/${problem.slug}/quiz-options`,
+            values.quizOptions.map((opt, i) => ({
+              ordinal: i,
+              text_md: opt.text_md,
+              is_correct: opt.is_correct,
+              explanation_md: opt.explanation_md || null,
+            })),
           );
-          formData.append(
-            "output_file",
-            new Blob([tc.output_content], { type: "text/plain" }),
-            `${i}.out`,
-          );
+        }
 
-          const res = await fetch(`/api/problems/${problem.slug}/test-cases`, {
-            method: "POST",
-            credentials: "include",
-            body: formData,
-          });
-
-          if (!res.ok) {
-            const payload = await res.json().catch(() => ({}));
-            throw new Error(
-              `Test ${i + 1}: ${(payload as { detail?: string }).detail ?? "Eroare"}`,
+        if (!isQuiz) {
+          for (let i = 0; i < values.testCases.length; i++) {
+            const tc = values.testCases[i];
+            const formData = new FormData();
+            formData.append("ordinal", String(i));
+            formData.append("score", String(tc.score));
+            formData.append("is_sample", String(tc.is_sample));
+            formData.append("is_hidden", String(!tc.is_sample));
+            formData.append(
+              "input_file",
+              new Blob([tc.input_content], { type: "text/plain" }),
+              `${i}.in`,
             );
+            formData.append(
+              "output_file",
+              new Blob([tc.output_content], { type: "text/plain" }),
+              `${i}.out`,
+            );
+
+            const res = await fetch(`/api/problems/${problem.slug}/test-cases`, {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            });
+
+            if (!res.ok) {
+              const payload = await res.json().catch(() => ({}));
+              throw new Error(
+                `Test ${i + 1}: ${(payload as { detail?: string }).detail ?? "Eroare"}`,
+              );
+            }
           }
         }
 
@@ -437,84 +475,152 @@ export default function NouProblemPage() {
             </Tabs>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="input_format">Format date de intrare</Label>
-              <textarea
-                id="input_format"
-                {...register("input_format")}
-                rows={4}
-                placeholder="Descrierea datelor de intrare (Markdown)"
-                className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
+          {watchProblemType !== "quiz" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="input_format">Format date de intrare</Label>
+                <textarea
+                  id="input_format"
+                  {...register("input_format")}
+                  rows={4}
+                  placeholder="Descrierea datelor de intrare (Markdown)"
+                  className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="output_format">Format date de ieșire</Label>
+                <textarea
+                  id="output_format"
+                  {...register("output_format")}
+                  rows={4}
+                  placeholder="Descrierea datelor de ieșire (Markdown)"
+                  className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="output_format">Format date de ieșire</Label>
-              <textarea
-                id="output_format"
-                {...register("output_format")}
-                rows={4}
-                placeholder="Descrierea datelor de ieșire (Markdown)"
-                className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-          </div>
+          )}
 
           <Separator />
 
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <Label>Cazuri de test</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1"
-                onClick={() =>
-                  append({ input_content: "", output_content: "", score: 10, is_sample: false })
-                }
-              >
-                <Plus className="h-3 w-3" />
-                Adaugă
-              </Button>
-            </div>
-
-            {testCaseFields.length === 0 ? (
-              <p className="rounded border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
-                Nu ai adăugat cazuri de test.{" "}
-                <button
+          {watchProblemType === "quiz" ? (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <Label>Opțiuni quiz</Label>
+                <Button
                   type="button"
-                  className="text-primary hover:underline"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1"
                   onClick={() =>
-                    append({
-                      input_content: "",
-                      output_content: "",
-                      score: 10,
-                      is_sample: false,
-                    })
+                    appendQuizOption({ text_md: "", is_correct: false, explanation_md: "" })
                   }
                 >
-                  Adaugă primul
-                </button>
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {testCaseFields.map((field, index) => (
-                  <TestCaseRow
-                    key={field.id}
-                    index={index}
-                    register={register}
-                    setValue={setValue}
-                    errors={errors}
-                    onRemove={() => remove(index)}
-                  />
-                ))}
+                  <Plus className="h-3 w-3" />
+                  Adaugă opțiune
+                </Button>
               </div>
-            )}
-          </div>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Bifează &quot;Corect&quot; pentru una sau mai multe răspunsuri corecte.
+              </p>
+
+              {quizOptionFields.length === 0 ? (
+                <p className="rounded border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
+                  Nu ai adăugat opțiuni.{" "}
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    onClick={() =>
+                      appendQuizOption({ text_md: "", is_correct: false, explanation_md: "" })
+                    }
+                  >
+                    Adaugă prima
+                  </button>
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {quizOptionFields.map((field, index) => (
+                    <QuizOptionRow
+                      key={field.id}
+                      index={index}
+                      register={register}
+                      errors={errors}
+                      onRemove={() => removeQuizOption(index)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <Label>Cazuri de test</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1"
+                  onClick={() =>
+                    append({ input_content: "", output_content: "", score: 10, is_sample: false })
+                  }
+                >
+                  <Plus className="h-3 w-3" />
+                  Adaugă
+                </Button>
+              </div>
+
+              {testCaseFields.length === 0 ? (
+                <p className="rounded border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
+                  Nu ai adăugat cazuri de test.{" "}
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    onClick={() =>
+                      append({
+                        input_content: "",
+                        output_content: "",
+                        score: 10,
+                        is_sample: false,
+                      })
+                    }
+                  >
+                    Adaugă primul
+                  </button>
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {testCaseFields.map((field, index) => (
+                    <TestCaseRow
+                      key={field.id}
+                      index={index}
+                      register={register}
+                      setValue={setValue}
+                      errors={errors}
+                      onRemove={() => remove(index)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <aside className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Tip problemă</Label>
+            <Select
+              defaultValue="standard"
+              onValueChange={(v) => setValue("problem_type", v as "standard" | "quiz")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard (cod)</SelectItem>
+                <SelectItem value="quiz">Quiz (alegere multiplă)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-1.5">
             <Label>Dificultate</Label>
             <Select
@@ -640,6 +746,65 @@ export default function NouProblemPage() {
 
 type RegisterFn = ReturnType<typeof useForm<FormValues>>["register"];
 type ErrorsType = ReturnType<typeof useForm<FormValues>>["formState"]["errors"];
+
+function QuizOptionRow({
+  index,
+  register,
+  errors,
+  onRemove,
+}: {
+  index: number;
+  register: RegisterFn;
+  errors: ErrorsType;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded border border-border p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-mono text-xs text-muted-foreground">Opțiunea {index + 1}</span>
+        <div className="flex items-center gap-3">
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              {...register(`quizOptions.${index}.is_correct`)}
+              className="h-3 w-3 rounded border-border"
+            />
+            Corect
+          </label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+            onClick={onRemove}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <textarea
+          {...register(`quizOptions.${index}.text_md`)}
+          rows={2}
+          placeholder="Textul opțiunii (Markdown suportat)"
+          className={cn(
+            "w-full rounded border border-input bg-muted/30 px-2 py-1.5 font-mono text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+            errors.quizOptions?.[index]?.text_md && "border-destructive",
+          )}
+        />
+        {errors.quizOptions?.[index]?.text_md && (
+          <p className="text-xs text-destructive">{errors.quizOptions[index].text_md?.message}</p>
+        )}
+        <textarea
+          {...register(`quizOptions.${index}.explanation_md`)}
+          rows={2}
+          placeholder="Explicație (opțional, afișată după răspuns)"
+          className="w-full rounded border border-input bg-muted/30 px-2 py-1.5 font-mono text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      </div>
+    </div>
+  );
+}
 
 function TestCaseRow({
   index,

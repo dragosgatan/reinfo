@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text, text
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,6 +26,11 @@ class ComparisonMode(StrEnum):
     exact = "exact"
     whitespace_insensitive = "whitespace_insensitive"
     float_epsilon = "float_epsilon"
+
+
+class ProblemType(StrEnum):
+    standard = "standard"
+    quiz = "quiz"
 
 
 class Problem(Base, TimestampMixin):
@@ -69,6 +74,11 @@ class Problem(Base, TimestampMixin):
     origin_contest_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("contests.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    problem_type: Mapped[ProblemType] = mapped_column(
+        Enum(ProblemType, name="problemtype"),
+        nullable=False,
+        server_default=text("'standard'"),
+    )
 
     author: Mapped["User | None"] = relationship("User", back_populates="problems")
     test_cases: Mapped[list["TestCase"]] = relationship(
@@ -76,6 +86,12 @@ class Problem(Base, TimestampMixin):
         back_populates="problem",
         cascade="all, delete-orphan",
         order_by="TestCase.ordinal",
+    )
+    quiz_options: Mapped[list["QuizOption"]] = relationship(
+        "QuizOption",
+        back_populates="problem",
+        cascade="all, delete-orphan",
+        order_by="QuizOption.ordinal",
     )
     submissions: Mapped[list["Submission"]] = relationship("Submission", back_populates="problem")
     origin_contest: Mapped["Contest | None"] = relationship(
@@ -106,3 +122,20 @@ class TestCase(Base):
     results: Mapped[list["SubmissionResult"]] = relationship(
         "SubmissionResult", back_populates="test_case"
     )
+
+
+class QuizOption(Base):
+    __tablename__ = "quiz_options"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
+    problem_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("problems.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    text_md: Mapped[str] = mapped_column(Text, nullable=False)
+    text_md_en: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_correct: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    explanation_md: Mapped[str | None] = mapped_column(Text, nullable=True)
+    explanation_md_en: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    problem: Mapped["Problem"] = relationship("Problem", back_populates="quiz_options")

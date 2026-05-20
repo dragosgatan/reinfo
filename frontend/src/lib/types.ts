@@ -1,5 +1,33 @@
 import { z } from "zod";
 
+export const ProblemTypeSchema = z.enum(["standard", "quiz"]);
+export type ProblemType = z.infer<typeof ProblemTypeSchema>;
+
+export const QuizOptionReadSchema = z.object({
+  id: z.string().uuid(),
+  ordinal: z.number().int(),
+  text_md: z.string(),
+  text_md_en: z.string().nullable(),
+});
+export type QuizOptionRead = z.infer<typeof QuizOptionReadSchema>;
+
+export const QuizOptionWithAnswerSchema = z.object({
+  id: z.string().uuid(),
+  ordinal: z.number().int(),
+  text_md: z.string(),
+  text_md_en: z.string().nullable(),
+  is_correct: z.boolean(),
+  explanation_md: z.string().nullable(),
+  explanation_md_en: z.string().nullable(),
+});
+export type QuizOptionWithAnswer = z.infer<typeof QuizOptionWithAnswerSchema>;
+
+export const QuizAttemptResultSchema = z.object({
+  correct: z.boolean(),
+  options: z.array(QuizOptionWithAnswerSchema),
+});
+export type QuizAttemptResult = z.infer<typeof QuizAttemptResultSchema>;
+
 export const ProblemListItemSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -8,6 +36,7 @@ export const ProblemListItemSchema = z.object({
   tags: z.array(z.string()),
   solve_count: z.number().int(),
   user_status: z.enum(["solved", "attempted", "unsolved"]).nullable(),
+  problem_type: ProblemTypeSchema,
 });
 export type ProblemListItem = z.infer<typeof ProblemListItemSchema>;
 
@@ -59,8 +88,10 @@ export const ProblemDetailSchema = z.object({
   score_total: z.number().int(),
   comparison_mode: z.enum(["exact", "whitespace_insensitive", "float_epsilon"]),
   float_epsilon: z.number().nullable(),
+  problem_type: ProblemTypeSchema,
   solve_count: z.number().int(),
   sample_test_cases: z.array(TestCaseSummarySchema),
+  quiz_options: z.array(QuizOptionReadSchema),
   origin_contest: z.object({ slug: z.string(), title: z.string() }).nullable(),
 });
 export type ProblemDetail = z.infer<typeof ProblemDetailSchema>;
@@ -142,6 +173,7 @@ export const ProblemReadSchema = z.object({
   score_total: z.number().int(),
   comparison_mode: z.enum(["exact", "whitespace_insensitive", "float_epsilon"]),
   float_epsilon: z.number().nullable(),
+  problem_type: ProblemTypeSchema,
 });
 export type ProblemRead = z.infer<typeof ProblemReadSchema>;
 
