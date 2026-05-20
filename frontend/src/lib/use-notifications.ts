@@ -13,8 +13,8 @@ export function useNotificationsWs() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const proto = window.location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${proto}://${window.location.host}/api/social/ws/notifications`);
+    const base = process.env.NEXT_PUBLIC_API_URL ?? window.location.origin;
+    const ws = new WebSocket(base.replace(/^http/, "ws") + "/api/social/ws/notifications");
     wsRef.current = ws;
 
     ws.onmessage = (ev) => {

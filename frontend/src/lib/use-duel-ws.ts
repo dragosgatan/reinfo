@@ -51,9 +51,8 @@ export function useDuelWs(duelId: string | null, enabled = true): UseDuelWsResul
   useEffect(() => {
     if (!enabled || !duelId) return;
 
-    const proto = window.location.protocol === "https:" ? "wss" : "ws";
-    const host = window.location.host;
-    const url = `${proto}://${host}/api/duels/${duelId}/ws`;
+    const base = process.env.NEXT_PUBLIC_API_URL ?? window.location.origin;
+    const url = base.replace(/^http/, "ws") + `/api/duels/${duelId}/ws`;
 
     let cancelled = false;
     const ws = new WebSocket(url);

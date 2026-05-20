@@ -12,8 +12,8 @@ export function useClassChat(classId: string) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const proto = window.location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${proto}://${window.location.host}/api/classes/${classId}/ws`);
+    const base = process.env.NEXT_PUBLIC_API_URL ?? window.location.origin;
+    const ws = new WebSocket(base.replace(/^http/, "ws") + `/api/classes/${classId}/ws`);
     wsRef.current = ws;
 
     ws.onopen = () => setStatus("live");

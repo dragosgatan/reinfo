@@ -400,8 +400,17 @@ async def delete_test_case_endpoint(
         raise HTTPException(status_code=404, detail="Cazul de test nu a fost găsit")
     await delete_test_case(tc.input_path, tc.output_path)
     await session.execute(sa_delete(TestCase).where(TestCase.id == tc.id))
+    await _sync_score_total(problem, session)
     await session.commit()
     return {"message": "Cazul de test a fost șters"}
+
+
+async def _sync_score_total(problem: Problem, session: AsyncSession) -> None:
+    """Update problem.score_total to match the sum of its test case scores."""
+    result = await session.scalar(
+        select(func.coalesce(func.sum(TestCase.score), 0)).where(TestCase.problem_id == problem.id)
+    )
+    problem.score_total = int(result)
 
 
 @router.post("/{slug}/test-cases", response_model=TestCaseRead, status_code=201)
@@ -454,6 +463,7 @@ async def upload_test_case(
         )
         session.add(tc)
 
+    await _sync_score_total(problem, session)
     await session.commit()
     await session.refresh(tc)
     return TestCaseRead.model_validate(tc)
