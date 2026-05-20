@@ -3,13 +3,17 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 
+import httpx
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
 
 from app.config import settings
+from app.db import engine
 from app.limiter import limiter
 from app.realtime import class_chat_hub, notification_hub, run_listener
 from app.routers import auth, classrooms, contests, duels, lessons, problems, social, submissions
@@ -17,6 +21,13 @@ from app.routers import users as users_router
 from app.routers.contests import dispatch_leaderboard_update
 from app.routers.duels import dispatch_duel_update
 from app.storage import avatars_directory
+
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.environment,
+        traces_sample_rate=0.05,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -105,3 +116,27 @@ app.mount("/avatars", StaticFiles(directory=str(avatars_directory())), name="ava
 async def health() -> dict[str, str]:
     """Verifică starea serverului."""
     return {"status": "ok"}
+
+
+@app.get("/api/health/detailed", tags=["system"])
+async def health_detailed() -> dict[str, object]:
+    """Verifică conectivitatea la baza de date și Piston."""
+    checks: dict[str, str] = {}
+
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception:
+        log.exception("health check: database unreachable")
+        checks["database"] = "error"
+
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(f"{settings.piston_url}/api/v2/runtimes")
+            checks["piston"] = "ok" if resp.status_code == 200 else "error"
+    except Exception:
+        checks["piston"] = "error"
+
+    overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
+    return {"status": overall, "checks": checks}

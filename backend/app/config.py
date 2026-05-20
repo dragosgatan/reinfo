@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     data_dir: str = "../data"
     environment: str = "development"
     piston_url: str = "http://piston:2000"
+    sentry_dsn: str = ""
 
 
 settings = Settings()

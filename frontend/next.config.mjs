@@ -1,4 +1,5 @@
 import createNextIntlPlugin from "next-intl/plugin";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -19,4 +20,13 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+const sentryConfig = {
+  org: process.env.SENTRY_ORG ?? "",
+  project: process.env.SENTRY_PROJECT ?? "reinfo-frontend",
+  silent: true,
+  disableLogger: true,
+  // Only upload source maps when SENTRY_AUTH_TOKEN is set (CI/production builds)
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+};
+
+export default withSentryConfig(withNextIntl(nextConfig), sentryConfig);

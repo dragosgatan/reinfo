@@ -55,6 +55,8 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+.env.prod
+nginx/certbot-webroot/
 
 # Alembic
 backend/alembic/versions/*.pyc
