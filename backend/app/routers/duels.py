@@ -367,6 +367,24 @@ async def decline_duel_request(
     await session.commit()
 
 
+@router.get("/lobby", response_model=LobbyResponse)
+async def get_lobby(
+    session: AsyncSession = Depends(get_session),
+    current_user: User | None = Depends(lambda: None),
+) -> LobbyResponse:
+    """Public lobby: queue counts, active duels, recent finished duels."""
+    return await _build_lobby(session, None)
+
+
+@router.get("/lobby/me", response_model=LobbyResponse)
+async def get_lobby_me(
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> LobbyResponse:
+    """Lobby including the current user's queue entry."""
+    return await _build_lobby(session, current_user)
+
+
 @router.get("/{duel_id}", response_model=DuelRead)
 async def get_duel(
     duel_id: uuid.UUID,
@@ -537,25 +555,6 @@ async def get_rating_history(
         .limit(20)
     )
     return list(rows)
-
-
-@router.get("/lobby", response_model=LobbyResponse)
-async def get_lobby(
-    session: AsyncSession = Depends(get_session),
-    current_user: User | None = Depends(lambda: None),
-) -> LobbyResponse:
-    """Public lobby: queue counts, active duels, recent finished duels."""
-
-    return await _build_lobby(session, None)
-
-
-@router.get("/lobby/me", response_model=LobbyResponse)
-async def get_lobby_me(
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-) -> LobbyResponse:
-    """Lobby including the current user's queue entry."""
-    return await _build_lobby(session, current_user)
 
 
 async def _build_lobby(session: AsyncSession, current_user: User | None) -> LobbyResponse:
