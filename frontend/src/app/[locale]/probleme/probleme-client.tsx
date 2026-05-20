@@ -3,6 +3,8 @@
 import { useCallback, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { Search, X, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,35 +23,36 @@ import { StatusIcon } from "@/components/problems/status-icon";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { ProblemListResponseSchema, ALL_TAGS, TAG_LABELS } from "@/lib/types";
+import { ProblemListResponseSchema, ALL_TAGS, getTagLabel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { ProblemListItem } from "@/lib/types";
 
 const PER_PAGE = 20;
-
-const SORT_OPTIONS = [
-  { value: "oldest", label: "Cele mai vechi" },
-  { value: "newest", label: "Cele mai noi" },
-  { value: "easiest", label: "Cele mai ușoare" },
-  { value: "hardest", label: "Cele mai grele" },
-  { value: "most_solved", label: "Cele mai rezolvate" },
-] as const;
-
 const DIFF_ANY = "any";
-
-const DIFFICULTY_OPTIONS = [
-  { value: DIFF_ANY, label: "Orice" },
-  ...Array.from({ length: 10 }, (_, i) => ({
-    value: String(i + 1),
-    label: String(i + 1),
-  })),
-];
 
 export default function ProblemeClient() {
   const router = useRouter();
   const params = useSearchParams();
   const { user, isAuthenticated } = useAuth();
   const [, startTransition] = useTransition();
+  const t = useTranslations("problems");
+  const locale = useLocale();
+
+  const SORT_OPTIONS = [
+    { value: "oldest", label: t("sortOldest") },
+    { value: "newest", label: t("sortNewest") },
+    { value: "easiest", label: t("sortEasiest") },
+    { value: "hardest", label: t("sortHardest") },
+    { value: "most_solved", label: t("sortMostSolved") },
+  ] as const;
+
+  const DIFFICULTY_OPTIONS = [
+    { value: DIFF_ANY, label: t("difficultyAny") },
+    ...Array.from({ length: 10 }, (_, i) => ({
+      value: String(i + 1),
+      label: String(i + 1),
+    })),
+  ];
 
   const q = params.get("q") ?? "";
   const diffMin = params.get("diff_min") ?? "";
@@ -80,9 +83,9 @@ export default function ProblemeClient() {
       const current = next.getAll("tags");
       next.delete("tags");
       if (current.includes(tag)) {
-        current.filter((t) => t !== tag).forEach((t) => next.append("tags", t));
+        current.filter((tg) => tg !== tag).forEach((tg) => next.append("tags", tg));
       } else {
-        [...current, tag].forEach((t) => next.append("tags", t));
+        [...current, tag].forEach((tg) => next.append("tags", tg));
       }
       next.delete("page");
       startTransition(() => router.replace(`?${next.toString()}`, { scroll: false }));
@@ -110,7 +113,7 @@ export default function ProblemeClient() {
     if (q) p.set("search", q);
     if (diffMin) p.set("difficulty_min", diffMin);
     if (diffMax) p.set("difficulty_max", diffMax);
-    activeTags.forEach((t) => p.append("tags", t));
+    activeTags.forEach((tg) => p.append("tags", tg));
     if (status && isAuthenticated) p.set("status", status);
     p.set("sort", sort);
     if (problemType) p.set("problem_type", problemType);
@@ -126,22 +129,35 @@ export default function ProblemeClient() {
 
   const hasFilters = q || diffMin || diffMax || activeTags.length > 0 || status || problemType;
 
+  const STATUS_OPTIONS = [
+    { value: "", label: t("statusAll") },
+    { value: "solved", label: t("solved") },
+    { value: "attempted", label: t("attempted") },
+    { value: "unsolved", label: t("unsolved") },
+  ] as const;
+
+  const TYPE_OPTIONS = [
+    { value: "", label: t("typeAll") },
+    { value: "standard", label: t("typeStandard") },
+    { value: "quiz", label: t("typeQuiz") },
+  ] as const;
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Probleme</h1>
+          <h1 className="text-xl font-bold tracking-tight">{t("title")}</h1>
           {data && (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {data.total.toLocaleString("ro")} probleme
+              {t("problemCount", { count: data.total.toLocaleString(locale) })}
             </p>
           )}
         </div>
         {user?.role === "teacher" || user?.role === "admin" ? (
           <Button asChild size="sm" className="gap-1.5">
             <Link href="/probleme/nou">
-              <Plus className="h-3.5 w-3.5" />
-              Adaugă
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              {t("addProblem")}
             </Link>
           </Button>
         ) : null}
@@ -151,9 +167,10 @@ export default function ProblemeClient() {
         <aside className="space-y-5">
           <div>
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" aria-hidden="true" />
               <Input
-                placeholder="Caută..."
+                placeholder={t("search")}
+                aria-label={t("search")}
                 className="h-8 pl-8 text-sm"
                 value={q}
                 onChange={(e) => setParam("q", e.target.value)}
@@ -163,7 +180,7 @@ export default function ProblemeClient() {
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Sortare
+              {t("sortLabel")}
             </p>
             <Select value={sort} onValueChange={(v) => setParam("sort", v)}>
               <SelectTrigger className="h-8 text-xs">
@@ -181,7 +198,7 @@ export default function ProblemeClient() {
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Dificultate
+              {t("difficulty")}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -226,21 +243,22 @@ export default function ProblemeClient() {
           {isAuthenticated && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Status
+                {t("statusLabel")}
               </p>
-              <div className="flex flex-wrap gap-1.5">
-                {(["", "solved", "attempted", "unsolved"] as const).map((s) => (
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("statusLabel")}>
+                {STATUS_OPTIONS.map((opt) => (
                   <button
-                    key={s}
-                    onClick={() => setParam("status", s)}
+                    key={opt.value}
+                    onClick={() => setParam("status", opt.value)}
+                    aria-pressed={status === opt.value}
                     className={cn(
                       "rounded border px-2 py-1 text-xs transition-colors",
-                      status === s
+                      status === opt.value
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
                     )}
                   >
-                    {s === "" ? "Toate" : s === "solved" ? "Rezolvat" : s === "attempted" ? "Încercat" : "Nerezolvat"}
+                    {opt.label}
                   </button>
                 ))}
               </div>
@@ -249,21 +267,22 @@ export default function ProblemeClient() {
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Tip
+              {t("typeLabel")}
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {(["", "standard", "quiz"] as const).map((t) => (
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("typeLabel")}>
+              {TYPE_OPTIONS.map((opt) => (
                 <button
-                  key={t}
-                  onClick={() => setParam("type", t)}
+                  key={opt.value}
+                  onClick={() => setParam("type", opt.value)}
+                  aria-pressed={problemType === opt.value}
                   className={cn(
                     "rounded border px-2 py-1 text-xs transition-colors",
-                    problemType === t
+                    problemType === opt.value
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
                   )}
                 >
-                  {t === "" ? "Toate" : t === "standard" ? "Standard" : "Quiz"}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -271,13 +290,14 @@ export default function ProblemeClient() {
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Etichete
+              {t("tags")}
             </p>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1" role="group" aria-label={t("tags")}>
               {ALL_TAGS.map((tag) => (
                 <button
                   key={tag}
                   onClick={() => toggleTag(tag)}
+                  aria-pressed={activeTags.includes(tag)}
                   className={cn(
                     "rounded border px-2 py-0.5 text-xs transition-colors",
                     activeTags.includes(tag)
@@ -285,7 +305,7 @@ export default function ProblemeClient() {
                       : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
                   )}
                 >
-                  {TAG_LABELS[tag] ?? tag}
+                  {getTagLabel(tag, t as (key: string) => string)}
                 </button>
               ))}
             </div>
@@ -296,8 +316,8 @@ export default function ProblemeClient() {
               onClick={clearFilters}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
-              <X className="h-3 w-3" />
-              Șterge filtrele
+              <X className="h-3 w-3" aria-hidden="true" />
+              {t("clearFilters")}
             </button>
           )}
         </aside>
@@ -309,11 +329,11 @@ export default function ProblemeClient() {
                 <TableRow className="hover:bg-transparent">
                   {isAuthenticated && <TableHead className="w-8" />}
                   <TableHead className="w-12 font-mono text-xs">#</TableHead>
-                  <TableHead>Titlu</TableHead>
-                  <TableHead className="w-28 text-center">Dificultate</TableHead>
-                  <TableHead className="hidden sm:table-cell">Etichete</TableHead>
+                  <TableHead>{t("tableTitle")}</TableHead>
+                  <TableHead className="w-28 text-center">{t("difficulty")}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{t("tags")}</TableHead>
                   <TableHead className="hidden w-24 text-right font-mono text-xs md:table-cell">
-                    Rezolvate
+                    {t("solveCount")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -351,6 +371,7 @@ export default function ProblemeClient() {
                         showStatus={isAuthenticated}
                         onTagClick={toggleTag}
                         activeTag={(tag) => activeTags.includes(tag)}
+                        locale={locale}
                       />
                     ))}
 
@@ -360,7 +381,7 @@ export default function ProblemeClient() {
                       colSpan={isAuthenticated ? 6 : 5}
                       className="py-8 text-center text-sm text-muted-foreground"
                     >
-                      Nu au fost găsite probleme.
+                      {t("noProblems")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -371,7 +392,7 @@ export default function ProblemeClient() {
           {data && data.pages > 1 && (
             <div className="mt-4 flex items-center justify-between text-sm">
               <span className="text-xs text-muted-foreground">
-                Pagina {page} din {data.pages}
+                {t("page", { n: page, total: data.pages })}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -380,14 +401,14 @@ export default function ProblemeClient() {
                   className="h-7 w-7 p-0"
                   onClick={() => setPage(page - 1)}
                   disabled={page <= 1}
-                  aria-label="Pagina anterioară"
+                  aria-label={t("prevPage")}
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
                 {Array.from({ length: Math.min(data.pages, 7) }, (_, i) => {
                   const p = getPageNumber(i, page, data.pages);
                   return p === null ? (
-                    <span key={i} className="px-1 text-muted-foreground">
+                    <span key={i} className="px-1 text-muted-foreground" aria-hidden="true">
                       …
                     </span>
                   ) : (
@@ -395,6 +416,7 @@ export default function ProblemeClient() {
                       key={p}
                       variant={p === page ? "outline" : "ghost"}
                       size="sm"
+                      aria-current={p === page ? "page" : undefined}
                       className={cn(
                         "h-7 w-7 p-0 font-mono text-xs",
                         p === page && "border-primary text-primary",
@@ -411,9 +433,9 @@ export default function ProblemeClient() {
                   className="h-7 w-7 p-0"
                   onClick={() => setPage(page + 1)}
                   disabled={page >= data.pages}
-                  aria-label="Pagina următoare"
+                  aria-label={t("nextPage")}
                 >
-                  <ChevronRight className="h-3.5 w-3.5" />
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -430,13 +452,16 @@ function ProblemRow({
   showStatus,
   onTagClick,
   activeTag,
+  locale,
 }: {
   problem: ProblemListItem;
   index: number;
   showStatus: boolean;
   onTagClick: (tag: string) => void;
   activeTag: (tag: string) => boolean;
+  locale: string;
 }) {
+  const t = useTranslations("problems");
   return (
     <TableRow>
       {showStatus && (
@@ -471,6 +496,7 @@ function ProblemRow({
             <button
               key={tag}
               onClick={() => onTagClick(tag)}
+              aria-pressed={activeTag(tag)}
               className={cn(
                 "rounded border px-1.5 py-0.5 text-xs transition-colors",
                 activeTag(tag)
@@ -478,7 +504,7 @@ function ProblemRow({
                   : "border-border text-muted-foreground hover:border-foreground/30",
               )}
             >
-              {TAG_LABELS[tag] ?? tag}
+              {getTagLabel(tag, t as (key: string) => string)}
             </button>
           ))}
           {problem.tags.length > 3 && (
@@ -487,7 +513,7 @@ function ProblemRow({
         </div>
       </TableCell>
       <TableCell className="hidden text-right font-mono text-xs text-muted-foreground md:table-cell">
-        {problem.solve_count.toLocaleString("ro")}
+        {problem.solve_count.toLocaleString(locale)}
       </TableCell>
     </TableRow>
   );

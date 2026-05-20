@@ -31,12 +31,12 @@ export function UserMenu() {
       queryClient.setQueryData(["auth", "me"], null);
       router.push("/");
     } catch {
-      toast.error("Eroare la deconectare.");
+      toast.error(t("logout"));
     }
   }
 
   if (isLoading) {
-    return <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />;
+    return <div className="h-8 w-8 animate-pulse rounded-full bg-muted" aria-hidden="true" />;
   }
 
   if (!isAuthenticated || !user) {
@@ -57,9 +57,15 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+        <Button
+          variant="ghost"
+          className="relative h-8 w-8 rounded-full p-0"
+          aria-label={t("userMenu")}
+        >
           <Avatar className="h-8 w-8">
-            {user.avatar_url && <AvatarImage src={resolveMediaUrl(user.avatar_url)} alt={user.username} />}
+            {user.avatar_url && (
+              <AvatarImage src={resolveMediaUrl(user.avatar_url)} alt={user.username} />
+            )}
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
@@ -72,19 +78,22 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href={`/u/${user.username}`}>
-            <User className="mr-2 h-4 w-4" />
+            <User className="mr-2 h-4 w-4" aria-hidden="true" />
             {t("profile")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/setari/profil">
-            <Settings className="mr-2 h-4 w-4" />
+            <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
             {t("settings")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-          <LogOut className="mr-2 h-4 w-4" />
+        <DropdownMenuItem
+          onClick={handleLogout}
+          className="text-destructive focus:text-destructive"
+        >
+          <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
           {t("logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>

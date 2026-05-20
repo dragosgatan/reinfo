@@ -1,4 +1,7 @@
 {
+  "accessibility": {
+    "skipToContent": "Sari la conținutul principal"
+  },
   "nav": {
     "problems": "Probleme",
     "submissions": "Submisii",
@@ -9,7 +12,11 @@
     "friends": "Prieteni",
     "classes": "Clase",
     "search": "Caută...",
-    "searchPlaceholder": "Caută probleme, utilizatori..."
+    "searchPlaceholder": "Caută probleme, utilizatori...",
+    "mainLabel": "Navigare principală",
+    "mobileMenuOpen": "Deschide meniul de navigare",
+    "mobileMenuClose": "Închide meniul de navigare",
+    "allResultsFor": "Toate rezultatele pentru \"{query}\""
   },
   "auth": {
     "login": "Autentificare",
@@ -18,7 +25,8 @@
     "profile": "Profil",
     "settings": "Setări",
     "loggingIn": "Se autentifică...",
-    "registering": "Se înregistrează..."
+    "registering": "Se înregistrează...",
+    "userMenu": "Meniu utilizator"
   },
   "home": {
     "title": "Programare competitivă pentru toți",
@@ -33,6 +41,16 @@
       "users": "Utilizatori",
       "submissions": "Submisii",
       "contests": "Concursuri"
+    },
+    "features": {
+      "pythonTitle": "Gândit pentru Python",
+      "pythonDesc": "Rezolvă probleme direct în Python, limbajul ideal pentru cei care abia încep drumul în informatică.",
+      "duelsTitle": "Dueluri 1v1",
+      "duelsDesc": "Provoacă prieteni sau adversari aleatorii la dueluri temporizate cu sistem de rating Elo.",
+      "socialTitle": "Experiență socială",
+      "socialDesc": "Profiluri, listă de prieteni, clasamente și feed de activitate pentru o competiție reală.",
+      "teachersTitle": "Unealtă pentru profesori",
+      "teachersDesc": "Creează clase, atribuie probleme și urmărește progresul elevilor dintr-un singur loc."
     }
   },
   "problems": {
@@ -104,7 +122,53 @@
     "testResults": "Teste",
     "compileError": "Eroare de compilare",
     "emptyCode": "Codul sursă nu poate fi gol.",
-    "errorGeneric": "A apărut o eroare. Încearcă din nou."
+    "errorGeneric": "A apărut o eroare. Încearcă din nou.",
+    "sortLabel": "Sortare",
+    "sortOldest": "Cele mai vechi",
+    "sortNewest": "Cele mai noi",
+    "sortEasiest": "Cele mai ușoare",
+    "sortHardest": "Cele mai grele",
+    "sortMostSolved": "Cele mai rezolvate",
+    "difficultyAny": "Orice",
+    "difficultyTitle": "Dificultate {n}/10",
+    "statusLabel": "Status",
+    "statusAll": "Toate",
+    "typeLabel": "Tip",
+    "typeAll": "Toate",
+    "typeStandard": "Standard",
+    "typeQuiz": "Quiz",
+    "clearFilters": "Șterge filtrele",
+    "tableTitle": "Titlu",
+    "problemCount": "{count} probleme",
+    "addProblem": "Adaugă",
+    "prevPage": "Pagina anterioară",
+    "nextPage": "Pagina următoare",
+    "notFoundError": "Problema nu a fost găsită.",
+    "loadError": "A apărut o eroare la încărcarea problemei.",
+    "quizAnswerTitle": "Răspunde",
+    "quizVerify": "Verifică",
+    "quizVerifying": "Se verifică...",
+    "quizCorrect": "Răspuns corect!",
+    "quizWrong": "Răspuns greșit.",
+    "quizRetry": "Încearcă din nou",
+    "quizExplanation": "Explicație",
+    "page": "Pagina {n} din {total}",
+    "tagLabels": {
+      "sortare": "Sortare",
+      "cautare": "Căutare binară",
+      "dp": "Programare dinamică",
+      "grafuri": "Grafuri",
+      "arbori": "Arbori",
+      "matematica": "Matematică",
+      "geometrie": "Geometrie",
+      "greedy": "Greedy",
+      "backtracking": "Backtracking",
+      "recursivitate": "Recursivitate",
+      "vectori": "Vectori",
+      "siruri": "Șiruri",
+      "combinatorica": "Combinatorică",
+      "divide-cucereste": "Divide și cucerește"
+    }
   },
   "submissions": {
     "title": "Submisii",
@@ -253,7 +317,8 @@
     "losses": "Î",
     "draws": "R",
     "noEntries": "Niciun utilizator în clasament.",
-    "weeklyNote": "Probleme rezolvate în ultimele 7 zile"
+    "weeklyNote": "Probleme rezolvate în ultimele 7 zile",
+    "scoreTooltip": "Ușor × 1 + Mediu × 2 + Greu × 3"
   },
   "profile": {
     "editProfile": "Editează profil",
@@ -363,7 +428,17 @@
     "language": "Limbă",
     "theme": "Temă",
     "lightMode": "Modul clar",
-    "darkMode": "Modul întunecat"
+    "darkMode": "Modul întunecat",
+    "switchThemeToDark": "Comută la modul întunecat",
+    "switchThemeToLight": "Comută la modul clar",
+    "selectLanguage": "Selectează limba"
+  },
+  "notFound": {
+    "title": "Pagina nu există",
+    "subtitle": "Pagina pe care o cauți a fost mutată, ștearsă sau nu a existat niciodată.",
+    "home": "Acasă",
+    "problems": "Probleme",
+    "errorCode": "eroare 404"
   },
   "duel": {
     "title": "Duel",
@@ -383,5 +458,21 @@
     "victory": "Victorie!",
     "defeat": "Înfrângere",
     "draw": "Remiză"
+  },
+  "friends": {
+    "title": "Prieteni",
+    "tabActivity": "Activitate",
+    "tabFriends": "Prieteni",
+    "tabRequests": "Cereri primite",
+    "loginRequired": "Trebuie să fii autentificat.",
+    "loginAction": "Autentifică-te"
+  },
+  "footer": {
+    "tagline": "Platformă modernă de programare competitivă pentru elevi din România.",
+    "sectionPlatform": "Platformă",
+    "sectionAccount": "Cont",
+    "sectionProject": "Proiect",
+    "copyright": "© {year} ReInfo. Toate drepturile rezervate.",
+    "infoeducatie": "Proiect InfoEducație — Secțiunea Software Educațional"
   }
 }

@@ -1,4 +1,7 @@
 {
+  "accessibility": {
+    "skipToContent": "Skip to main content"
+  },
   "nav": {
     "problems": "Problems",
     "submissions": "Submissions",
@@ -9,7 +12,11 @@
     "friends": "Friends",
     "classes": "Classes",
     "search": "Search...",
-    "searchPlaceholder": "Search problems, users..."
+    "searchPlaceholder": "Search problems, users...",
+    "mainLabel": "Main navigation",
+    "mobileMenuOpen": "Open navigation menu",
+    "mobileMenuClose": "Close navigation menu",
+    "allResultsFor": "All results for \"{query}\""
   },
   "auth": {
     "login": "Sign In",
@@ -18,7 +25,8 @@
     "profile": "Profile",
     "settings": "Settings",
     "loggingIn": "Signing in...",
-    "registering": "Registering..."
+    "registering": "Registering...",
+    "userMenu": "User menu"
   },
   "home": {
     "title": "Competitive programming for everyone",
@@ -33,6 +41,16 @@
       "users": "Users",
       "submissions": "Submissions",
       "contests": "Contests"
+    },
+    "features": {
+      "pythonTitle": "Built for Python",
+      "pythonDesc": "Solve problems directly in Python, the ideal language for those just starting their journey in computer science.",
+      "duelsTitle": "1v1 Duels",
+      "duelsDesc": "Challenge friends or random opponents to timed duels with an Elo rating system.",
+      "socialTitle": "Social experience",
+      "socialDesc": "Profiles, friends list, leaderboards, and activity feed for real competition.",
+      "teachersTitle": "Tool for teachers",
+      "teachersDesc": "Create classes, assign problems, and track student progress from one place."
     }
   },
   "problems": {
@@ -104,7 +122,53 @@
     "testResults": "Tests",
     "compileError": "Compile error",
     "emptyCode": "Code cannot be empty.",
-    "errorGeneric": "An error occurred. Try again."
+    "errorGeneric": "An error occurred. Try again.",
+    "sortLabel": "Sort",
+    "sortOldest": "Oldest",
+    "sortNewest": "Newest",
+    "sortEasiest": "Easiest",
+    "sortHardest": "Hardest",
+    "sortMostSolved": "Most solved",
+    "difficultyAny": "Any",
+    "difficultyTitle": "Difficulty {n}/10",
+    "statusLabel": "Status",
+    "statusAll": "All",
+    "typeLabel": "Type",
+    "typeAll": "All",
+    "typeStandard": "Standard",
+    "typeQuiz": "Quiz",
+    "clearFilters": "Clear filters",
+    "tableTitle": "Title",
+    "problemCount": "{count} problems",
+    "addProblem": "Add",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "notFoundError": "Problem not found.",
+    "loadError": "An error occurred while loading the problem.",
+    "quizAnswerTitle": "Answer",
+    "quizVerify": "Check",
+    "quizVerifying": "Checking...",
+    "quizCorrect": "Correct answer!",
+    "quizWrong": "Wrong answer.",
+    "quizRetry": "Try again",
+    "quizExplanation": "Explanation",
+    "page": "Page {n} of {total}",
+    "tagLabels": {
+      "sortare": "Sorting",
+      "cautare": "Binary Search",
+      "dp": "Dynamic Programming",
+      "grafuri": "Graphs",
+      "arbori": "Trees",
+      "matematica": "Mathematics",
+      "geometrie": "Geometry",
+      "greedy": "Greedy",
+      "backtracking": "Backtracking",
+      "recursivitate": "Recursion",
+      "vectori": "Arrays",
+      "siruri": "Strings",
+      "combinatorica": "Combinatorics",
+      "divide-cucereste": "Divide and Conquer"
+    }
   },
   "submissions": {
     "title": "Submissions",
@@ -253,7 +317,8 @@
     "losses": "L",
     "draws": "D",
     "noEntries": "No users on the leaderboard yet.",
-    "weeklyNote": "Problems solved in the last 7 days"
+    "weeklyNote": "Problems solved in the last 7 days",
+    "scoreTooltip": "Easy × 1 + Medium × 2 + Hard × 3"
   },
   "profile": {
     "editProfile": "Edit profile",
@@ -363,7 +428,17 @@
     "language": "Language",
     "theme": "Theme",
     "lightMode": "Light mode",
-    "darkMode": "Dark mode"
+    "darkMode": "Dark mode",
+    "switchThemeToDark": "Switch to dark mode",
+    "switchThemeToLight": "Switch to light mode",
+    "selectLanguage": "Select language"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The page you're looking for was moved, deleted, or never existed.",
+    "home": "Home",
+    "problems": "Problems",
+    "errorCode": "error 404"
   },
   "duel": {
     "title": "Duel",
@@ -383,5 +458,21 @@
     "victory": "Victory!",
     "defeat": "Defeat",
     "draw": "Draw"
+  },
+  "friends": {
+    "title": "Friends",
+    "tabActivity": "Activity",
+    "tabFriends": "Friends",
+    "tabRequests": "Incoming requests",
+    "loginRequired": "You must be signed in.",
+    "loginAction": "Sign in"
+  },
+  "footer": {
+    "tagline": "Modern competitive programming platform for Romanian students.",
+    "sectionPlatform": "Platform",
+    "sectionAccount": "Account",
+    "sectionProject": "Project",
+    "copyright": "© {year} ReInfo. All rights reserved.",
+    "infoeducatie": "InfoEducație project — Educational Software section"
   }
 }

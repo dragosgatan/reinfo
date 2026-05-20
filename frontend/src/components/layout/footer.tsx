@@ -3,7 +3,9 @@ import { Link } from "@/i18n/navigation";
 import { Separator } from "@/components/ui/separator";
 
 export function Footer() {
-  const t = useTranslations("nav");
+  const tNav = useTranslations("nav");
+  const tAuth = useTranslations("auth");
+  const t = useTranslations("footer");
 
   return (
     <footer className="border-t border-border bg-background">
@@ -13,60 +15,58 @@ export function Footer() {
             <Link href="/" className="font-bold">
               ReInfo
             </Link>
-            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-              Platformă modernă de programare competitivă pentru elevi din România.
-            </p>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{t("tagline")}</p>
           </div>
 
-          <div>
+          <nav aria-label={t("sectionPlatform")}>
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Platformă
+              {t("sectionPlatform")}
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link href="/probleme" className="hover:text-foreground transition-colors">
-                  {t("problems")}
+                  {tNav("problems")}
                 </Link>
               </li>
               <li>
                 <Link href="/concursuri" className="hover:text-foreground transition-colors">
-                  {t("contests")}
+                  {tNav("contests")}
                 </Link>
               </li>
               <li>
                 <Link href="/invatare" className="hover:text-foreground transition-colors">
-                  {t("learning")}
+                  {tNav("learning")}
                 </Link>
               </li>
               <li>
                 <Link href="/clasament" className="hover:text-foreground transition-colors">
-                  {t("leaderboard")}
+                  {tNav("leaderboard")}
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
-          <div>
+          <nav aria-label={t("sectionAccount")}>
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Cont
+              {t("sectionAccount")}
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link href="/login" className="hover:text-foreground transition-colors">
-                  Autentificare
+                  {tAuth("login")}
                 </Link>
               </li>
               <li>
                 <Link href="/register" className="hover:text-foreground transition-colors">
-                  Înregistrare
+                  {tAuth("register")}
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
-          <div>
+          <nav aria-label={t("sectionProject")}>
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Proiect
+              {t("sectionProject")}
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
@@ -90,14 +90,14 @@ export function Footer() {
                 </a>
               </li>
             </ul>
-          </div>
+          </nav>
         </div>
 
         <Separator className="my-6" />
 
         <div className="flex flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
-          <p>© {new Date().getFullYear()} ReInfo. Toate drepturile rezervate.</p>
-          <p>Proiect InfoEducație — Secțiunea Software Educațional</p>
+          <p>{t("copyright", { year: new Date().getFullYear() })}</p>
+          <p>{t("infoeducatie")}</p>
         </div>
       </div>
     </footer>

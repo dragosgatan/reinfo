@@ -116,6 +116,7 @@ function UserCell({
 
 export default async function LeaderboardPage() {
   const t = await getTranslations("leaderboard");
+  const scoreTooltip = t("scoreTooltip");
   const [problems, weekly, duels] = await Promise.all([
     fetchProblemsLeaderboard(),
     fetchProblemsLeaderboardWeekly(),
@@ -137,11 +138,11 @@ export default async function LeaderboardPage() {
         </TabsList>
 
         <TabsContent value="problems" className="mt-4">
-          <ProblemsTable entries={problems} noEntriesLabel={t("noEntries")} rankLabel={t("rank")} userLabel={t("user")} scoreLabel={t("score")} />
+          <ProblemsTable entries={problems} noEntriesLabel={t("noEntries")} rankLabel={t("rank")} userLabel={t("user")} scoreLabel={t("score")} scoreTooltip={scoreTooltip} />
         </TabsContent>
 
         <TabsContent value="weekly" className="mt-4">
-          <ProblemsTable entries={weekly} noEntriesLabel={t("noEntries")} rankLabel={t("rank")} userLabel={t("user")} scoreLabel={t("score")} />
+          <ProblemsTable entries={weekly} noEntriesLabel={t("noEntries")} rankLabel={t("rank")} userLabel={t("user")} scoreLabel={t("score")} scoreTooltip={scoreTooltip} />
           <p className="mt-3 text-[11px] text-muted-foreground">{t("weeklyNote")}</p>
         </TabsContent>
 
@@ -202,12 +203,14 @@ function ProblemsTable({
   rankLabel,
   userLabel,
   scoreLabel,
+  scoreTooltip,
 }: {
   entries: ProblemsLeaderboardEntry[];
   noEntriesLabel: string;
   rankLabel: string;
   userLabel: string;
   scoreLabel: string;
+  scoreTooltip: string;
 }) {
   if (entries.length === 0) {
     return <p className="text-sm text-muted-foreground py-8 text-center">{noEntriesLabel}</p>;
@@ -222,11 +225,9 @@ function ProblemsTable({
             <TooltipTrigger asChild>
               <span className="text-right cursor-default select-none">{scoreLabel}</span>
             </TooltipTrigger>
-            <TooltipContent side="top">
-              Ușor × 1 + Mediu × 2 + Greu × 3
-            </TooltipContent>
+            <TooltipContent side="top">{scoreTooltip}</TooltipContent>
           </Tooltip>
-          <span className="text-right text-emerald-600 dark:text-emerald-500">E</span>
+          <span className="text-right text-emerald-600 dark:text-emerald-500">U</span>
           <span className="text-right text-amber-600 dark:text-amber-500">M</span>
           <span className="text-right text-red-600 dark:text-red-500">G</span>
         </div>

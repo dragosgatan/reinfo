@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import type { UseFormSetValue } from "react-hook-form";
@@ -24,7 +25,7 @@ import {
 import { ProblemStatement } from "@/components/problems/problem-statement";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { ProblemReadSchema, ALL_TAGS, TAG_LABELS } from "@/lib/types";
+import { ProblemReadSchema, ALL_TAGS, getTagLabel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 
@@ -83,6 +84,7 @@ function slugify(title: string): string {
 }
 
 export default function NouProblemPage() {
+  const t = useTranslations("problems");
   const router = useRouter();
   const searchParams = useSearchParams();
   const contestSlug = searchParams.get("contest_slug");
@@ -807,7 +809,7 @@ export default function NouProblemPage() {
                       : "border-border text-muted-foreground hover:border-foreground/30",
                   )}
                 >
-                  {TAG_LABELS[tag] ?? tag}
+                  {getTagLabel(tag, t as (key: string) => string)}
                 </button>
               ))}
             </div>
@@ -815,7 +817,7 @@ export default function NouProblemPage() {
               <div className="mt-2 flex flex-wrap gap-1">
                 {watchTags!.map((tag) => (
                   <Badge key={tag} variant="default" className="text-xs">
-                    {TAG_LABELS[tag] ?? tag}
+                    {getTagLabel(tag, t as (key: string) => string)}
                   </Badge>
                 ))}
               </div>

@@ -20,13 +20,14 @@ export function NavDesktop() {
   const pathname = usePathname();
 
   return (
-    <nav className="hidden md:flex items-center ml-3" aria-label="Principal">
+    <nav className="hidden md:flex items-center ml-3" aria-label={t("mainLabel")}>
       {navItems.map(({ href, key }) => {
         const isActive = pathname === href || pathname.startsWith(href + "/");
         return (
           <Link
             key={href}
             href={href}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
               "px-3 py-2 text-sm transition-colors",
               isActive

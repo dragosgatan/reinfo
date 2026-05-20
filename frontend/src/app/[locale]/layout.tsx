@@ -1,30 +1,11 @@
-import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
-import { JetBrains_Mono } from "next/font/google";
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-});
 import { routing } from "@/i18n/routing";
 import { Providers } from "@/providers";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import "../globals.css";
-
-export const metadata: Metadata = {
-  title: {
-    default: "ReInfo – Programare Competitivă",
-    template: "%s · ReInfo",
-  },
-  description:
-    "Platformă modernă de programare competitivă pentru elevi și profesori din România.",
-};
 
 interface LocaleLayoutProps {
   children: React.ReactNode;
@@ -38,21 +19,25 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     notFound();
   }
 
-  const messages = await getMessages();
+  const [messages, t] = await Promise.all([getMessages(), getTranslations("accessibility")]);
 
   return (
-    <html lang={locale} className={`${GeistSans.variable} ${GeistMono.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col">
-        <NextIntlClientProvider messages={messages}>
-          <Providers>
-            <TooltipProvider>
-              <Header />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </TooltipProvider>
-          </Providers>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      <Providers>
+        <TooltipProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[200] focus-visible:rounded focus-visible:bg-background focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            {t("skipToContent")}
+          </a>
+          <Header />
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </TooltipProvider>
+      </Providers>
+    </NextIntlClientProvider>
   );
 }

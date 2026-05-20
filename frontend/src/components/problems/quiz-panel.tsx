@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, XCircle, Circle, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProblemStatement } from "./problem-statement";
@@ -17,6 +18,7 @@ interface QuizPanelProps {
 }
 
 export function QuizPanel({ slug, options, lang = "ro" }: QuizPanelProps) {
+  const t = useTranslations("problems");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [result, setResult] = useState<{
     correct: boolean;
@@ -67,11 +69,11 @@ export function QuizPanel({ slug, options, lang = "ro" }: QuizPanelProps) {
           )}
         >
           {result.correct ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           ) : (
-            <XCircle className="h-4 w-4 shrink-0" />
+            <XCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
           )}
-          {result.correct ? "Răspuns corect!" : "Răspuns greșit."}
+          {result.correct ? t("quizCorrect") : t("quizWrong")}
         </div>
       )}
 
@@ -134,7 +136,7 @@ export function QuizPanel({ slug, options, lang = "ro" }: QuizPanelProps) {
                   {expMd && (
                     <div className="mt-1.5 border-t border-border/50 pt-1.5">
                       <p className="mb-0.5 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                        Explicație
+                        {t("quizExplanation")}
                       </p>
                       <div className="prose prose-sm dark:prose-invert max-w-none text-xs text-muted-foreground">
                         <ProblemStatement markdown={expMd} />
@@ -155,11 +157,11 @@ export function QuizPanel({ slug, options, lang = "ro" }: QuizPanelProps) {
           disabled={selected.size === 0 || isPending}
           onClick={() => mutate()}
         >
-          {isPending ? "Se verifică..." : "Verifică"}
+          {isPending ? t("quizVerifying") : t("quizVerify")}
         </Button>
       ) : (
         <Button size="sm" variant="outline" className="w-full" onClick={reset}>
-          Încearcă din nou
+          {t("quizRetry")}
         </Button>
       )}
     </div>

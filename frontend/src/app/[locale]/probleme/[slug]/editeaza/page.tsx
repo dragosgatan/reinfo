@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -33,7 +34,7 @@ import {
 import { ProblemStatement } from "@/components/problems/problem-statement";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { ProblemReadSchema, TestCaseListSchema, ALL_TAGS, TAG_LABELS } from "@/lib/types";
+import { ProblemReadSchema, TestCaseListSchema, ALL_TAGS, getTagLabel } from "@/lib/types";
 import type { TestCaseRead } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
@@ -57,6 +58,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function EditProblemPage() {
+  const t = useTranslations("problems");
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
   const router = useRouter();
@@ -601,7 +603,7 @@ export default function EditProblemPage() {
                       : "border-border text-muted-foreground hover:border-foreground/30",
                   )}
                 >
-                  {TAG_LABELS[tag] ?? tag}
+                  {getTagLabel(tag, t as (key: string) => string)}
                 </button>
               ))}
             </div>
@@ -609,7 +611,7 @@ export default function EditProblemPage() {
               <div className="mt-2 flex flex-wrap gap-1">
                 {watchTags!.map((tag) => (
                   <Badge key={tag} variant="default" className="text-xs">
-                    {TAG_LABELS[tag] ?? tag}
+                    {getTagLabel(tag, t as (key: string) => string)}
                   </Badge>
                 ))}
               </div>

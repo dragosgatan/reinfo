@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth";
 import { Link } from "@/i18n/navigation";
 import { FriendsList } from "@/components/social/friends-list";
@@ -9,11 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function FriendsPageClient() {
   const { isAuthenticated, isLoading } = useAuth();
+  const t = useTranslations("friends");
 
   if (isLoading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="h-8 w-48 animate-pulse rounded bg-muted" aria-hidden="true" />
       </div>
     );
   }
@@ -22,9 +24,9 @@ export function FriendsPageClient() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-muted-foreground">
-          Trebuie să fii autentificat.{" "}
+          {t("loginRequired")}{" "}
           <Link href="/login" className="underline hover:text-foreground">
-            Autentifică-te
+            {t("loginAction")}
           </Link>
         </p>
       </div>
@@ -33,13 +35,13 @@ export function FriendsPageClient() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <h1 className="mb-6 text-2xl font-bold tracking-tight">Prieteni</h1>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">{t("title")}</h1>
 
       <Tabs defaultValue="activity">
         <TabsList>
-          <TabsTrigger value="activity">Activitate</TabsTrigger>
-          <TabsTrigger value="friends">Prieteni</TabsTrigger>
-          <TabsTrigger value="requests">Cereri primite</TabsTrigger>
+          <TabsTrigger value="activity">{t("tabActivity")}</TabsTrigger>
+          <TabsTrigger value="friends">{t("tabFriends")}</TabsTrigger>
+          <TabsTrigger value="requests">{t("tabRequests")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="activity" className="mt-6">

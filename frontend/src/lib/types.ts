@@ -317,22 +317,11 @@ export const ALL_TAGS = [
   "divide-cucereste",
 ] as const;
 
-export const TAG_LABELS: Record<string, string> = {
-  sortare: "Sortare",
-  cautare: "Căutare binară",
-  dp: "Programare dinamică",
-  grafuri: "Grafuri",
-  arbori: "Arbori",
-  matematica: "Matematică",
-  geometrie: "Geometrie",
-  greedy: "Greedy",
-  backtracking: "Backtracking",
-  recursivitate: "Recursivitate",
-  vectori: "Vectori",
-  siruri: "Șiruri",
-  combinatorica: "Combinatorică",
-  "divide-cucereste": "Divide și cucerește",
-};
+export type ProblemTag = (typeof ALL_TAGS)[number];
+
+export function getTagLabel(tag: string, t: (key: string) => string): string {
+  return t(`tagLabels.${tag}`);
+}
 
 export const DuelStatusSchema = z.enum([
   "pending",

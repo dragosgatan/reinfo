@@ -13,11 +13,14 @@ function getDotColor(difficulty: number): string {
   return "bg-destructive";
 }
 
-export function getDifficultyLabel(difficulty: number): string {
-  if (difficulty <= 3) return "Ușor";
-  if (difficulty <= 6) return "Mediu";
-  if (difficulty <= 8) return "Greu";
-  return "Foarte greu";
+export function getDifficultyLabel(
+  difficulty: number,
+  t: (key: string) => string,
+): string {
+  if (difficulty <= 3) return t("difficultyLevels.easy");
+  if (difficulty <= 6) return t("difficultyLevels.medium");
+  if (difficulty <= 8) return t("difficultyLevels.hard");
+  return t("difficultyLevels.veryHard");
 }
 
 export function DifficultyIndicator({
@@ -30,16 +33,20 @@ export function DifficultyIndicator({
 
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
-      <div className="flex items-center gap-0.5" title={`Dificultate ${difficulty}/10`}>
+      <div
+        className="flex items-center gap-0.5"
+        aria-label={`${difficulty}/10`}
+      >
         {Array.from({ length: 5 }).map((_, i) => (
           <span
             key={i}
             className={cn("h-1.5 w-1.5 rounded-full", i < filled ? color : "bg-muted")}
+            aria-hidden="true"
           />
         ))}
       </div>
       {showLabel && (
-        <span className="text-xs text-muted-foreground">{getDifficultyLabel(difficulty)}</span>
+        <span className="text-xs text-muted-foreground">{difficulty}/10</span>
       )}
     </div>
   );

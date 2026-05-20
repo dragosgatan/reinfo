@@ -187,8 +187,8 @@ export function SearchBar() {
               }}
               className="flex w-full items-center gap-2 border-t border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors"
             >
-              <Search className="h-3 w-3" />
-              Toate problemele pentru &ldquo;{value.trim()}&rdquo;
+              <Search className="h-3 w-3" aria-hidden="true" />
+              {t("allResultsFor", { query: value.trim() })}
             </button>
           )}
         </div>

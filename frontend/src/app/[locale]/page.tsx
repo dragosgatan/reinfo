@@ -32,25 +32,39 @@ function difficultyVariant(d: number): "success" | "warning" | "destructive" {
   return "destructive";
 }
 
+const FEATURE_ICONS = [Code2, Trophy, Users, GraduationCap] as const;
+
 export default async function HomePage() {
-  const [t, tCommon, problems] = await Promise.all([
+  const [t, tCommon, tProblems, problems] = await Promise.all([
     getTranslations("home"),
     getTranslations("common"),
+    getTranslations("problems"),
     fetchFeaturedProblems(),
   ]);
 
+  const features = [
+    { icon: FEATURE_ICONS[0], title: t("features.pythonTitle"), desc: t("features.pythonDesc") },
+    { icon: FEATURE_ICONS[1], title: t("features.duelsTitle"), desc: t("features.duelsDesc") },
+    { icon: FEATURE_ICONS[2], title: t("features.socialTitle"), desc: t("features.socialDesc") },
+    {
+      icon: FEATURE_ICONS[3],
+      title: t("features.teachersTitle"),
+      desc: t("features.teachersDesc"),
+    },
+  ];
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6">
-      <section className="relative overflow-hidden flex flex-col gap-4 border-b border-border py-10 sm:flex-row sm:items-end sm:justify-between md:py-14">
+      <section className="relative overflow-hidden flex flex-col gap-6 border-b border-border py-16 sm:flex-row sm:items-end sm:justify-between md:py-24">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           {[
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg",       top: "12%",  right: "8%",  size: 38, opacity: 0.22 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-original.svg",           top: "55%",  right: "20%", size: 30, opacity: 0.09 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original-wordmark.svg",      top: "20%",  right: "30%", size: 32, opacity: 0.09 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg", bottom: "10%", right: "10%", size: 32, opacity: 0.09 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/c/c-original.svg",                 top: "8%",   right: "48%", size: 28, opacity: 0.09 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg",           bottom: "12%", right: "42%", size: 32, opacity: 0.09 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg",       top: "42%",  right: "55%", size: 28, opacity: 0.09 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg",       top: "10%",  right: "6%",  size: 44, opacity: 0.22 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-original.svg",           top: "55%",  right: "18%", size: 34, opacity: 0.10 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original-wordmark.svg",      top: "18%",  right: "28%", size: 36, opacity: 0.10 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg", bottom: "12%", right: "8%",  size: 36, opacity: 0.10 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/c/c-original.svg",                 top: "8%",   right: "46%", size: 30, opacity: 0.10 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg",           bottom: "14%", right: "40%", size: 34, opacity: 0.10 },
+            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg",       top: "40%",  right: "52%", size: 30, opacity: 0.10 },
           ].map(({ url, size, opacity, ...pos }, i) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -63,15 +77,18 @@ export default async function HomePage() {
           ))}
         </div>
 
-        <div className="relative max-w-lg">
-          <p className="mb-2 font-mono text-xs text-muted-foreground">
+        <div className="relative max-w-xl">
+          <p className="mb-3 font-mono text-xs text-muted-foreground">
             {t("tagline")}
           </p>
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t("title")}</h1>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+            {t("title")}
+          </h1>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
             {t("subtitle")}
           </p>
         </div>
+
         <div className="relative flex shrink-0 gap-2">
           <Button asChild size="sm">
             <Link href="/invatare">
@@ -85,34 +102,16 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <div className="border-b border-border py-8">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              icon: Code2,
-              title: "Gândit pentru Python",
-              desc: "Rezolvă probleme direct în Python, limbajul ideal pentru cei care abia încep drumul în informatică.",
-            },
-            {
-              icon: Trophy,
-              title: "Dueluri 1v1",
-              desc: "Provoacă prieteni sau adversari aleatorii la dueluri temporizate cu sistem de rating Elo.",
-            },
-            {
-              icon: Users,
-              title: "Experiență socială",
-              desc: "Profiluri, listă de prieteni, clasamente și feed de activitate pentru o competiție reală.",
-            },
-            {
-              icon: GraduationCap,
-              title: "Unealtă pentru profesori",
-              desc: "Creează clase, atribuie probleme și urmărește progresul elevilor dintr-un singur loc.",
-            },
-          ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{title}</span>
+      <div className="border-b border-border py-10">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map(({ icon: Icon, title, desc }, i) => (
+            <div key={title} className="flex flex-col gap-2 border-l border-border pl-4">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-[10px] font-medium tabular-nums text-muted-foreground/50">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="text-sm font-medium leading-snug">{title}</span>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
             </div>
@@ -154,7 +153,7 @@ export default async function HomePage() {
                   </Badge>
                 )}
                 <Badge variant={difficultyVariant(p.difficulty)} className="shrink-0 text-xs">
-                  {getDifficultyLabel(p.difficulty)}
+                  {getDifficultyLabel(p.difficulty, tProblems)}
                 </Badge>
                 <DifficultyIndicator difficulty={p.difficulty} className="hidden md:flex" />
                 <span className="hidden w-16 text-right font-mono text-xs text-muted-foreground md:block">

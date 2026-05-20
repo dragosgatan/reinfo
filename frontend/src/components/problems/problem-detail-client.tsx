@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, MemoryStick, Copy, Check, AlertCircle, Pencil, Trophy } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -81,6 +81,7 @@ interface ProblemDetailClientProps {
 
 export function ProblemDetailClient({ slug }: ProblemDetailClientProps) {
   const { user, isAuthenticated } = useAuth();
+  const t = useTranslations("problems");
 
   const {
     data: problem,
@@ -118,17 +119,15 @@ export function ProblemDetailClient({ slug }: ProblemDetailClientProps) {
     const status = error instanceof ApiError ? error.status : 0;
     return (
       <div className="mx-auto max-w-5xl px-4 py-16 text-center sm:px-6">
-        <AlertCircle className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
+        <AlertCircle className="mx-auto mb-4 h-8 w-8 text-muted-foreground" aria-hidden="true" />
         <p className="text-sm text-muted-foreground">
-          {status === 404
-            ? "Problema nu a fost găsită."
-            : "A apărut o eroare la încărcarea problemei."}
+          {status === 404 ? t("notFoundError") : t("loadError")}
         </p>
         <Link
           href="/probleme"
           className="mt-4 inline-block text-sm text-primary hover:underline"
         >
-          ← Înapoi la probleme
+          {t("backToProblems")}
         </Link>
       </div>
     );
@@ -158,6 +157,7 @@ function ProblemDetailLayout({
   isAuthenticated: boolean;
 }) {
   const t = useTranslations("problems");
+  const tCommon = useTranslations("common");
   const { user } = useAuth();
   const canEdit = user?.role === "teacher" || user?.role === "admin";
   const memoryMb = Math.round(problem.memory_limit_kb / 1024);
@@ -180,7 +180,7 @@ function ProblemDetailLayout({
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <DifficultyIndicator difficulty={problem.difficulty} />
               <span className="text-xs text-muted-foreground">
-                {getDifficultyLabel(problem.difficulty)} · {problem.difficulty}/10
+                {getDifficultyLabel(problem.difficulty, t)} · {problem.difficulty}/10
               </span>
               {problem.tags.map((tag) => (
                 <Badge key={tag} variant="muted" className="text-xs">
@@ -206,8 +206,8 @@ function ProblemDetailLayout({
                 href={`/probleme/${problem.slug}/editeaza` as Parameters<typeof Link>[0]["href"]}
                 className="flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
               >
-                <Pencil className="h-3 w-3" />
-                Editează
+                <Pencil className="h-3 w-3" aria-hidden="true" />
+                {tCommon("edit")}
               </Link>
             )}
           </div>
@@ -313,7 +313,7 @@ function ProblemDetailLayout({
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <div className="rounded border border-border p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {isQuiz ? "Răspunde" : t("submitTitle")}
+              {isQuiz ? t("quizAnswerTitle") : t("submitTitle")}
             </p>
             {isQuiz ? (
               <QuizPanel slug={problem.slug} options={problem.quiz_options} />
@@ -472,6 +472,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function SubmissionsTable({ submissions }: { submissions: SubmissionSummary[] }) {
+  const locale = useLocale();
   return (
     <div className="space-y-1">
       {submissions.map((sub) => (
@@ -486,7 +487,7 @@ function SubmissionsTable({ submissions }: { submissions: SubmissionSummary[] })
           <span className="font-mono text-muted-foreground">{sub.score}p</span>
           <span className="text-muted-foreground">{sub.language}</span>
           <span className="ml-auto font-mono text-muted-foreground">
-            {new Date(sub.created_at).toLocaleDateString("ro")}
+            {new Date(sub.created_at).toLocaleDateString(locale)}
           </span>
         </Link>
       ))}
