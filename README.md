@@ -47,7 +47,7 @@ ReInfo este o reimaginare a platformelor clasice de algoritmică (pbinfo, infoar
 
 **Social & Profil**
 - Profiluri publice: heatmap activitate, statistici, rating duel, istoric submisii
-- Sistem de prieteni cu notificări în timp real; filtrare clasament după prieteni
+- Sistem de prieteni cu notificări în timp real
 
 **Accesibilitate & Internaționalizare**
 - Limbă implicită: **română**; disponibil în **engleză** și **maghiară**
@@ -112,7 +112,7 @@ ReInfo reimagines classic algorithmics platforms (pbinfo, infoarena) with a focu
 
 **Social & Profiles**
 - Public profiles: activity heatmap, stats, duel rating, submission history
-- Friend system with real-time notifications; leaderboard filter by friends
+- Friend system with real-time notifications
 
 **Accessibility & i18n**
 - Default language: **Romanian**; available in **English** and **Hungarian**
