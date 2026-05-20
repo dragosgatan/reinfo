@@ -41,6 +41,7 @@ class Problem(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     statement_md: Mapped[str] = mapped_column(Text, nullable=False)
     statement_md_en: Mapped[str | None] = mapped_column(Text, nullable=True)
+    statement_md_hu: Mapped[str | None] = mapped_column(Text, nullable=True)
     input_format: Mapped[str] = mapped_column(Text, nullable=False)
     output_format: Mapped[str] = mapped_column(Text, nullable=False)
     difficulty: Mapped[int] = mapped_column(Integer, nullable=False)

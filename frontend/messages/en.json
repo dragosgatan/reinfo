@@ -253,8 +253,7 @@
     "losses": "L",
     "draws": "D",
     "noEntries": "No users on the leaderboard yet.",
-    "scoringNote": "Score formula: easy × 1 + medium × 2 + hard × 3 · E = easy, M = medium, G = hard",
-    "weeklyNote": "Problems solved in the last 7 days · same scoring formula"
+    "weeklyNote": "Problems solved in the last 7 days"
   },
   "profile": {
     "editProfile": "Edit profile",

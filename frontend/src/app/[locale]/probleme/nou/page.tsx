@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import type { UseFormSetValue } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2, Eye, EyeOff, Loader2, X } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Loader2, X, Languages } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,7 @@ const schema = z.object({
   problem_type: z.enum(["standard", "quiz"]).default("standard"),
   statement_md: z.string().min(1, "Enunțul în română este obligatoriu"),
   statement_md_en: z.string().default(""),
+  statement_md_hu: z.string().default(""),
   input_format: z.string().default(""),
   output_format: z.string().default(""),
   time_limit_ms: z.coerce.number().int().min(100).max(30000).default(1000),
@@ -88,7 +89,8 @@ export default function NouProblemPage() {
   const { user, isLoading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [publishMode, setPublishMode] = useState<"draft" | "public">("draft");
-  const [statementLang, setStatementLang] = useState<"ro" | "en">("ro");
+  const [statementLang, setStatementLang] = useState<"ro" | "en" | "hu">("ro");
+  const [translating, setTranslating] = useState(false);
 
   const {
     register,
@@ -109,6 +111,7 @@ export default function NouProblemPage() {
       testCases: [],
       quizOptions: [],
       statement_md_en: "",
+      statement_md_hu: "",
     },
   });
 
@@ -127,6 +130,7 @@ export default function NouProblemPage() {
   const watchSlug = watch("slug");
   const watchStatement = watch("statement_md");
   const watchStatementEn = watch("statement_md_en");
+  const watchStatementHu = watch("statement_md_hu");
   const watchTags = watch("tags");
   const watchComparisonMode = watch("comparison_mode");
   const watchProblemType = watch("problem_type");
@@ -157,6 +161,49 @@ export default function NouProblemPage() {
     [watchTags, setValue],
   );
 
+  const handleTranslate = useCallback(async () => {
+    const sourceText =
+      statementLang === "ro"
+        ? watchStatement
+        : statementLang === "en"
+          ? watchStatementEn
+          : watchStatementHu;
+
+    if (!sourceText?.trim()) {
+      toast.error("Scrie enunțul înainte de a traduce.");
+      return;
+    }
+
+    const targetLangs = (["ro", "en", "hu"] as const).filter((l) => l !== statementLang);
+
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sourceText, sourceLang: statementLang, targetLangs }),
+      });
+      const data = await res.json() as { results?: Record<string, string>; error?: string };
+
+      if (!res.ok || data.error) {
+        toast.error(data.error ?? "Traducerea a eșuat.");
+        return;
+      }
+
+      const results = data.results ?? {};
+      if (results.ro !== undefined) setValue("statement_md", results.ro);
+      if (results.en !== undefined) setValue("statement_md_en", results.en);
+      if (results.hu !== undefined) setValue("statement_md_hu", results.hu);
+
+      const modelShort = (data.model ?? "").split("/").pop()?.replace(":free", "") ?? "";
+      toast.success(`Tradus în ${targetLangs.map((l) => l.toUpperCase()).join(" și ")}${modelShort ? ` · ${modelShort}` : ""}`);
+    } catch {
+      toast.error("Eroare la traducere.");
+    } finally {
+      setTranslating(false);
+    }
+  }, [statementLang, watchStatement, watchStatementEn, watchStatementHu, setValue]);
+
   const onSubmit = useCallback(
     async (values: FormValues) => {
       setSubmitting(true);
@@ -172,6 +219,7 @@ export default function NouProblemPage() {
             title: values.title,
             statement_md: values.statement_md,
             statement_md_en: values.statement_md_en || null,
+            statement_md_hu: values.statement_md_hu || null,
             input_format: isQuiz ? "" : (values.input_format ?? ""),
             output_format: isQuiz ? "" : (values.output_format ?? ""),
             difficulty: values.difficulty,
@@ -396,31 +444,59 @@ export default function NouProblemPage() {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <Label>Enunț</Label>
-              <div className="flex rounded border border-border text-xs">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setStatementLang("ro")}
-                  className={cn(
-                    "px-2.5 py-1 transition-colors",
-                    statementLang === "ro"
-                      ? "bg-muted font-medium"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
+                  onClick={handleTranslate}
+                  disabled={translating}
+                  className="flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
+                  title={`Traduce din ${statementLang.toUpperCase()} în celelalte limbi`}
                 >
-                  RO
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatementLang("en")}
-                  className={cn(
-                    "px-2.5 py-1 transition-colors",
-                    statementLang === "en"
-                      ? "bg-muted font-medium"
-                      : "text-muted-foreground hover:text-foreground",
+                  {translating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Languages className="h-3 w-3" />
                   )}
-                >
-                  EN
+                  Traduce din {statementLang.toUpperCase()}
                 </button>
+                <div className="flex rounded border border-border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setStatementLang("ro")}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      statementLang === "ro"
+                        ? "bg-muted font-medium"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    RO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatementLang("en")}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      statementLang === "en"
+                        ? "bg-muted font-medium"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    EN
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatementLang("hu")}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      statementLang === "hu"
+                        ? "bg-muted font-medium"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    HU
+                  </button>
+                </div>
               </div>
             </div>
             <Tabs defaultValue="edit">
@@ -435,35 +511,42 @@ export default function NouProblemPage() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="edit">
-                {statementLang === "ro" ? (
-                  <>
-                    <textarea
-                      {...register("statement_md")}
-                      rows={10}
-                      placeholder="Enunțul problemei în română (Markdown + LaTeX)."
-                      className={cn(
-                        "w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
-                        errors.statement_md && "border-destructive",
-                      )}
-                    />
-                    {errors.statement_md && (
-                      <p className="mt-1 text-xs text-destructive">{errors.statement_md.message}</p>
+                <div className={cn(statementLang !== "ro" && "hidden")}>
+                  <textarea
+                    {...register("statement_md")}
+                    rows={10}
+                    placeholder="Enunțul problemei în română (Markdown + LaTeX)."
+                    className={cn(
+                      "w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+                      errors.statement_md && "border-destructive",
                     )}
-                  </>
-                ) : (
+                  />
+                  {errors.statement_md && (
+                    <p className="mt-1 text-xs text-destructive">{errors.statement_md.message}</p>
+                  )}
+                </div>
+                <div className={cn(statementLang !== "en" && "hidden")}>
                   <textarea
                     {...register("statement_md_en")}
                     rows={10}
                     placeholder="Problem statement in English (Markdown + LaTeX). Optional."
                     className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
-                )}
+                </div>
+                <div className={cn(statementLang !== "hu" && "hidden")}>
+                  <textarea
+                    {...register("statement_md_hu")}
+                    rows={10}
+                    placeholder="A feladat szövege magyarul (Markdown + LaTeX). Opcionális."
+                    className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
               </TabsContent>
               <TabsContent value="preview">
-                {(statementLang === "ro" ? watchStatement : watchStatementEn) ? (
+                {(statementLang === "ro" ? watchStatement : statementLang === "en" ? watchStatementEn : watchStatementHu) ? (
                   <div className="min-h-[200px] rounded border border-border p-4">
                     <ProblemStatement
-                      markdown={(statementLang === "ro" ? watchStatement : watchStatementEn) ?? ""}
+                      markdown={(statementLang === "ro" ? watchStatement : statementLang === "en" ? watchStatementEn : watchStatementHu) ?? ""}
                     />
                   </div>
                 ) : (

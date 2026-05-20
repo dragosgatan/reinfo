@@ -3,6 +3,12 @@ import { getTranslations } from "next-intl/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/utils";
 import type { DuelLeaderboardEntry, ProblemsLeaderboardEntry } from "@/lib/types";
@@ -132,7 +138,6 @@ export default async function LeaderboardPage() {
 
         <TabsContent value="problems" className="mt-4">
           <ProblemsTable entries={problems} noEntriesLabel={t("noEntries")} rankLabel={t("rank")} userLabel={t("user")} scoreLabel={t("score")} />
-          <p className="mt-3 text-[11px] text-muted-foreground">{t("scoringNote")}</p>
         </TabsContent>
 
         <TabsContent value="weekly" className="mt-4">
@@ -208,44 +213,60 @@ function ProblemsTable({
     return <p className="text-sm text-muted-foreground py-8 text-center">{noEntriesLabel}</p>;
   }
   return (
-    <div className="rounded border border-border overflow-hidden">
-      <div className="hidden sm:grid grid-cols-[40px_1fr_80px_48px_48px_48px] gap-3 border-b border-border bg-muted/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        <span>{rankLabel}</span>
-        <span>{userLabel}</span>
-        <span className="text-right">{scoreLabel}</span>
-        <span className="text-right text-emerald-600 dark:text-emerald-500">E</span>
-        <span className="text-right text-amber-600 dark:text-amber-500">M</span>
-        <span className="text-right text-red-600 dark:text-red-500">G</span>
+    <TooltipProvider>
+      <div className="rounded border border-border overflow-hidden">
+        <div className="hidden sm:grid grid-cols-[40px_1fr_80px_48px_48px_48px] gap-3 border-b border-border bg-muted/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span>{rankLabel}</span>
+          <span>{userLabel}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-right cursor-default select-none">{scoreLabel}</span>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              Ușor × 1 + Mediu × 2 + Greu × 3
+            </TooltipContent>
+          </Tooltip>
+          <span className="text-right text-emerald-600 dark:text-emerald-500">E</span>
+          <span className="text-right text-amber-600 dark:text-amber-500">M</span>
+          <span className="text-right text-red-600 dark:text-red-500">G</span>
+        </div>
+        <div className="divide-y divide-border">
+          {entries.map((entry) => (
+            <div
+              key={entry.username}
+              className="grid grid-cols-[40px_1fr_80px] sm:grid-cols-[40px_1fr_80px_48px_48px_48px] gap-3 items-center px-4 py-2.5 transition-colors hover:bg-muted/20"
+            >
+              <RankBadge rank={entry.rank} />
+              <UserCell
+                username={entry.username}
+                displayName={entry.display_name}
+                avatarUrl={entry.avatar_url}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="font-mono text-sm font-semibold text-right tabular-nums cursor-default">
+                    {entry.problem_score}
+                    <span className="ml-1 text-[10px] font-normal text-muted-foreground">pt</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="font-mono">
+                  {entry.solved_easy}×1 + {entry.solved_medium}×2 + {entry.solved_hard}×3
+                </TooltipContent>
+              </Tooltip>
+              <span className="hidden sm:block font-mono text-xs text-right tabular-nums text-emerald-600 dark:text-emerald-500">
+                {entry.solved_easy}
+              </span>
+              <span className="hidden sm:block font-mono text-xs text-right tabular-nums text-amber-600 dark:text-amber-500">
+                {entry.solved_medium}
+              </span>
+              <span className="hidden sm:block font-mono text-xs text-right tabular-nums text-red-600 dark:text-red-500">
+                {entry.solved_hard}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="divide-y divide-border">
-        {entries.map((entry) => (
-          <div
-            key={entry.username}
-            className="grid grid-cols-[40px_1fr_80px] sm:grid-cols-[40px_1fr_80px_48px_48px_48px] gap-3 items-center px-4 py-2.5 transition-colors hover:bg-muted/20"
-          >
-            <RankBadge rank={entry.rank} />
-            <UserCell
-              username={entry.username}
-              displayName={entry.display_name}
-              avatarUrl={entry.avatar_url}
-            />
-            <span className="font-mono text-sm font-semibold text-right tabular-nums">
-              {entry.problem_score}
-              <span className="ml-1 text-[10px] font-normal text-muted-foreground">pt</span>
-            </span>
-            <span className="hidden sm:block font-mono text-xs text-right tabular-nums text-emerald-600 dark:text-emerald-500">
-              {entry.solved_easy}
-            </span>
-            <span className="hidden sm:block font-mono text-xs text-right tabular-nums text-amber-600 dark:text-amber-500">
-              {entry.solved_medium}
-            </span>
-            <span className="hidden sm:block font-mono text-xs text-right tabular-nums text-red-600 dark:text-red-500">
-              {entry.solved_hard}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
+    </TooltipProvider>
   );
 }
 

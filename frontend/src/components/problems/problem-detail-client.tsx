@@ -19,8 +19,18 @@ import { useAuth } from "@/lib/auth";
 import { ProblemDetailSchema, SubmissionListResponseSchema } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function StatementLangToggle({ markdown, markdownEn }: { markdown: string; markdownEn: string }) {
-  const [lang, setLang] = useState<"ro" | "en">("ro");
+function StatementLangToggle({
+  markdown,
+  markdownEn,
+  markdownHu,
+}: {
+  markdown: string;
+  markdownEn: string;
+  markdownHu?: string | null;
+}) {
+  const [lang, setLang] = useState<"ro" | "en" | "hu">("ro");
+  const activeMarkdown =
+    lang === "en" ? markdownEn : lang === "hu" && markdownHu ? markdownHu : markdown;
   return (
     <div>
       <div className="mb-3 flex justify-end">
@@ -45,9 +55,21 @@ function StatementLangToggle({ markdown, markdownEn }: { markdown: string; markd
           >
             EN
           </button>
+          {markdownHu && (
+            <button
+              type="button"
+              onClick={() => setLang("hu")}
+              className={cn(
+                "px-2.5 py-1 transition-colors",
+                lang === "hu" ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              HU
+            </button>
+          )}
         </div>
       </div>
-      <ProblemStatement markdown={lang === "ro" ? markdown : markdownEn} />
+      <ProblemStatement markdown={activeMarkdown} />
     </div>
   );
 }
@@ -211,13 +233,15 @@ function ProblemDetailLayout({
             </TabsList>
 
             <TabsContent value="statement" className="mt-0">
-              {problem.statement_md_en && (
+              {(problem.statement_md_en || problem.statement_md_hu) ? (
                 <StatementLangToggle
                   markdown={problem.statement_md}
-                  markdownEn={problem.statement_md_en}
+                  markdownEn={problem.statement_md_en ?? ""}
+                  markdownHu={problem.statement_md_hu}
                 />
+              ) : (
+                <ProblemStatement markdown={problem.statement_md} />
               )}
-              {!problem.statement_md_en && <ProblemStatement markdown={problem.statement_md} />}
 
               {(problem.input_format || problem.output_format) && (
                 <>

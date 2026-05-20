@@ -11,6 +11,12 @@ import { CalendarDays, Github, Link as LinkIcon, Mail, Pencil, Swords } from "lu
 import { ChallengeButton } from "@/components/duel/challenge-button";
 import { RatingSparkline } from "@/components/duel/rating-sparkline";
 import { AddFriendButton } from "@/components/social/add-friend-button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ProfileTabs } from "./profile-client";
 import type {
   ActivityDay,
@@ -311,12 +317,21 @@ export default async function UserProfilePage({ params }: Props) {
                   {t("totalSolved")}
                 </p>
               </div>
-              <div className="rounded border border-border bg-muted/20 px-3 py-2 text-center min-w-[80px]">
-                <p className="font-mono text-lg font-bold">{stats.problem_score}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  {t("problemScore")}
-                </p>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="rounded border border-border bg-muted/20 px-3 py-2 text-center min-w-[80px] cursor-default">
+                      <p className="font-mono text-lg font-bold">{stats.problem_score}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                        {t("problemScore")}
+                      </p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[200px] text-center leading-relaxed">
+                    Ușor × 1 + Mediu × 2 + Greu × 3
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <div className="rounded border border-border bg-muted/20 px-3 py-2 text-center min-w-[80px]">
                 <p className="font-mono text-lg font-bold">{stats.total_submissions}</p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
