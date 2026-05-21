@@ -1,125 +1,29 @@
 # Referință API – ReInfo
 
-Documentația completă interactivă (Swagger UI) este disponibilă la `http://localhost:8000/api/docs` când serverul rulează.
+Documentație interactivă: `http://localhost:8000/api/docs` (Swagger) sau `/api/redoc`.
 
-Toate endpoint-urile sunt prefixate cu `/api`. Autentificarea se face prin cookie HTTP-only setat la `/api/auth/login`.
-
-## Cuprins
-
-- [Autentificare](#autentificare)
-- [Probleme](#probleme)
-- [Submisii](#submisii)
-- [Concursuri](#concursuri)
-- [Dueluri](#dueluri)
-- [Lecții](#lecții)
-- [Clase](#clase)
-- [Social](#social)
-- [Sistem](#sistem)
-- [Coduri de eroare](#coduri-de-eroare)
+Toate endpoint-urile sunt prefixate cu `/api`. Autentificarea se face prin cookie HTTP-only setat la login.
 
 ---
 
 ## Autentificare
 
-Sesiunile sunt gestionate prin cookie-uri HTTP-only. Niciun token nu este expus JavaScript-ului.
+| Endpoint | Metodă | Descriere |
+|---|---|---|
+| `/api/auth/register` | POST | Înregistrare cont nou (rate limit: 5/min) |
+| `/api/auth/login` | POST | Login, setează cookie sesiune |
+| `/api/auth/logout` | POST | Invalidează sesiunea |
+| `/api/auth/me` | GET | Utilizatorul autentificat curent |
+| `/api/auth/users/{username}` | GET | Profil public utilizator |
 
-### `POST /api/auth/register`
+**Login body:** `{ username, password }` → setează `Set-Cookie: session=...; HttpOnly; SameSite=Strict`
 
-Creează un cont nou.
-
-**Body:**
+**Me response:**
 ```json
 {
-  "username": "string (3-30 chars, alfanumeric + _ -)",
-  "email": "string (email valid)",
-  "password": "string (min 8 chars)",
-  "display_name": "string (opțional)"
-}
-```
-
-**Răspuns `201`:**
-```json
-{
-  "id": "uuid",
-  "username": "string",
-  "email": "string",
-  "display_name": "string",
-  "role": "user",
-  "created_at": "ISO8601"
-}
-```
-
-**Rate limit:** 5 cereri / minut per IP.
-
----
-
-### `POST /api/auth/login`
-
-Autentifică utilizatorul și setează cookie-ul de sesiune.
-
-**Body:**
-```json
-{
-  "username": "string",
-  "password": "string"
-}
-```
-
-**Răspuns `200`:** Setează `Set-Cookie: session=...; HttpOnly; SameSite=Strict`.
-```json
-{
-  "id": "uuid",
-  "username": "string",
-  "role": "user | teacher | admin"
-}
-```
-
----
-
-### `POST /api/auth/logout`
-
-Invalidează sesiunea curentă.
-
-**Răspuns `204`:** Șterge cookie-ul de sesiune.
-
----
-
-### `GET /api/auth/me`
-
-Returnează utilizatorul autentificat curent.
-
-**Autentificare:** Obligatorie.
-
-**Răspuns `200`:**
-```json
-{
-  "id": "uuid",
-  "username": "string",
-  "email": "string",
-  "display_name": "string",
-  "role": "user | teacher | admin",
-  "language": "ro | en",
-  "duel_rating": 1200,
-  "created_at": "ISO8601"
-}
-```
-
----
-
-### `GET /api/auth/users/{username}`
-
-Profilul public al unui utilizator.
-
-**Răspuns `200`:**
-```json
-{
-  "id": "uuid",
-  "username": "string",
-  "display_name": "string",
-  "role": "string",
-  "duel_rating": 1200,
-  "problems_solved": 42,
-  "created_at": "ISO8601"
+  "id": "uuid", "username": "string", "email": "string",
+  "role": "user | teacher | admin", "language": "ro | en | hu",
+  "duel_rating": 1200, "created_at": "ISO8601"
 }
 ```
 
@@ -127,159 +31,25 @@ Profilul public al unui utilizator.
 
 ## Probleme
 
-### `GET /api/problems`
-
-Listează problemele cu paginare și filtrare.
-
-**Query params:**
-
-| Parametru | Tip | Implicit | Descriere |
+| Endpoint | Metodă | Auth | Descriere |
 |---|---|---|---|
-| `page` | int | 1 | Pagina curentă |
-| `per_page` | int | 20 | Rezultate per pagină (max 100) |
-| `difficulty_min` | int | — | Dificultate minimă (1-10) |
-| `difficulty_max` | int | — | Dificultate maximă (1-10) |
-| `tags` | string | — | Filtrare după tag (separat prin virgulă) |
-| `search` | string | — | Căutare în titlu și enunț |
-| `sort` | string | `created_at` | `created_at`, `difficulty`, `title` |
-| `order` | string | `desc` | `asc` sau `desc` |
+| `/api/problems` | GET | — | Listare cu filtrare și paginare |
+| `/api/problems/{slug}` | GET | — | Detalii problemă cu enunț |
+| `/api/problems` | POST | Da | Creare problemă nouă |
+| `/api/problems/{slug}` | PATCH | Autor/admin | Actualizare |
+| `/api/problems/{slug}` | DELETE | Autor/admin | Ștergere |
+| `/api/problems/{slug}/test-cases` | GET/POST | Autor/admin | Cazuri de test |
+| `/api/problems/{slug}/test-cases/{ordinal}` | DELETE | Autor/admin | Ștergere test |
 
-**Răspuns `200`:**
+**Query params GET /api/problems:** `page`, `per_page`, `difficulty_min`, `difficulty_max`, `tags`, `search`, `sort`, `order`
+
+**POST /api/problems body:**
 ```json
 {
-  "items": [
-    {
-      "id": "uuid",
-      "slug": "string",
-      "title": "string",
-      "difficulty": 3,
-      "tags": ["array", "dp"],
-      "visibility": "public",
-      "score_total": 100,
-      "author": { "username": "string" }
-    }
-  ],
-  "total": 150,
-  "page": 1,
-  "per_page": 20
-}
-```
-
----
-
-### `GET /api/problems/{slug}`
-
-Detalii complete ale problemei, inclusiv enunț și cazuri de test publice.
-
-**Răspuns `200`:**
-```json
-{
-  "id": "uuid",
-  "slug": "string",
-  "title": "string",
-  "statement_md": "string (Markdown + LaTeX)",
-  "statement_md_en": "string (opțional)",
-  "difficulty": 5,
-  "tags": ["graph", "bfs"],
-  "visibility": "public",
-  "time_limit_ms": 1000,
-  "memory_limit_kb": 65536,
-  "score_total": 100,
-  "comparison_mode": "whitespace_insensitive",
-  "sample_test_cases": [
-    {
-      "ordinal": 1,
-      "is_sample": true,
-      "input_preview": "3 5\n1 2 3",
-      "output_preview": "6"
-    }
-  ],
-  "author": { "username": "string" }
-}
-```
-
----
-
-### `POST /api/problems`
-
-Creează o problemă nouă. **Autentificare:** Obligatorie.
-
-**Body:**
-```json
-{
-  "title": "string",
-  "statement_md": "string",
-  "difficulty": 5,
-  "tags": ["dp", "greedy"],
-  "visibility": "draft | public | private | contest",
-  "time_limit_ms": 1000,
-  "memory_limit_kb": 65536,
-  "score_total": 100,
-  "comparison_mode": "exact | whitespace_insensitive | float_epsilon"
-}
-```
-
-**Răspuns `201`:** Obiect problemă complet.
-
----
-
-### `PATCH /api/problems/{slug}`
-
-Actualizează o problemă existentă. **Autentificare:** Autor sau admin.
-
-**Body:** Orice câmpuri din `POST /api/problems` (parțial).
-
----
-
-### `DELETE /api/problems/{slug}`
-
-Șterge problema. **Autentificare:** Autor sau admin.
-
-**Răspuns `204`.**
-
----
-
-### `GET /api/problems/{slug}/test-cases`
-
-Listează cazurile de test ale problemei. **Autentificare:** Autor sau admin.
-
----
-
-### `POST /api/problems/{slug}/test-cases`
-
-Adaugă un caz de test (upload fișiere `.in` și `.out`). **Autentificare:** Autor sau admin.
-
-**Body:** `multipart/form-data` cu câmpurile `input_file` și `output_file`.
-
----
-
-### `DELETE /api/problems/{slug}/test-cases/{ordinal}`
-
-Șterge un caz de test. **Autentificare:** Autor sau admin.
-
----
-
-### `GET /api/problems/{slug}/input/{ordinal}`
-
-Descarcă fișierul `.in` pentru un caz de test public.
-
----
-
-### `PUT /api/problems/{slug}/quiz-options`
-
-Setează opțiunile quiz (întrebări cu răspuns multiplu). **Autentificare:** Autor sau admin.
-
----
-
-### `POST /api/problems/{slug}/quiz-attempt`
-
-Trimite un răspuns la quiz. **Autentificare:** Obligatorie.
-
-**Răspuns `200`:**
-```json
-{
-  "correct": true,
-  "explanation": "string (opțional)"
+  "title": "string", "statement_md": "string", "difficulty": 5,
+  "tags": ["dp"], "visibility": "draft | public | private | contest",
+  "time_limit_ms": 1000, "memory_limit_kb": 65536,
+  "score_total": 100, "comparison_mode": "exact | whitespace_insensitive | float_epsilon"
 }
 ```
 
@@ -287,62 +57,19 @@ Trimite un răspuns la quiz. **Autentificare:** Obligatorie.
 
 ## Submisii
 
-### `POST /api/submissions`
+| Endpoint | Metodă | Auth | Descriere |
+|---|---|---|---|
+| `/api/submissions` | POST | Da | Trimite soluție |
+| `/api/submissions` | GET | Da | Istoric submisii |
+| `/api/submissions/{id}` | GET | Da | Detalii cu rezultate per test |
 
-Trimite o soluție pentru judecată. **Autentificare:** Obligatorie.
+**POST body:** `{ problem_id, code, language }` — limbaje: `c | cpp | python | java | rust | go | javascript | kotlin | pypy`
 
-**Body:**
+**GET /{id} response:**
 ```json
 {
-  "problem_id": "uuid",
-  "code": "string (cod sursă)",
-  "language": "c | cpp | python | java | rust | go | javascript | kotlin | pypy"
-}
-```
-
-**Răspuns `201`:**
-```json
-{
-  "id": "uuid",
-  "verdict": "pending",
-  "score": 0,
-  "created_at": "ISO8601"
-}
-```
-
----
-
-### `GET /api/submissions`
-
-Istoricul submisiilor utilizatorului curent. **Autentificare:** Obligatorie.
-
-**Query params:** `problem_id`, `verdict`, `page`, `per_page`.
-
----
-
-### `GET /api/submissions/{id}`
-
-Detalii submisie cu rezultatele per test. **Autentificare:** Obligatorie.
-
-**Răspuns `200`:**
-```json
-{
-  "id": "uuid",
-  "problem": { "slug": "string", "title": "string" },
-  "code": "string",
-  "language": "string",
-  "verdict": "AC | WA | CE | TLE | MLE | RE | pending",
-  "score": 100,
-  "judged_at": "ISO8601",
-  "results": [
-    {
-      "test_case_ordinal": 1,
-      "verdict": "AC",
-      "time_ms": 45,
-      "memory_kb": 2048,
-      "output_snippet": "6\n"
-    }
-  ]
+  "id": "uuid", "verdict": "AC | WA | CE | TLE | MLE | RE | pending",
+  "score": 100, "results": [{ "test_case_ordinal": 1, "verdict": "AC", "time_ms": 45, "memory_kb": 2048 }]
 }
 ```
 
@@ -350,292 +77,97 @@ Detalii submisie cu rezultatele per test. **Autentificare:** Obligatorie.
 
 ## Concursuri
 
-### `GET /api/contests`
+| Endpoint | Metodă | Auth | Descriere |
+|---|---|---|---|
+| `/api/contests` | GET | — | Listare (`status=upcoming|running|finished`) |
+| `/api/contests/{slug}` | GET | — | Detalii cu probleme |
+| `/api/contests` | POST | Teacher/admin | Creare concurs |
+| `/api/contests/{slug}/join` | POST | Da | Înscriere |
+| `/api/contests/{slug}/leaderboard` | GET | — | Clasament snapshot |
+| `WS /api/contests/{slug}/leaderboard` | WS | — | Clasament live |
 
-Listează concursurile publice.
-
-**Query params:** `status` (`upcoming | running | finished`), `page`, `per_page`.
-
----
-
-### `GET /api/contests/{slug}`
-
-Detalii concurs cu problemele incluse.
-
----
-
-### `POST /api/contests`
-
-Creează un concurs nou. **Autentificare:** Teacher sau admin.
-
-**Body:**
+**WS leaderboard message:**
 ```json
-{
-  "title": "string",
-  "description": "string",
-  "start_at": "ISO8601",
-  "end_at": "ISO8601",
-  "type": "contest | homework | qualifier",
-  "is_public": true
-}
-```
-
----
-
-### `POST /api/contests/{slug}/join`
-
-Înscrie utilizatorul curent în concurs. **Autentificare:** Obligatorie.
-
----
-
-### `GET /api/contests/{slug}/leaderboard`
-
-Clasamentul concursului (snapshot).
-
----
-
-### `WebSocket /api/contests/{slug}/leaderboard`
-
-Clasament în timp real. Primești mesaje JSON la fiecare actualizare de scor:
-```json
-{
-  "type": "leaderboard_update",
-  "entries": [
-    {
-      "rank": 1,
-      "username": "string",
-      "total_score": 300,
-      "penalty": 1200
-    }
-  ]
-}
+{ "type": "leaderboard_update", "entries": [{ "rank": 1, "username": "string", "total_score": 300 }] }
 ```
 
 ---
 
 ## Dueluri
 
-### `POST /api/duels/requests`
+| Endpoint | Metodă | Auth | Descriere |
+|---|---|---|---|
+| `/api/duels/requests` | POST | Da | Trimite invitație |
+| `/api/duels/requests/pending` | GET | Da | Invitații primite |
+| `/api/duels/requests/{id}/accept` | POST | Da | Acceptă invitație |
+| `/api/duels/queue/join` | POST | Da | Intră în coadă matchmaking |
+| `/api/duels/queue/leave` | DELETE | Da | Ieși din coadă |
+| `/api/duels/{duel_id}` | GET | Da | Detalii duel |
+| `/api/duels/{duel_id}/submit` | POST | Da | Trimite cod în duel |
+| `/api/duels/{duel_id}/resign` | POST | Da | Abandonează |
+| `WS /api/duels/{duel_id}/ws` | WS | Da | Evenimente live |
 
-Trimite o invitație de duel. **Autentificare:** Obligatorie.
-
-**Body:**
-```json
-{
-  "to_username": "string"
-}
-```
-
----
-
-### `GET /api/duels/requests/pending`
-
-Invitații primite și netratate. **Autentificare:** Obligatorie.
-
----
-
-### `POST /api/duels/requests/{request_id}/accept`
-
-Acceptă invitația și creează duelul. **Autentificare:** Obligatorie.
-
----
-
-### `POST /api/duels/queue/join`
-
-Intră în coada de matchmaking. **Autentificare:** Obligatorie.
-
----
-
-### `DELETE /api/duels/queue/leave`
-
-Ieși din coadă. **Autentificare:** Obligatorie.
-
----
-
-### `GET /api/duels/{duel_id}`
-
-Detalii duel curent.
-
----
-
-### `POST /api/duels/{duel_id}/submit`
-
-Trimite cod în contextul unui duel. **Autentificare:** Obligatorie.
-
----
-
-### `POST /api/duels/{duel_id}/resign`
-
-Abandonează duelul. **Autentificare:** Obligatorie.
-
----
-
-### `WebSocket /api/duels/{duel_id}/ws`
-
-Actualizări în timp real pentru duel. Evenimente posibile:
-
+**WS duel events:**
 ```json
 { "type": "submission_result", "user_id": "uuid", "verdict": "AC", "score": 100 }
-{ "type": "draw_offered", "from_user_id": "uuid" }
-{ "type": "draw_accepted" }
-{ "type": "resign", "user_id": "uuid" }
 { "type": "duel_finished", "winner_id": "uuid", "elo_change": 15 }
+{ "type": "draw_offered", "from_user_id": "uuid" }
+{ "type": "resign", "user_id": "uuid" }
 ```
 
 ---
 
 ## Lecții
 
-### `GET /api/lessons`
-
-Listează materialele didactice.
-
-**Query params:** `difficulty`, `tags`, `page`, `per_page`.
-
----
-
-### `GET /api/lessons/{slug}`
-
-Conținut complet al lecției.
-
----
-
-### `POST /api/lessons/{slug}/complete`
-
-Marchează lecția ca finalizată. **Autentificare:** Obligatorie.
-
-**Răspuns `200`:**
-```json
-{
-  "completed_at": "ISO8601"
-}
-```
+| Endpoint | Metodă | Auth | Descriere |
+|---|---|---|---|
+| `/api/lessons` | GET | — | Listare (`difficulty`, `tags`) |
+| `/api/lessons/{slug}` | GET | — | Conținut complet |
+| `/api/lessons/{slug}/complete` | POST | Da | Marchează ca finalizat |
 
 ---
 
 ## Clase
 
-### `POST /api/classrooms`
-
-Creează o clasă nouă. **Autentificare:** Teacher sau admin.
-
-**Body:**
-```json
-{
-  "name": "string"
-}
-```
-
-**Răspuns `201`:**
-```json
-{
-  "id": "uuid",
-  "name": "string",
-  "code": "ABCD12",
-  "teacher": { "username": "string" }
-}
-```
-
----
-
-### `POST /api/classrooms/join`
-
-Înscrie-te într-o clasă cu codul de acces. **Autentificare:** Obligatorie.
-
-**Body:**
-```json
-{
-  "code": "ABCD12"
-}
-```
-
----
-
-### `GET /api/classrooms/{class_id}`
-
-Detalii clasă (anunțuri, teme, membri). **Autentificare:** Membru sau teacher.
-
----
-
-### `POST /api/classrooms/{class_id}/regenerate-code`
-
-Generează un cod de acces nou. **Autentificare:** Teacher.
+| Endpoint | Metodă | Auth | Descriere |
+|---|---|---|---|
+| `/api/classrooms` | POST | Teacher/admin | Creare clasă |
+| `/api/classrooms/join` | POST | Da | Alăturare cu cod |
+| `/api/classrooms/{id}` | GET | Membru | Detalii, anunțuri, teme |
+| `/api/classrooms/{id}/regenerate-code` | POST | Teacher | Cod nou de acces |
 
 ---
 
 ## Social
 
-### `POST /api/social/friend-requests`
-
-Trimite cerere de prietenie. **Autentificare:** Obligatorie.
-
-**Body:**
-```json
-{
-  "to_username": "string"
-}
-```
-
----
-
-### `POST /api/social/friend-requests/{id}/accept`
-
-Acceptă cererea de prietenie. **Autentificare:** Obligatorie.
-
----
-
-### `GET /api/social/friends`
-
-Lista prietenilor. **Autentificare:** Obligatorie.
-
----
-
-### `GET /api/social/notifications`
-
-Notificări necitite. **Autentificare:** Obligatorie.
-
----
-
-### `POST /api/social/notifications/{id}/read`
-
-Marchează notificarea ca citită. **Autentificare:** Obligatorie.
+| Endpoint | Metodă | Auth | Descriere |
+|---|---|---|---|
+| `/api/social/friend-requests` | POST | Da | Cerere de prietenie |
+| `/api/social/friend-requests/{id}/accept` | POST | Da | Acceptă |
+| `/api/social/friends` | GET | Da | Lista prietenilor |
+| `/api/social/notifications` | GET | Da | Notificări necitite |
+| `/api/social/notifications/{id}/read` | POST | Da | Marchează ca citit |
+| `WS /api/social/notifications/ws` | WS | Da | Notificări live |
 
 ---
 
 ## Sistem
 
-### `GET /api/health`
-
-Starea serverului.
-
-**Răspuns `200`:**
-```json
-{
-  "status": "ok",
-  "database": "connected",
-  "piston": "reachable"
-}
-```
+**GET /api/health** → `{ "status": "ok", "database": "connected", "piston": "reachable" }`
 
 ---
 
 ## Coduri de eroare
 
-Toate erorile urmează formatul standard:
+Toate erorile: `{ "detail": "mesaj" }`
 
-```json
-{
-  "detail": "Mesaj de eroare descriptiv"
-}
-```
-
-| Cod HTTP | Semnificație |
+| Cod | Semnificație |
 |---|---|
-| `400 Bad Request` | Date invalide în request |
-| `401 Unauthorized` | Sesiune lipsă sau expirată |
-| `403 Forbidden` | Permisiuni insuficiente |
-| `404 Not Found` | Resursa nu există |
-| `409 Conflict` | Conflict (username/email deja existent) |
-| `422 Unprocessable Entity` | Eroare validare Pydantic |
-| `429 Too Many Requests` | Rate limit depășit |
-| `500 Internal Server Error` | Eroare server neașteptată |
+| 400 | Date invalide |
+| 401 | Sesiune lipsă sau expirată |
+| 403 | Permisiuni insuficiente |
+| 404 | Resursa nu există |
+| 409 | Conflict (username/email existent) |
+| 422 | Eroare validare Pydantic |
+| 429 | Rate limit depășit |
+| 500 | Eroare server neașteptată |
