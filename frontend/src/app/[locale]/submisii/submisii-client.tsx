@@ -37,7 +37,7 @@ const EMPTY_FILTERS: Filters = {
 };
 
 
-function buildQuery(filters: Filters, page: number, tab: Tab): string {
+function buildQuery(filters: Filters, page: number, tab: Tab, userId?: string): string {
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("per_page", "20");
@@ -47,6 +47,7 @@ function buildQuery(filters: Filters, page: number, tab: Tab): string {
   if (filters.date_from) params.set("date_from", filters.date_from);
   if (filters.date_to) params.set("date_to", filters.date_to);
   if (tab === "flagged") params.set("flagged_only", "true");
+  if (tab === "mine" && userId) params.set("user_id", userId);
   return `/api/submissions?${params.toString()}`;
 }
 
@@ -62,7 +63,7 @@ export function SubmisiiClient() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["submissions-list", tab, appliedFilters, page],
-    queryFn: () => api.get(buildQuery(appliedFilters, page, tab), SubmissionListResponseSchema),
+    queryFn: () => api.get(buildQuery(appliedFilters, page, tab, user?.id), SubmissionListResponseSchema),
     enabled: isAuthenticated,
     staleTime: 15 * 1000,
   });
