@@ -91,7 +91,7 @@ const ALL_ACHIEVEMENTS: AchievementMeta[] = [
   { key: "first_external", label: "Dincolo de platformă", description: "Ai adăugat un rezultat dintr-o competiție externă", tier: "bronze", Icon: Globe },
   { key: "10_ac", label: "Constant", description: "Ai rezolvat 10 probleme distincte", tier: "silver", Icon: TrendingUp },
   { key: "first_hard", label: "Apetit pentru dificultate", description: "Ai rezolvat o problemă cu dificultate ridicată (7+)", tier: "silver", Icon: Zap },
-  { key: "first_duel_win", label: "Prima sânge", description: "Ai câștigat primul duel", tier: "silver", Icon: Trophy },
+  { key: "first_duel_win", label: "Primul sânge", description: "Ai câștigat primul duel", tier: "silver", Icon: Trophy },
   { key: "rating_1000", label: "Calificat", description: "Rating duel ≥ 1000", tier: "silver", Icon: Star },
   { key: "25_ac", label: "Rezolvitor", description: "Ai rezolvat 25 de probleme distincte", tier: "gold", Icon: Target },
   { key: "50_ac", label: "Dedicat", description: "Ai rezolvat 50 de probleme distincte", tier: "gold", Icon: Flame },
