@@ -3,14 +3,20 @@ import json
 import time
 
 BASE = "http://piston:2000/api/v2"
-NEEDED = {"c", "c++", "python", "go", "java", "kotlin", "rust", "javascript"}
+NEEDED = {"gcc", "node", "python", "go", "java", "kotlin", "rust"}
+
+def ver_tuple(v):
+    try:
+        return tuple(int(x) for x in v.split("."))
+    except ValueError:
+        return (0,)
 
 pkgs = json.loads(urllib.request.urlopen(f"{BASE}/packages").read())
 latest = {}
 for p in pkgs:
     lang = p["language"]
     if lang in NEEDED:
-        if lang not in latest or p["language_version"] > latest[lang]:
+        if lang not in latest or ver_tuple(p["language_version"]) > ver_tuple(latest[lang]):
             latest[lang] = p["language_version"]
 
 print("Installing:", latest)
