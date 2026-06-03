@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser, hasRole } from "@/lib/server-auth";
 
 const MODEL = "deepseek/deepseek-v4-flash";
 
@@ -14,6 +15,11 @@ type OpenRouterResponse = {
 };
 
 export async function POST(req: NextRequest) {
+  const user = await getSessionUser(req);
+  if (!user || !hasRole(user, "teacher")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "Translation not configured" }, { status: 503 });

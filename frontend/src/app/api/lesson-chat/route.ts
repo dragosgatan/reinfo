@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/server-auth";
 
 const MODEL = "deepseek/deepseek-v4-flash";
 
 type Message = { role: string; content: string };
 
 export async function POST(req: NextRequest) {
+  const user = await getSessionUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "AI not configured" }, { status: 503 });
