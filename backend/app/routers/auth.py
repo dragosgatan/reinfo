@@ -25,7 +25,7 @@ async def register(
     data: UserCreate,
     session: AsyncSession = Depends(get_session),
 ) -> UserRead:
-    """Înregistrează un cont nou. Nu creează sesiune — utilizatorul trebuie să facă login separat."""
+    """Înregistrează un cont nou. Nu creează sesiune - utilizatorul trebuie să facă login separat."""
     existing = await session.scalar(
         select(User).where((User.username == data.username) | (User.email == data.email))
     )
@@ -96,7 +96,7 @@ async def logout(
     reinfo_session: str | None = Cookie(default=None),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
-    """Șterge sesiunea curentă. Idempotent — nu eșuează dacă nu există sesiune."""
+    """Șterge sesiunea curentă. Idempotent - nu eșuează dacă nu există sesiune."""
     if reinfo_session:
         db_session = await session.scalar(
             select(DbSession).where(DbSession.token == reinfo_session)

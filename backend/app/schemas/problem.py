@@ -8,7 +8,7 @@ from app.models.problem import ComparisonMode, ProblemType, Visibility
 
 
 class QuizOptionRead(BaseModel):
-    """Quiz option as shown to users before answering — no answers revealed."""
+    """Quiz option as shown to users before answering - no answers revealed."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -19,7 +19,7 @@ class QuizOptionRead(BaseModel):
 
 
 class QuizOptionWithAnswer(BaseModel):
-    """Quiz option returned after an attempt — includes correct flag and explanation."""
+    """Quiz option returned after an attempt - includes correct flag and explanation."""
 
     model_config = ConfigDict(from_attributes=True)
 

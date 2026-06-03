@@ -1,14 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/server-auth";
 
 const MODEL = "deepseek/deepseek-v4-flash";
 
 type Message = { role: string; content: string };
 
+async function checkAccess(req: NextRequest): Promise<{ status: number; retryAfter?: string }> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const res = await fetch(`${apiUrl}/api/ai/lesson-chat/check`, {
+    method: "POST",
+    headers: { cookie: req.headers.get("cookie") ?? "" },
+  });
+  return { status: res.status, retryAfter: res.headers.get("Retry-After") ?? undefined };
+}
+
 export async function POST(req: NextRequest) {
-  const user = await getSessionUser(req);
-  if (!user) {
+  const { status, retryAfter } = await checkAccess(req);
+
+  if (status === 401) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (status === 429) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: retryAfter ? { "Retry-After": retryAfter } : {} },
+    );
+  }
+  if (status !== 204) {
+    return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY;

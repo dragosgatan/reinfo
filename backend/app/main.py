@@ -18,6 +18,7 @@ from app.limiter import limiter
 from app.realtime import class_chat_hub, notification_hub, run_listener
 from app.routers import (
     admin,
+    ai,
     auth,
     classrooms,
     contests,
@@ -112,6 +113,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users_router.router)
 app.include_router(admin.router)
+app.include_router(ai.router)
 app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(contests.router)

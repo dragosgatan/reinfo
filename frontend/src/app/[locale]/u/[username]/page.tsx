@@ -134,7 +134,7 @@ async function fetchCurrentUser(cookieHeader: string): Promise<CurrentUser | nul
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  return { title: `${username} — ReInfo` };
+  return { title: `${username} - ReInfo` };
 }
 
 export default async function UserProfilePage({ params }: Props) {

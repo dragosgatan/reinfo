@@ -92,7 +92,7 @@ function QuizRow({
     <div className="rounded border border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="font-mono text-xs text-muted-foreground">
-          Quiz #{index + 1} — {t("quizIdLabel")}: <code>{quiz.id}</code>
+          Quiz #{index + 1} - {t("quizIdLabel")}: <code>{quiz.id}</code>
           <span className="ml-2 text-muted-foreground/60">
             (embed via{" "}
             <code className="rounded bg-muted px-1">{`<!-- quiz:${quiz.id} -->`}</code>)

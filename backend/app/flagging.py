@@ -1,6 +1,6 @@
 """Heuristic code flagging for suspicious submissions.
 
-Flags are informational only — they never affect verdict or score.
+Flags are informational only - they never affect verdict or score.
 """
 
 import re

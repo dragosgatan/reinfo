@@ -407,7 +407,7 @@ async def test_contest_problem_public_after_end(
     db_session.add(ContestProblem(contest_id=contest.id, problem_id=problem.id, ordinal=1))
     await db_session.commit()
 
-    # unauthenticated — should see the problem now that contest is over
+    # unauthenticated - should see the problem now that contest is over
     r = await client.get("/api/problems")
     assert r.status_code == 200
     slugs = [item["slug"] for item in r.json()["items"]]

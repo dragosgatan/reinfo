@@ -52,7 +52,7 @@ async function fetchDuelsLeaderboard(): Promise<DuelLeaderboardEntry[]> {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: "Clasament — ReInfo" };
+  return { title: "Clasament - ReInfo" };
 }
 
 function RankBadge({ rank }: { rank: number }) {

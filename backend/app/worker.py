@@ -1,7 +1,7 @@
 """Background worker that polls for queued judging jobs and processes them.
 
 Run with: python -m app.worker
-Multiple instances are safe — FOR UPDATE SKIP LOCKED prevents double-processing.
+Multiple instances are safe - FOR UPDATE SKIP LOCKED prevents double-processing.
 """
 
 import asyncio

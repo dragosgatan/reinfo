@@ -239,7 +239,7 @@ export function TestsTab({ classId, isTeacher }: Props) {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {formatDt(test.start_time, locale)} — {formatDt(test.end_time, locale)}
+                  {formatDt(test.start_time, locale)} - {formatDt(test.end_time, locale)}
                 </p>
               </div>
 

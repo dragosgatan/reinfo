@@ -452,7 +452,7 @@ export default function EditProblemPage() {
               <SelectContent>
                 {Array.from({ length: 10 }, (_, i) => (
                   <SelectItem key={i + 1} value={String(i + 1)}>
-                    {i + 1} —{" "}
+                    {i + 1} -{" "}
                     {getDifficultyLabel(i + 1, t as (key: string) => string)}
                   </SelectItem>
                 ))}
