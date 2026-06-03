@@ -356,10 +356,10 @@
       "save": "Salvează modificările",
       "delete": "Șterge concursul",
       "confirmDelete": "Ești sigur că vrei să ștergi concursul? Această acțiune este ireversibilă.",
-    "errorGeneric": "A apărut o eroare. Încearcă din nou.",
-    "validationUsernameRequired": "Obligatoriu",
-    "validationPasswordRequired": "Parola este obligatorie"
-  },
+      "errorGeneric": "A apărut o eroare. Încearcă din nou.",
+      "validationUsernameRequired": "Obligatoriu",
+      "validationPasswordRequired": "Parola este obligatorie"
+    },
     "fromContest": "Din concursul",
     "addProblem": "Adaugă problemă",
     "security": "Securitate",
@@ -906,5 +906,37 @@
       "noHomeworkTeacher": "Nicio temă creată.",
       "noHomeworkStudent": "Nicio temă atribuită."
     }
+  },
+  "admin": {
+    "title": "Panou de administrare",
+    "subtitle": "Gestionează utilizatorii și monitorizează platforma.",
+    "metaTitle": "Admin — ReInfo",
+    "statUsers": "Utilizatori",
+    "statProblems": "Probleme",
+    "statSubmissions": "Submisii",
+    "statContests": "Concursuri",
+    "roleStudent": "Student",
+    "roleTeacher": "Profesor",
+    "roleAdmin": "Admin",
+    "colUser": "Utilizator",
+    "colDisplayName": "Nume afișat",
+    "colRole": "Rol",
+    "colRegistered": "Înregistrat",
+    "tabAll": "Toți",
+    "tabStudents": "Studenți",
+    "tabTeachers": "Profesori",
+    "tabAdmins": "Admini",
+    "searchPlaceholder": "Caută după username, email...",
+    "noResults": "Niciun utilizator găsit.",
+    "bannedBadge": "suspendat",
+    "actionBan": "Suspendă",
+    "actionUnban": "Reactivează",
+    "paginationTotal": "{count} utilizatori total",
+    "paginationBack": "Înapoi",
+    "paginationNext": "Înainte",
+    "pageOf": "{page} / {total}",
+    "roleSuperuser": "Superuser",
+    "superuserProtected": "protejat",
+    "tabSuperusers": "Superuseri"
   }
 }

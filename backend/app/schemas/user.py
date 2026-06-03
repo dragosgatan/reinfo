@@ -162,6 +162,41 @@ class ProblemsLeaderboardEntry(BaseModel):
     solved_hard: int
 
 
+class AdminUserRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    username: str
+    email: str
+    display_name: str
+    avatar_url: str | None
+    role: UserRole
+    is_banned: bool
+    created_at: datetime
+    last_active_at: datetime
+
+
+class AdminUserList(BaseModel):
+    total: int
+    users: list[AdminUserRead]
+
+
+class AdminRoleUpdate(BaseModel):
+    role: UserRole
+
+
+class AdminBanUpdate(BaseModel):
+    is_banned: bool
+
+
+class AdminStats(BaseModel):
+    total_users: int
+    total_problems: int
+    total_submissions: int
+    total_contests: int
+    users_by_role: dict[str, int]
+
+
 class DuelLeaderboardEntry(BaseModel):
     rank: int
     username: str

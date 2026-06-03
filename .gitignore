@@ -1,4 +1,3 @@
-CLAUDE.md
 
 # data directory (problem assets, test files)
 data/
@@ -38,11 +37,11 @@ frontend/.env.test.local
 frontend/.env.production.local
 npm-debug.log*
 yarn-debug.log*
+.claude/
 yarn-error.log*
 .pnp
 .pnp.js
 
-.claude/
 
 # IDE
 .idea/
@@ -50,6 +49,7 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+CLAUDE.md
 .DS_Store
 Thumbs.db
 
@@ -57,6 +57,6 @@ Thumbs.db
 docker-compose.override.yml
 .env.prod
 nginx/certbot-webroot/
-
+	
 # Alembic
 backend/alembic/versions/*.pyc

@@ -906,5 +906,37 @@
       "noHomeworkTeacher": "No homework created.",
       "noHomeworkStudent": "No homework assigned."
     }
+  },
+  "admin": {
+    "title": "Admin panel",
+    "subtitle": "Manage users and monitor the platform.",
+    "metaTitle": "Admin — ReInfo",
+    "statUsers": "Users",
+    "statProblems": "Problems",
+    "statSubmissions": "Submissions",
+    "statContests": "Contests",
+    "roleStudent": "Student",
+    "roleTeacher": "Teacher",
+    "roleAdmin": "Admin",
+    "colUser": "User",
+    "colDisplayName": "Display name",
+    "colRole": "Role",
+    "colRegistered": "Registered",
+    "tabAll": "All",
+    "tabStudents": "Students",
+    "tabTeachers": "Teachers",
+    "tabAdmins": "Admins",
+    "searchPlaceholder": "Search by username, email...",
+    "noResults": "No users found.",
+    "bannedBadge": "suspended",
+    "actionBan": "Suspend",
+    "actionUnban": "Reactivate",
+    "paginationTotal": "{count} users total",
+    "paginationBack": "Back",
+    "paginationNext": "Next",
+    "pageOf": "{page} / {total}",
+    "roleSuperuser": "Superuser",
+    "superuserProtected": "protected",
+    "tabSuperusers": "Superusers"
   }
 }

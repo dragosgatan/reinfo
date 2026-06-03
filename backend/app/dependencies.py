@@ -38,6 +38,8 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilizator inexistent"
         )
 
+    if user.is_banned:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cont suspendat")
     user.last_active_at = datetime.now(UTC)
     await session.commit()
     return user

@@ -16,7 +16,17 @@ from app.config import settings
 from app.db import engine
 from app.limiter import limiter
 from app.realtime import class_chat_hub, notification_hub, run_listener
-from app.routers import auth, classrooms, contests, duels, lessons, problems, social, submissions
+from app.routers import (
+    admin,
+    auth,
+    classrooms,
+    contests,
+    duels,
+    lessons,
+    problems,
+    social,
+    submissions,
+)
 from app.routers import users as users_router
 from app.routers.contests import dispatch_leaderboard_update
 from app.routers.duels import dispatch_duel_update
@@ -101,6 +111,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(users_router.router)
+app.include_router(admin.router)
 app.include_router(problems.router)
 app.include_router(submissions.router)
 app.include_router(contests.router)

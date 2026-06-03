@@ -356,10 +356,10 @@
       "save": "Változtatások mentése",
       "delete": "Verseny törlése",
       "confirmDelete": "Biztosan törölni szeretnéd ezt a versenyt? Ez a művelet visszavonhatatlan.",
-"errorGeneric": "Hiba történt. Próbáld újra.",
-    "validationUsernameRequired": "Kötelező",
-    "validationPasswordRequired": "A jelszó kötelező"
-  },
+      "errorGeneric": "Hiba történt. Próbáld újra.",
+      "validationUsernameRequired": "Kötelező",
+      "validationPasswordRequired": "A jelszó kötelező"
+    },
     "fromContest": "Versenyből",
     "addProblem": "Feladat hozzáadása",
     "security": "Biztonság",
@@ -906,5 +906,37 @@
       "noHomeworkTeacher": "Nincs házi feladat létrehozva.",
       "noHomeworkStudent": "Nincs kiosztott házi feladat."
     }
+  },
+  "admin": {
+    "title": "Adminisztrátor panel",
+    "subtitle": "Felhasználók kezelése és a platform figyelése.",
+    "metaTitle": "Admin — ReInfo",
+    "statUsers": "Felhasználók",
+    "statProblems": "Feladatok",
+    "statSubmissions": "Beküldések",
+    "statContests": "Versenyek",
+    "roleStudent": "Tanuló",
+    "roleTeacher": "Tanár",
+    "roleAdmin": "Admin",
+    "colUser": "Felhasználó",
+    "colDisplayName": "Megjelenített név",
+    "colRole": "Szerepkör",
+    "colRegistered": "Regisztrált",
+    "tabAll": "Összes",
+    "tabStudents": "Tanulók",
+    "tabTeachers": "Tanárok",
+    "tabAdmins": "Adminok",
+    "searchPlaceholder": "Keresés felhasználónév, e-mail alapján...",
+    "noResults": "Nem található felhasználó.",
+    "bannedBadge": "felfüggesztve",
+    "actionBan": "Felfüggeszt",
+    "actionUnban": "Visszaállít",
+    "paginationTotal": "{count} felhasználó összesen",
+    "paginationBack": "Vissza",
+    "paginationNext": "Következő",
+    "pageOf": "{page} / {total}",
+    "roleSuperuser": "Superfelhasználó",
+    "superuserProtected": "védett",
+    "tabSuperusers": "Superfelhasználók"
   }
 }
