@@ -47,6 +47,8 @@ services:
     privileged: true
     tmpfs:
       - /piston/jobs
+    volumes:
+      - piston_packages:/piston/packages
 
   nginx:
     image: nginx:alpine
@@ -63,3 +65,4 @@ services:
 
 volumes:
   pg_data:
+  piston_packages:
