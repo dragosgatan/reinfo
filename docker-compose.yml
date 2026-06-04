@@ -60,6 +60,8 @@ services:
       - "2000:2000"
     tmpfs:
       - /piston/jobs
+    volumes:
+      - piston_packages:/piston/packages
 
   frontend:
     build:
@@ -78,3 +80,4 @@ services:
 
 volumes:
   pg_data:
+  piston_packages:

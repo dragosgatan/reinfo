@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = ["http://localhost:3000"]
     data_dir: str = "../data"
     environment: str = "development"
-    piston_url: str = "http://piston:2000"
+    piston_url: str = "http://localhost:2000"
     sentry_dsn: str = ""
     cookie_domain: str = ""
 

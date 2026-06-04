@@ -1,8 +1,9 @@
+import sys
 import urllib.request
 import json
 import time
 
-BASE = "http://piston:2000/api/v2"
+BASE = (sys.argv[1].rstrip("/") + "/api/v2") if len(sys.argv) > 1 else "http://piston:2000/api/v2"
 NEEDED = {"gcc", "node", "python", "go", "java", "kotlin", "rust"}
 
 def ver_tuple(v):
