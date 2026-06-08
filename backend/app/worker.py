@@ -287,7 +287,7 @@ async def process_duel_queue(session: AsyncSession) -> None:
 
 async def run_worker() -> None:
     """Poll for queued jobs forever, processing one per iteration."""
-    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+    engine = create_async_engine(settings.database_url, pool_pre_ping=True, connect_args={"ssl": False})
     factory = async_sessionmaker(engine, expire_on_commit=False)
 
     log.info("worker started, polling every %.1fs", _POLL_INTERVAL)
