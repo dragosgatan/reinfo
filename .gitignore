@@ -60,3 +60,5 @@ nginx/certbot-webroot/
 	
 # Alembic
 backend/alembic/versions/*.pyc
+.vercel
+.env*
