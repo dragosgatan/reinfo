@@ -116,3 +116,13 @@
     scrollbar-color: hsl(var(--border)) transparent;
   }
 }
+
+.hljs {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+pre code.hljs,
+code.hljs {
+  padding: 0 !important;
+}

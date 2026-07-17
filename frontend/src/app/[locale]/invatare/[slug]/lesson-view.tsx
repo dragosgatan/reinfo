@@ -263,12 +263,13 @@ function CodeRenderer({
 }: React.HTMLAttributes<HTMLElement> & { inline?: boolean }) {
   const language = /language-(\w+)/.exec(className || "")?.[1];
   const codeStr = childrenToString(children).replace(/\n$/, "");
+  const isBlock = Boolean(className);
 
   if (language === "python" && !props.inline) {
     return <RunnablePython code={codeStr} />;
   }
 
-  if (language) {
+  if (isBlock) {
     return (
       <code className={cn("text-xs", className)} {...props}>
         {children}

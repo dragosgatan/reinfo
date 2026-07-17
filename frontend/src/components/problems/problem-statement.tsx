@@ -44,7 +44,7 @@ export function ProblemStatement({ markdown, className }: ProblemStatementProps)
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
           code: ({ children, className: codeClass }) => {
-            const isBlock = codeClass?.includes("language-");
+            const isBlock = Boolean(codeClass);
             if (isBlock) {
               return (
                 <code className={cn("text-xs", codeClass)}>{children}</code>
