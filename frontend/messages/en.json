@@ -938,5 +938,66 @@
     "roleSuperuser": "Superuser",
     "superuserProtected": "protected",
     "tabSuperusers": "Superusers"
+  },
+  "roadmaps": {
+    "title": "Roadmaps",
+    "subtitle": "Structured learning paths for competitive programming.",
+    "noRoadmaps": "No roadmaps available yet.",
+    "nodes": "nodes",
+    "draft": "Draft",
+    "backToRoadmaps": "← Roadmaps",
+    "status": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "done": "Done"
+    },
+    "linkType": {
+      "problem": "Problem",
+      "material": "Material",
+      "external": "External resource"
+    },
+    "nodeSheet": {
+      "description": "Description",
+      "links": "Resources",
+      "statusLabel": "Your status",
+      "noDescription": "No description.",
+      "noLinks": "No resources added.",
+      "close": "Close"
+    },
+    "admin": {
+      "addRoadmap": "New roadmap",
+      "editMode": "Edit mode",
+      "exitEditMode": "Exit editing",
+      "addNode": "New node",
+      "editNode": "Edit node",
+      "deleteNode": "Delete node",
+      "addEdge": "New connection",
+      "deleteEdge": "Delete connection",
+      "addLink": "Add resource",
+      "removeLink": "Remove",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "deleteRoadmap": "Delete roadmap",
+      "form": {
+        "title": "Title",
+        "slug": "Identifier (slug)",
+        "description": "Description",
+        "icon": "Icon (emoji)",
+        "xPosition": "X position (0–100)",
+        "yPosition": "Y position (0–100)",
+        "order": "Order",
+        "parentNode": "Parent node (optional)",
+        "noParent": "No parent",
+        "fromNode": "From node",
+        "toNode": "To node",
+        "url": "URL",
+        "linkTitle": "Resource title",
+        "linkType": "Resource type",
+        "create": "Create",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete"
+      }
+    }
   }
 }

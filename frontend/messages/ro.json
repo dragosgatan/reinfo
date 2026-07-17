@@ -938,5 +938,66 @@
     "roleSuperuser": "Superuser",
     "superuserProtected": "protejat",
     "tabSuperusers": "Superuseri"
+  },
+  "roadmaps": {
+    "title": "Hărți de parcurs",
+    "subtitle": "Trasee de învățare structurate pentru programare competitivă.",
+    "noRoadmaps": "Nu există hărți de parcurs disponibile.",
+    "nodes": "noduri",
+    "draft": "Ciornă",
+    "backToRoadmaps": "← Hărți de parcurs",
+    "status": {
+      "not_started": "Neînceput",
+      "in_progress": "În progres",
+      "done": "Finalizat"
+    },
+    "linkType": {
+      "problem": "Problemă",
+      "material": "Material",
+      "external": "Resursă externă"
+    },
+    "nodeSheet": {
+      "description": "Descriere",
+      "links": "Resurse",
+      "statusLabel": "Statusul tău",
+      "noDescription": "Fără descriere.",
+      "noLinks": "Fără resurse adăugate.",
+      "close": "Închide"
+    },
+    "admin": {
+      "addRoadmap": "Hartă nouă",
+      "editMode": "Mod editare",
+      "exitEditMode": "Ieși din editare",
+      "addNode": "Nod nou",
+      "editNode": "Editează nodul",
+      "deleteNode": "Șterge nodul",
+      "addEdge": "Conexiune nouă",
+      "deleteEdge": "Șterge conexiunea",
+      "addLink": "Adaugă resursă",
+      "removeLink": "Elimină",
+      "publish": "Publică",
+      "unpublish": "Ascunde",
+      "deleteRoadmap": "Șterge harta",
+      "form": {
+        "title": "Titlu",
+        "slug": "Identificator (slug)",
+        "description": "Descriere",
+        "icon": "Pictogramă (emoji)",
+        "xPosition": "Poziție X (0–100)",
+        "yPosition": "Poziție Y (0–100)",
+        "order": "Ordine",
+        "parentNode": "Nod părinte (opțional)",
+        "noParent": "Fără părinte",
+        "fromNode": "De la nodul",
+        "toNode": "La nodul",
+        "url": "URL",
+        "linkTitle": "Titlu resursă",
+        "linkType": "Tip resursă",
+        "create": "Creează",
+        "save": "Salvează",
+        "cancel": "Anulează",
+        "delete": "Șterge"
+      }
+    }
   }
 }

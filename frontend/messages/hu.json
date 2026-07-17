@@ -938,5 +938,66 @@
     "roleSuperuser": "Superfelhasználó",
     "superuserProtected": "védett",
     "tabSuperusers": "Superfelhasználók"
+  },
+  "roadmaps": {
+    "title": "Tanulási térképek",
+    "subtitle": "Strukturált tanulási útvonalak versenyszerű programozáshoz.",
+    "noRoadmaps": "Még nincsenek tanulási térképek.",
+    "nodes": "csomópont",
+    "draft": "Vázlat",
+    "backToRoadmaps": "← Tanulási térképek",
+    "status": {
+      "not_started": "Nem kezdett",
+      "in_progress": "Folyamatban",
+      "done": "Kész"
+    },
+    "linkType": {
+      "problem": "Feladat",
+      "material": "Anyag",
+      "external": "Külső forrás"
+    },
+    "nodeSheet": {
+      "description": "Leírás",
+      "links": "Források",
+      "statusLabel": "Saját állapot",
+      "noDescription": "Nincs leírás.",
+      "noLinks": "Nincsenek hozzáadott források.",
+      "close": "Bezárás"
+    },
+    "admin": {
+      "addRoadmap": "Új térkép",
+      "editMode": "Szerkesztési mód",
+      "exitEditMode": "Kilépés a szerkesztésből",
+      "addNode": "Új csomópont",
+      "editNode": "Csomópont szerkesztése",
+      "deleteNode": "Csomópont törlése",
+      "addEdge": "Új kapcsolat",
+      "deleteEdge": "Kapcsolat törlése",
+      "addLink": "Forrás hozzáadása",
+      "removeLink": "Eltávolítás",
+      "publish": "Közzétesz",
+      "unpublish": "Elrejt",
+      "deleteRoadmap": "Térkép törlése",
+      "form": {
+        "title": "Cím",
+        "slug": "Azonosító (slug)",
+        "description": "Leírás",
+        "icon": "Ikon (emoji)",
+        "xPosition": "X pozíció (0–100)",
+        "yPosition": "Y pozíció (0–100)",
+        "order": "Sorrend",
+        "parentNode": "Szülő csomópont (opcionális)",
+        "noParent": "Nincs szülő",
+        "fromNode": "Kiindulási csomópont",
+        "toNode": "Cél csomópont",
+        "url": "URL",
+        "linkTitle": "Forrás címe",
+        "linkType": "Forrás típusa",
+        "create": "Létrehozás",
+        "save": "Mentés",
+        "cancel": "Mégse",
+        "delete": "Törlés"
+      }
+    }
   }
 }

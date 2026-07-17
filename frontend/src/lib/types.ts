@@ -732,6 +732,79 @@ export const DirectMessageReadSchema = z.object({
 });
 export type DirectMessageRead = z.infer<typeof DirectMessageReadSchema>;
 
+export const NodeStatusSchema = z.enum(["not_started", "in_progress", "done"]);
+export type NodeStatus = z.infer<typeof NodeStatusSchema>;
+
+export const NodeLinkTypeSchema = z.enum(["problem", "material", "external"]);
+export type NodeLinkType = z.infer<typeof NodeLinkTypeSchema>;
+
+export const NodeLinkSchema = z.object({
+  id: z.string().uuid(),
+  url: z.string(),
+  title: z.string(),
+  link_type: NodeLinkTypeSchema,
+  problem_id: z.string().uuid().nullable(),
+});
+export type NodeLink = z.infer<typeof NodeLinkSchema>;
+
+export const NodeProgressSchema = z.object({
+  status: NodeStatusSchema,
+  updated_at: z.string(),
+});
+export type NodeProgress = z.infer<typeof NodeProgressSchema>;
+
+export const RoadmapNodeSchema = z.object({
+  id: z.string().uuid(),
+  roadmap_id: z.string().uuid(),
+  parent_id: z.string().uuid().nullable(),
+  title: z.string(),
+  description: z.string().nullable(),
+  order: z.number().int(),
+  x: z.number(),
+  y: z.number(),
+  links: z.array(NodeLinkSchema),
+  progress: NodeProgressSchema.nullable(),
+});
+export type RoadmapNode = z.infer<typeof RoadmapNodeSchema>;
+
+export const RoadmapEdgeSchema = z.object({
+  id: z.string().uuid(),
+  from_node_id: z.string().uuid(),
+  to_node_id: z.string().uuid(),
+});
+export type RoadmapEdge = z.infer<typeof RoadmapEdgeSchema>;
+
+export const RoadmapSummarySchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  slug: z.string(),
+  description: z.string().nullable(),
+  icon: z.string().nullable(),
+  is_published: z.boolean(),
+  total_nodes: z.number().int(),
+  completed_nodes: z.number().int(),
+  completion_pct: z.number(),
+});
+export type RoadmapSummary = z.infer<typeof RoadmapSummarySchema>;
+
+export const RoadmapListResponseSchema = z.object({
+  items: z.array(RoadmapSummarySchema),
+  total: z.number().int(),
+});
+export type RoadmapListResponse = z.infer<typeof RoadmapListResponseSchema>;
+
+export const RoadmapDetailSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  slug: z.string(),
+  description: z.string().nullable(),
+  icon: z.string().nullable(),
+  is_published: z.boolean(),
+  nodes: z.array(RoadmapNodeSchema),
+  edges: z.array(RoadmapEdgeSchema),
+});
+export type RoadmapDetail = z.infer<typeof RoadmapDetailSchema>;
+
 export const LessonReadSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),

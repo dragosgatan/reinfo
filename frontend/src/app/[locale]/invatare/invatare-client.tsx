@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, CheckCircle2, ChevronRight, Plus } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronRight, Map, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
@@ -61,10 +61,27 @@ export default function InvatareClient() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
+
+      <Link
+        href="/invatare/harti"
+        className="mb-8 flex items-center justify-between gap-4 rounded-lg border border-border bg-card px-5 py-4 transition-all hover:border-foreground/20 hover:shadow-sm"
+        aria-label="Hărți de parcurs"
+      >
+        <div className="flex items-center gap-3">
+          <Map className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-medium">Hărți de parcurs</p>
+            <p className="text-xs text-muted-foreground">
+              Trasee de învățare structurate pentru programare competitivă
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </Link>
 
       <div className="mb-8 flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-md border border-border p-1">

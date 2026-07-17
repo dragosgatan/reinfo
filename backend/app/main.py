@@ -25,6 +25,7 @@ from app.routers import (
     duels,
     lessons,
     problems,
+    roadmaps,
     social,
     submissions,
 )
@@ -119,6 +120,7 @@ app.include_router(submissions.router)
 app.include_router(contests.router)
 app.include_router(duels.router)
 app.include_router(lessons.router)
+app.include_router(roadmaps.router)
 app.include_router(social.router)
 app.include_router(classrooms.router)
 
