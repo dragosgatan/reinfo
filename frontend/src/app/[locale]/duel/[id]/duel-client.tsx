@@ -219,7 +219,7 @@ function PlayerPanel({
         {player.best_verdict ? (
           <VerdictBadge verdict={player.best_verdict as VerdictType} />
         ) : (
-          <span className="text-xs text-muted-foreground font-mono">—</span>
+          <span className="text-xs text-muted-foreground font-mono">-</span>
         )}
       </div>
     </div>

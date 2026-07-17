@@ -693,7 +693,7 @@
     "points": "pont",
     "eloUpdated": "Az Elo-értékelés frissült",
     "notFound": "A párbaj nem található vagy nincs hozzáférésed.",
-    "drawOfferedToast": "Az ellenfeled döntetlent ajánlott — válaszolj 60 másodpercen belül.",
+    "drawOfferedToast": "Az ellenfeled döntetlent ajánlott - válaszolj 60 másodpercen belül.",
     "codeSent": "Kód elküldve! ID: {id}",
     "sendError": "Küldési hiba",
     "drawSent": "Döntetlen ajánlat elküldve.",
@@ -740,7 +740,7 @@
     "tabRequests": "Bejövő kérések",
     "loginRequired": "Be kell jelentkezned.",
     "loginAction": "Bejelentkezés",
-    "friendAdded": "Barátok — ReInfo",
+    "friendAdded": "Barátok - ReInfo",
     "friendRemoved": "Barát eltávolítva",
     "requestAlreadySent": "A kérés már elküldve",
     "requestAccepted": "Kérés elfogadva!",
@@ -777,7 +777,7 @@
     "sectionAccount": "Fiók",
     "sectionProject": "Projekt",
     "copyright": "© {year} ReInfo. Minden jog fenntartva.",
-    "infoeducatie": "InfoEducație projekt — Oktatási szoftver szekció"
+    "infoeducatie": "InfoEducație projekt - Oktatási szoftver szekció"
   },
   "classes": {
     "title": "Saját osztályaim",
@@ -910,7 +910,7 @@
   "admin": {
     "title": "Adminisztrátor panel",
     "subtitle": "Felhasználók kezelése és a platform figyelése.",
-    "metaTitle": "Admin — ReInfo",
+    "metaTitle": "Admin - ReInfo",
     "statUsers": "Felhasználók",
     "statProblems": "Feladatok",
     "statSubmissions": "Beküldések",

@@ -223,10 +223,10 @@ function TestRow({ result, index }: { result: SubmissionResult; index: number })
         <VerdictBadge verdict={result.verdict} />
         <span className="text-right">{result.score}p</span>
         <span className="text-right">
-          {result.execution_time_ms != null ? `${result.execution_time_ms}ms` : "—"}
+          {result.execution_time_ms != null ? `${result.execution_time_ms}ms` : "-"}
         </span>
         <span className="text-right">
-          {result.memory_kb != null ? `${result.memory_kb}K` : "—"}
+          {result.memory_kb != null ? `${result.memory_kb}K` : "-"}
         </span>
 
         {(hasWaDiff || hasCeOrRe) && (

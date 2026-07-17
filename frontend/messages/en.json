@@ -693,7 +693,7 @@
     "points": "pts",
     "eloUpdated": "Elo rating updated",
     "notFound": "Duel not found or you don't have access.",
-    "drawOfferedToast": "Your opponent offered a draw — respond within 60s.",
+    "drawOfferedToast": "Your opponent offered a draw - respond within 60s.",
     "codeSent": "Code submitted! ID: {id}",
     "sendError": "Submission error",
     "drawSent": "Draw offer sent.",
@@ -740,7 +740,7 @@
     "tabRequests": "Incoming requests",
     "loginRequired": "You must be signed in.",
     "loginAction": "Sign in",
-    "friendAdded": "Friends — ReInfo",
+    "friendAdded": "Friends - ReInfo",
     "friendRemoved": "Friend removed",
     "requestAlreadySent": "Request already sent",
     "requestAccepted": "Request accepted!",
@@ -777,7 +777,7 @@
     "sectionAccount": "Account",
     "sectionProject": "Project",
     "copyright": "© {year} ReInfo. All rights reserved.",
-    "infoeducatie": "InfoEducație project — Educational Software section"
+    "infoeducatie": "InfoEducație project - Educational Software section"
   },
   "classes": {
     "title": "My classes",
@@ -910,7 +910,7 @@
   "admin": {
     "title": "Admin panel",
     "subtitle": "Manage users and monitor the platform.",
-    "metaTitle": "Admin — ReInfo",
+    "metaTitle": "Admin - ReInfo",
     "statUsers": "Users",
     "statProblems": "Problems",
     "statSubmissions": "Submissions",

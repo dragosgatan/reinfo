@@ -229,7 +229,7 @@ export default function LeaderboardClient({ slug }: Props) {
                           cellTone(score, total),
                         )}
                       >
-                        {score > 0 ? score : "—"}
+                        {score > 0 ? score : "-"}
                       </TableCell>
                     );
                   })}

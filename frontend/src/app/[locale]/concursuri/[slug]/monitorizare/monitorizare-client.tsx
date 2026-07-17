@@ -197,7 +197,7 @@ export default function MonitorizareClient({ slug }: Props) {
                     <ViolationBadge type={v.violation_type} labels={VIOLATION_LABELS} />
                   </TableCell>
                   <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
-                    {v.details ? JSON.stringify(v.details) : "—"}
+                    {v.details ? JSON.stringify(v.details) : "-"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(v.created_at).toLocaleTimeString(locale, {

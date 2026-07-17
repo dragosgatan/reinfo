@@ -163,7 +163,7 @@ export function RoadmapGraph({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 "hover:shadow-md hover:scale-105",
               )}
-              aria-label={`${node.title} — ${status}`}
+              aria-label={`${node.title} - ${status}`}
             >
               <div className="flex items-center gap-1.5">
                 <span

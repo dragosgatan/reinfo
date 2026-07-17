@@ -693,7 +693,7 @@
     "points": "pct",
     "eloUpdated": "Rating-ul Elo s-a actualizat",
     "notFound": "Duelul nu a fost găsit sau nu ai acces.",
-    "drawOfferedToast": "Adversarul tău a oferit remiză — răspunde în 60s.",
+    "drawOfferedToast": "Adversarul tău a oferit remiză - răspunde în 60s.",
     "codeSent": "Cod trimis! ID: {id}",
     "sendError": "Eroare la trimitere",
     "drawSent": "Ofertă de remiză trimisă.",
@@ -740,7 +740,7 @@
     "tabRequests": "Cereri primite",
     "loginRequired": "Trebuie să fii autentificat.",
     "loginAction": "Autentifică-te",
-    "friendAdded": "Prieteni — ReInfo",
+    "friendAdded": "Prieteni - ReInfo",
     "friendRemoved": "Prieten eliminat",
     "requestAlreadySent": "Cererea a fost deja trimisă",
     "requestAccepted": "Cerere acceptată!",
@@ -777,7 +777,7 @@
     "sectionAccount": "Cont",
     "sectionProject": "Proiect",
     "copyright": "© {year} ReInfo. Toate drepturile rezervate.",
-    "infoeducatie": "Proiect InfoEducație — Secțiunea Software Educațional"
+    "infoeducatie": "Proiect InfoEducație - Secțiunea Software Educațional"
   },
   "classes": {
     "title": "Clasele mele",
@@ -910,7 +910,7 @@
   "admin": {
     "title": "Panou de administrare",
     "subtitle": "Gestionează utilizatorii și monitorizează platforma.",
-    "metaTitle": "Admin — ReInfo",
+    "metaTitle": "Admin - ReInfo",
     "statUsers": "Utilizatori",
     "statProblems": "Probleme",
     "statSubmissions": "Submisii",

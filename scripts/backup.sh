@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nightly PostgreSQL backup — run via cron as root on the droplet.
+# Nightly PostgreSQL backup - run via cron as root on the droplet.
 # Cron example (2 AM daily): 0 2 * * * /opt/reinfo/scripts/backup.sh >> /var/log/reinfo-backup.log 2>&1
 set -euo pipefail
 

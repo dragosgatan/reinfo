@@ -94,7 +94,7 @@ function RecentDuelRow({ duel }: { duel: RecentDuelSummary }) {
       ? t("draw")
       : duel.winner_username
         ? t("winsLabel", { username: duel.winner_username })
-        : "—";
+        : "-";
 
   return (
     <Link
