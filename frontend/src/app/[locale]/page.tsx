@@ -58,21 +58,22 @@ export default async function HomePage() {
       <section className="relative overflow-hidden flex flex-col gap-6 border-b border-border py-16 sm:flex-row sm:items-end sm:justify-between md:py-24">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           {[
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg",       top: "10%",  right: "6%",  size: 44, opacity: 0.22 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-original.svg",           top: "55%",  right: "18%", size: 34, opacity: 0.10 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original-wordmark.svg",      top: "18%",  right: "28%", size: 36, opacity: 0.10 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg", bottom: "12%", right: "8%",  size: 36, opacity: 0.10 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/c/c-original.svg",                 top: "8%",   right: "46%", size: 30, opacity: 0.10 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg",           bottom: "14%", right: "40%", size: 34, opacity: 0.10 },
-            { url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg",       top: "40%",  right: "52%", size: 30, opacity: 0.10 },
-          ].map(({ url, size, opacity, ...pos }, i) => (
+            { url: "/logos/python.png", top: "10%",  right: "6%",  opacity: 0.22 },
+            { url: "/logos/rust.png",   top: "55%",  right: "18%", opacity: 0.10 },
+            { url: "/logos/go.png",     top: "18%",  right: "28%", opacity: 0.10 },
+            { url: "/logos/cpp.png",    bottom: "12%", right: "8%",  opacity: 0.10 },
+            { url: "/logos/c.png",      top: "8%",   right: "46%", opacity: 0.10 },
+            { url: "/logos/java.png",   bottom: "14%", right: "40%", opacity: 0.10 },
+            { url: "/logos/kotlin.png", top: "40%",  right: "52%", opacity: 0.10 },
+            { url: "/logos/nodejs.png", top: "30%",  right: "38%", opacity: 0.10 },
+          ].map(({ url, opacity, ...pos }, i) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={i}
               src={url}
               alt=""
               className="absolute select-none grayscale dark:invert"
-              style={{ ...pos, width: size, height: size, opacity }}
+              style={{ ...pos, maxWidth: 44, maxHeight: 44, width: "auto", height: "auto", opacity }}
             />
           ))}
         </div>
