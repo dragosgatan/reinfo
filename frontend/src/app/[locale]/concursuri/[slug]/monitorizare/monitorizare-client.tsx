@@ -71,7 +71,9 @@ export default function MonitorizareClient({ slug }: Props) {
   });
 
   const canView =
-    user?.role === "admin" || (user?.role === "teacher" && contest?.created_by === user?.id);
+    user?.role === "admin" ||
+    user?.role === "superuser" ||
+    (user?.role === "teacher" && contest?.created_by === user?.id);
 
   const { data: flagged = [], isLoading: flaggedLoading } = useQuery({
     queryKey: ["contest-flagged", slug],

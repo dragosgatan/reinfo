@@ -55,7 +55,7 @@ export default function ConcursuriClient() {
 
   const contests: ContestSummary[] = data?.items ?? [];
   const canCreate =
-    user?.role === "teacher" || user?.role === "admin";
+    user?.role === "teacher" || user?.role === "admin" || user?.role === "superuser";
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">

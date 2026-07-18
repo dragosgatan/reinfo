@@ -159,7 +159,8 @@ function ProblemDetailLayout({
   const t = useTranslations("problems");
   const tCommon = useTranslations("common");
   const { user } = useAuth();
-  const canEdit = user?.role === "teacher" || user?.role === "admin";
+  const canEdit =
+    user?.role === "teacher" || user?.role === "admin" || user?.role === "superuser";
   const memoryMb = Math.round(problem.memory_limit_kb / 1024);
   const [editorFocused, setEditorFocused] = useState(false);
   const isQuiz = problem.problem_type === "quiz";

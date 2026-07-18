@@ -54,7 +54,7 @@ function buildQuery(filters: Filters, page: number, tab: Tab, userId?: string): 
 export function SubmisiiClient() {
   const t = useTranslations("submissions");
   const { user, isAuthenticated } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "superuser";
 
   const [tab, setTab] = useState<Tab>("mine");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);

@@ -328,7 +328,7 @@ export default function ProfileSettingsPage() {
           <Button type="submit" disabled={saving} size="sm">
             {saving ? t("saving") : t("save")}
           </Button>
-          {u.role === "admin" && (
+          {(u.role === "admin" || u.role === "superuser") && (
             <Badge variant="secondary" className="text-xs">
               Admin
             </Badge>

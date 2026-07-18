@@ -316,7 +316,10 @@ export default function NouProblemPage() {
 
   if (isLoading) return null;
 
-  if (!user || (user.role !== "teacher" && user.role !== "admin")) {
+  if (
+    !user ||
+    (user.role !== "teacher" && user.role !== "admin" && user.role !== "superuser")
+  ) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
         <p className="text-sm text-muted-foreground">{t("permissionDeniedProblem")}</p>

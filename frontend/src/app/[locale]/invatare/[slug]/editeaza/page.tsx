@@ -21,7 +21,9 @@ export default function EditeazaLectiePage({ params }: Props) {
   const { data: lesson, isLoading: lessonLoading } = useQuery({
     queryKey: ["lesson", slug],
     queryFn: () => api.get(`/api/lessons/${slug}`, LessonReadSchema),
-    enabled: !!user && (user.role === "teacher" || user.role === "admin"),
+    enabled:
+      !!user &&
+      (user.role === "teacher" || user.role === "admin" || user.role === "superuser"),
   });
 
   if (authLoading || lessonLoading) {
@@ -33,7 +35,10 @@ export default function EditeazaLectiePage({ params }: Props) {
     );
   }
 
-  if (!user || (user.role !== "teacher" && user.role !== "admin")) {
+  if (
+    !user ||
+    (user.role !== "teacher" && user.role !== "admin" && user.role !== "superuser")
+  ) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
         <p className="text-sm text-muted-foreground">

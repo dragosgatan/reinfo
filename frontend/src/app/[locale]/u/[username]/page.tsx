@@ -171,7 +171,7 @@ export default async function UserProfilePage({ params }: Props) {
   const totalDuels = duelWins + duelLosses + duelDraws;
 
   const isOwnProfile = currentUser?.username === username;
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "superuser";
 
   const defaultStats: UserStatsRead = {
     total_solved: 0,
@@ -201,7 +201,7 @@ export default async function UserProfilePage({ params }: Props) {
             {profile.display_name !== username && (
               <span className="text-base text-muted-foreground">{profile.display_name}</span>
             )}
-            {profile.role === "admin" && (
+            {(profile.role === "admin" || profile.role === "superuser") && (
               <Badge variant="secondary" className="text-xs">
                 Admin
               </Badge>

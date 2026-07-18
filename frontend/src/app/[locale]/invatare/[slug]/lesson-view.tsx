@@ -564,7 +564,8 @@ interface LessonViewProps {
 export function LessonView({ lesson, prevLesson, nextLesson }: LessonViewProps) {
   const t = useTranslations("learning");
   const { user } = useAuth();
-  const isTeacher = user?.role === "teacher" || user?.role === "admin";
+  const isTeacher =
+    user?.role === "teacher" || user?.role === "admin" || user?.role === "superuser";
 
   const [isCompleted, setIsCompleted] = useState(lesson.is_completed);
   const [completing, setCompleting] = useState(false);

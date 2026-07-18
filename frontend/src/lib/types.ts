@@ -482,7 +482,7 @@ export const UserPublicSchema = z.object({
   username: z.string(),
   display_name: z.string(),
   avatar_url: z.string().nullable(),
-  role: z.enum(["student", "teacher", "admin"]),
+  role: z.enum(["student", "teacher", "admin", "superuser"]),
   created_at: z.string(),
 });
 export type UserPublic = z.infer<typeof UserPublicSchema>;
@@ -493,7 +493,7 @@ export const UserProfileReadSchema = z.object({
   display_name: z.string(),
   avatar_url: z.string().nullable(),
   bio: z.string().nullable(),
-  role: z.enum(["student", "teacher", "admin"]),
+  role: z.enum(["student", "teacher", "admin", "superuser"]),
   created_at: z.string(),
   last_active_at: z.string(),
   duel_rating: z.number().int(),

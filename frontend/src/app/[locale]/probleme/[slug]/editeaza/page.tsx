@@ -93,7 +93,11 @@ export default function EditProblemPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || (user.role !== "teacher" && user.role !== "admin")) return;
+    if (
+      !user ||
+      (user.role !== "teacher" && user.role !== "admin" && user.role !== "superuser")
+    )
+      return;
 
     api.get(`/api/problems/${slug}`, ProblemReadSchema)
       .then((problem) => {
@@ -224,7 +228,10 @@ export default function EditProblemPage() {
 
   if (authLoading) return null;
 
-  if (!user || (user.role !== "teacher" && user.role !== "admin")) {
+  if (
+    !user ||
+    (user.role !== "teacher" && user.role !== "admin" && user.role !== "superuser")
+  ) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
         <p className="text-sm text-muted-foreground">{t("accessDeniedProblem")}</p>
@@ -535,7 +542,7 @@ export default function EditProblemPage() {
             )}
           </div>
 
-          {user?.role === "admin" && (
+          {(user?.role === "admin" || user?.role === "superuser") && (
             <>
               <Separator />
               <div>

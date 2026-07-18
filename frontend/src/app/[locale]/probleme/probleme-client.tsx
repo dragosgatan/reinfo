@@ -153,7 +153,7 @@ export default function ProblemeClient() {
             </p>
           )}
         </div>
-        {user?.role === "teacher" || user?.role === "admin" ? (
+        {user?.role === "teacher" || user?.role === "admin" || user?.role === "superuser" ? (
           <Button asChild size="sm" className="gap-1.5">
             <Link href="/probleme/nou">
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />

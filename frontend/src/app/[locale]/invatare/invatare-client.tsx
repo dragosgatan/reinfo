@@ -26,7 +26,8 @@ const LEVEL_COLORS: Record<LessonLevel, string> = {
 export default function InvatareClient() {
   const t = useTranslations("learning");
   const { user } = useAuth();
-  const isTeacher = user?.role === "teacher" || user?.role === "admin";
+  const isTeacher =
+    user?.role === "teacher" || user?.role === "admin" || user?.role === "superuser";
 
   const [levelFilter, setLevelFilter] = useState<LessonLevel | "all">("all");
   const [showTeacherView, setShowTeacherView] = useState(false);

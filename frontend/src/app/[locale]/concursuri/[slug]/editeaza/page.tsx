@@ -109,6 +109,7 @@ export default function EditeazaConcursPage({
 
   const canEdit =
     user?.role === "admin" ||
+    user?.role === "superuser" ||
     (user?.role === "teacher" && contest.created_by === user?.id);
 
   if (!canEdit) {

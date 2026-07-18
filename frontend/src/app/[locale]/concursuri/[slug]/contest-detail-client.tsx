@@ -63,6 +63,7 @@ export default function ContestDetailClient({ slug }: Props) {
   const isPast = contest.status === "past";
   const canEdit =
     user?.role === "admin" ||
+    user?.role === "superuser" ||
     (user?.role === "teacher" && contest.created_by === user?.id);
 
   return (
