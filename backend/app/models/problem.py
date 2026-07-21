@@ -31,6 +31,7 @@ class ComparisonMode(StrEnum):
 class ProblemType(StrEnum):
     standard = "standard"
     quiz = "quiz"
+    dataset = "dataset"
 
 
 class Problem(Base, TimestampMixin):

@@ -70,3 +70,5 @@ nginx/certbot-webroot/
 backend/alembic/versions/*.pyc
 .vercel
 .env*
+
+IMPLEMENTATION.md

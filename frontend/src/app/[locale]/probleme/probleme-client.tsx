@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DifficultyIndicator } from "@/components/problems/difficulty-indicator";
 import { StatusIcon } from "@/components/problems/status-icon";
 import { Link } from "@/i18n/navigation";
@@ -29,6 +30,14 @@ import type { ProblemListItem } from "@/lib/types";
 
 const PER_PAGE = 20;
 const DIFF_ANY = "any";
+
+const TABS = ["algoritmica", "ai", "ctf", "exercitii"] as const;
+type Tab = (typeof TABS)[number];
+
+const TAB_PROBLEM_TYPE: Partial<Record<Tab, string>> = {
+  algoritmica: "standard",
+  exercitii: "quiz",
+};
 
 export default function ProblemeClient() {
   const router = useRouter();
@@ -61,7 +70,10 @@ export default function ProblemeClient() {
   const status = params.get("status") ?? "";
   const sort = (params.get("sort") ?? "oldest") as string;
   const page = Number(params.get("page") ?? "1");
-  const problemType = params.get("type") ?? "";
+  const rawTab = params.get("tab");
+  const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "algoritmica";
+  const problemType = TAB_PROBLEM_TYPE[tab] ?? "";
+  const showList = tab === "algoritmica" || tab === "exercitii";
 
   const setParam = useCallback(
     (key: string, value: string | null) => {
@@ -75,6 +87,13 @@ export default function ProblemeClient() {
       startTransition(() => router.replace(`?${next.toString()}`, { scroll: false }));
     },
     [params, router],
+  );
+
+  const setTab = useCallback(
+    (value: string) => {
+      setParam("tab", value === "algoritmica" ? null : value);
+    },
+    [setParam],
   );
 
   const toggleTag = useCallback(
@@ -103,8 +122,10 @@ export default function ProblemeClient() {
   );
 
   const clearFilters = useCallback(() => {
-    startTransition(() => router.replace("?", { scroll: false }));
-  }, [router]);
+    const next = new URLSearchParams();
+    if (rawTab) next.set("tab", rawTab);
+    startTransition(() => router.replace(`?${next.toString()}`, { scroll: false }));
+  }, [rawTab, router]);
 
   const buildQuery = () => {
     const p = new URLSearchParams();
@@ -125,9 +146,10 @@ export default function ProblemeClient() {
     queryFn: () => api.get(`/api/problems/?${buildQuery()}`, ProblemListResponseSchema),
     placeholderData: (prev) => prev,
     staleTime: 30 * 1000,
+    enabled: showList,
   });
 
-  const hasFilters = q || diffMin || diffMax || activeTags.length > 0 || status || problemType;
+  const hasFilters = q || diffMin || diffMax || activeTags.length > 0 || status;
 
   const STATUS_OPTIONS = [
     { value: "", label: t("statusAll") },
@@ -136,11 +158,12 @@ export default function ProblemeClient() {
     { value: "unsolved", label: t("unsolved") },
   ] as const;
 
-  const TYPE_OPTIONS = [
-    { value: "", label: t("typeAll") },
-    { value: "standard", label: t("typeStandard") },
-    { value: "quiz", label: t("typeQuiz") },
-  ] as const;
+  const TAB_LABELS: Record<Tab, string> = {
+    algoritmica: t("tabAlgoritmica"),
+    ai: t("tabAI"),
+    ctf: t("tabCTF"),
+    exercitii: t("tabExercitii"),
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
@@ -163,6 +186,23 @@ export default function ProblemeClient() {
         ) : null}
       </div>
 
+      <Tabs value={tab} onValueChange={setTab} className="mb-5">
+        <TabsList>
+          {TABS.map((value) => (
+            <TabsTrigger key={value} value={value}>
+              {TAB_LABELS[value]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {!showList && (
+        <div className="flex items-center justify-center rounded border border-dashed border-border py-24 text-sm text-muted-foreground">
+          {t("emptyTabContent")}
+        </div>
+      )}
+
+      {showList && (
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         <aside className="space-y-5">
           <div>
@@ -264,29 +304,6 @@ export default function ProblemeClient() {
               </div>
             </div>
           )}
-
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("typeLabel")}
-            </p>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("typeLabel")}>
-              {TYPE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setParam("type", opt.value)}
-                  aria-pressed={problemType === opt.value}
-                  className={cn(
-                    "rounded border px-2 py-1 text-xs transition-colors",
-                    problemType === opt.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -442,6 +459,7 @@ export default function ProblemeClient() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

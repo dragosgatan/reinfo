@@ -8,7 +8,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.problem import Problem, TestCase, Visibility
+from app.models.problem import Problem, ProblemType, TestCase, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
 from app.security import hash_password
@@ -47,6 +47,7 @@ async def _make_problem(
     visibility: Visibility = Visibility.public,
     difficulty: int = 3,
     tags: list[str] | None = None,
+    problem_type: ProblemType = ProblemType.standard,
 ) -> Problem:
     problem = Problem(
         slug=slug,
@@ -58,6 +59,7 @@ async def _make_problem(
         tags=tags or [],
         author_id=author_id,
         visibility=visibility,
+        problem_type=problem_type,
         updated_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
     )
     db.add(problem)
@@ -202,6 +204,32 @@ async def test_list_difficulty_filter(client: AsyncClient, db_session: AsyncSess
     body = r.json()
     assert body["total"] == 1
     assert body["items"][0]["slug"] == "medium"
+
+
+@pytest.mark.asyncio
+async def test_list_type_filter(client: AsyncClient, db_session: AsyncSession) -> None:
+    author = await _make_user(db_session, "type1", UserRole.teacher)
+    await _make_problem(db_session, author.id, slug="p-standard", problem_type=ProblemType.standard)
+    await _make_problem(db_session, author.id, slug="p-quiz", problem_type=ProblemType.quiz)
+    await _make_problem(db_session, author.id, slug="p-dataset", problem_type=ProblemType.dataset)
+
+    r = await client.get("/api/problems?problem_type=standard")
+    body = r.json()
+    assert body["total"] == 1
+    assert body["items"][0]["slug"] == "p-standard"
+
+    r = await client.get("/api/problems?problem_type=quiz")
+    body = r.json()
+    assert body["total"] == 1
+    assert body["items"][0]["slug"] == "p-quiz"
+
+    r = await client.get("/api/problems?problem_type=dataset")
+    body = r.json()
+    assert body["total"] == 1
+    assert body["items"][0]["slug"] == "p-dataset"
+
+    r = await client.get("/api/problems")
+    assert r.json()["total"] == 3
 
 
 @pytest.mark.asyncio

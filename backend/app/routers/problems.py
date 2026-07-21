@@ -116,7 +116,7 @@ async def list_problems(
     difficulty_max: int | None = Query(None, ge=1, le=10),
     status: Literal["solved", "attempted", "unsolved"] | None = Query(None),
     sort: Literal["newest", "oldest", "easiest", "hardest", "most_solved"] = Query("oldest"),
-    problem_type: Literal["standard", "quiz"] | None = Query(None),
+    problem_type: Literal["standard", "quiz", "dataset"] | None = Query(None),
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ProblemListResponse:

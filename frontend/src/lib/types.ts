@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ProblemTypeSchema = z.enum(["standard", "quiz"]);
+export const ProblemTypeSchema = z.enum(["standard", "quiz", "dataset"]);
 export type ProblemType = z.infer<typeof ProblemTypeSchema>;
 
 export const QuizOptionReadSchema = z.object({
