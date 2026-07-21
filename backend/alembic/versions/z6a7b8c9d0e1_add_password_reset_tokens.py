@@ -1,7 +1,7 @@
 """add password reset tokens
 
 Revision ID: z6a7b8c9d0e1
-Revises: y4z5a6b7c8d9
+Revises: b7c8d9e0f1g2
 Create Date: 2026-07-21 00:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "z6a7b8c9d0e1"
-down_revision: str | None = "y4z5a6b7c8d9"
+down_revision: str | None = "b7c8d9e0f1g2"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
