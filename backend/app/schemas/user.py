@@ -22,6 +22,15 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(max_length=256, pattern=_EMAIL_PATTERN)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str = Field(min_length=8)
+
+
 class UserUpdate(BaseModel):
     display_name: str | None = Field(default=None, max_length=128)
     avatar_url: str | None = Field(default=None, max_length=512)

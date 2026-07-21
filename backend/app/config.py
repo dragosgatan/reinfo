@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     cookie_domain: str = ""
     enable_dataset_repro: bool = False
+    resend_api_key: str = ""
+    email_from: str = "ReInfo <onboarding@resend.dev>"
+    frontend_url: str = "http://localhost:3000"
 
 
 settings = Settings()
