@@ -4,23 +4,10 @@ WORKDIR /build
 RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml .
-# Install only production dependencies into an isolated venv
+# Install production dependencies straight from pyproject.toml's [project.dependencies] -
+# do not hardcode the package list here again, it silently drifts out of sync (see incident 2026-07-21).
 RUN uv venv /venv && \
-    uv pip install --python /venv/bin/python \
-        "fastapi>=0.115.0" \
-        "uvicorn[standard]>=0.30.0" \
-        "sqlalchemy>=2.0.0" \
-        "alembic>=1.13.0" \
-        "asyncpg>=0.29.0" \
-        "pydantic>=2.7.0" \
-        "pydantic-settings>=2.3.0" \
-        "bcrypt>=4.1.0" \
-        "python-multipart>=0.0.9" \
-        "aiofiles>=23.2.0" \
-        "itsdangerous>=2.2.0" \
-        "slowapi>=0.1.9" \
-        "httpx>=0.27.0" \
-        "sentry-sdk[fastapi]>=2.0.0"
+    uv pip install --python /venv/bin/python -r pyproject.toml
 
 FROM python:3.11-slim AS runtime
 WORKDIR /app
