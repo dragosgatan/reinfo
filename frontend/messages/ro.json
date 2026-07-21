@@ -657,6 +657,26 @@
     "errorConflict": "Utilizatorul sau emailul există deja.",
     "errorGeneric": "A apărut o eroare. Încearcă din nou."
   },
+  "forgotPassword": {
+    "title": "Ai uitat parola?",
+    "subtitle": "Introdu adresa de email și îți trimitem un link de resetare",
+    "email": "Email",
+    "submit": "Trimite link de resetare",
+    "success": "Dacă adresa există, am trimis un email cu instrucțiuni de resetare.",
+    "errorGeneric": "A apărut o eroare. Încearcă din nou.",
+    "backToLogin": "Înapoi la autentificare"
+  },
+  "resetPassword": {
+    "title": "Resetează parola",
+    "subtitle": "Alege o parolă nouă pentru contul tău",
+    "password": "Parolă nouă",
+    "confirmPassword": "Confirmă parola",
+    "submit": "Resetează parola",
+    "success": "Parola a fost resetată cu succes. Te poți autentifica acum.",
+    "errorInvalidToken": "Linkul de resetare este invalid sau a expirat.",
+    "errorGeneric": "A apărut o eroare. Încearcă din nou.",
+    "backToLogin": "Înapoi la autentificare"
+  },
   "common": {
     "loading": "Se încarcă...",
     "error": "A apărut o eroare.",

@@ -1,21 +1,30 @@
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import get_session
 from app.dependencies import SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS, get_current_user
+from app.email import send_password_reset_email
 from app.limiter import limiter
+from app.models.user import PasswordResetToken, User
 from app.models.user import Session as DbSession
-from app.models.user import User
-from app.schemas.user import LoginRequest, UserCreate, UserProfileRead, UserRead
+from app.schemas.user import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    ResetPasswordRequest,
+    UserCreate,
+    UserProfileRead,
+    UserRead,
+)
 from app.security import generate_token, hash_password, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 _COOKIE_MAX_AGE = SESSION_EXPIRY_DAYS * 24 * 3600
+_RESET_TOKEN_EXPIRY_HOURS = 1
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -112,6 +121,69 @@ async def logout(
         domain=settings.cookie_domain or None,
     )
     return {"message": "Deconectat cu succes"}
+
+
+@router.post("/forgot-password")
+@limiter.limit("5/minute")
+async def forgot_password(
+    request: Request,
+    data: ForgotPasswordRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """Trimite un email cu link de resetare a parolei, dacă adresa există.
+
+    Răspunsul este identic indiferent dacă emailul există sau nu, pentru a
+    evita enumerarea conturilor.
+    """
+    user = await session.scalar(select(User).where(User.email == data.email))
+    if user is not None:
+        token = generate_token()
+        reset_token = PasswordResetToken(
+            user_id=user.id,
+            token=token,
+            expires_at=datetime.now(UTC) + timedelta(hours=_RESET_TOKEN_EXPIRY_HOURS),
+        )
+        session.add(reset_token)
+        await session.commit()
+
+        await send_password_reset_email(user.email, token)
+
+    return {"message": "Dacă adresa există, am trimis un email cu instrucțiuni"}
+
+
+@router.post("/reset-password")
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    data: ResetPasswordRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """Resetează parola pe baza unui token valid, neexpirat și nefolosit."""
+    reset_token = await session.scalar(
+        select(PasswordResetToken).where(
+            PasswordResetToken.token == data.token,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > datetime.now(UTC),
+        )
+    )
+    if reset_token is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Link de resetare invalid sau expirat",
+        )
+
+    user = await session.get(User, reset_token.user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Link de resetare invalid sau expirat",
+        )
+
+    user.password_hash = hash_password(data.password)
+    reset_token.used_at = datetime.now(UTC)
+    await session.execute(delete(DbSession).where(DbSession.user_id == user.id))
+    await session.commit()
+    return {"message": "Parola a fost resetată cu succes"}
 
 
 @router.get("/me")

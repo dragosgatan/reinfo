@@ -1,15 +1,15 @@
 """Tests for /api/auth/* endpoints."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.user import PasswordResetToken, User
 from app.models.user import Session as DbSession
-from app.models.user import User
 
 _USER: dict = {
     "username": "testuser",
@@ -201,3 +201,140 @@ async def test_me_updates_last_active_at(client: AsyncClient, db_session: AsyncS
     # refresh to see the updated value committed by get_current_user
     await db_session.refresh(user)
     assert user.last_active_at >= before
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_existing_email(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+
+    r = await client.post("/api/auth/forgot-password", json={"email": _USER["email"]})
+    assert r.status_code == 200
+    assert "message" in r.json()
+
+    token_row = await db_session.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
+    )
+    assert token_row is not None
+    assert token_row.used_at is None
+    assert token_row.expires_at > datetime.now(UTC)
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_unknown_email(client: AsyncClient, db_session: AsyncSession) -> None:
+    r = await client.post("/api/auth/forgot-password", json={"email": "nobody@example.com"})
+    assert r.status_code == 200
+    assert "message" in r.json()
+
+    token_row = await db_session.scalar(select(PasswordResetToken))
+    assert token_row is None
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_invalid_email_format(client: AsyncClient) -> None:
+    r = await client.post("/api/auth/forgot-password", json={"email": "notanemail"})
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_reset_password_success(client: AsyncClient, db_session: AsyncSession) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+    login_r = await _login(client)
+    old_session_token = login_r.cookies["reinfo_session"]
+
+    await client.post("/api/auth/forgot-password", json={"email": _USER["email"]})
+    token_row = await db_session.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
+    )
+    assert token_row is not None
+
+    r = await client.post(
+        "/api/auth/reset-password",
+        json={"token": token_row.token, "password": "newsecret123"},
+    )
+    assert r.status_code == 200
+
+    old_login = await _login(client)
+    assert old_login.status_code == 401
+
+    new_login = await _login(client, password="newsecret123")
+    assert new_login.status_code == 200
+
+    old_session_row = await db_session.scalar(
+        select(DbSession).where(DbSession.token == old_session_token)
+    )
+    assert old_session_row is None
+
+
+@pytest.mark.asyncio
+async def test_reset_password_invalid_token(client: AsyncClient) -> None:
+    r = await client.post(
+        "/api/auth/reset-password",
+        json={"token": "not-a-real-token", "password": "newsecret123"},
+    )
+    assert r.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_reset_password_expired_token(client: AsyncClient, db_session: AsyncSession) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+
+    expired = PasswordResetToken(
+        user_id=user_id,
+        token="expired-reset-token-xyz",
+        expires_at=datetime.now(UTC) - timedelta(hours=1),
+    )
+    db_session.add(expired)
+    await db_session.commit()
+
+    r = await client.post(
+        "/api/auth/reset-password",
+        json={"token": "expired-reset-token-xyz", "password": "newsecret123"},
+    )
+    assert r.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_reset_password_token_reuse(client: AsyncClient, db_session: AsyncSession) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+
+    await client.post("/api/auth/forgot-password", json={"email": _USER["email"]})
+    token_row = await db_session.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
+    )
+    assert token_row is not None
+
+    r1 = await client.post(
+        "/api/auth/reset-password",
+        json={"token": token_row.token, "password": "newsecret123"},
+    )
+    assert r1.status_code == 200
+
+    r2 = await client.post(
+        "/api/auth/reset-password",
+        json={"token": token_row.token, "password": "anothersecret"},
+    )
+    assert r2.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_reset_password_short_password(client: AsyncClient, db_session: AsyncSession) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+
+    await client.post("/api/auth/forgot-password", json={"email": _USER["email"]})
+    token_row = await db_session.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
+    )
+    assert token_row is not None
+
+    r = await client.post(
+        "/api/auth/reset-password",
+        json={"token": token_row.token, "password": "short"},
+    )
+    assert r.status_code == 422

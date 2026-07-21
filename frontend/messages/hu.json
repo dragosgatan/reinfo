@@ -657,6 +657,26 @@
     "errorConflict": "A felhasználónév vagy e-mail már foglalt.",
     "errorGeneric": "Hiba történt. Próbáld újra."
   },
+  "forgotPassword": {
+    "title": "Elfelejtette a jelszavát?",
+    "subtitle": "Add meg az e-mail címed, és küldünk egy visszaállító linket",
+    "email": "E-mail",
+    "submit": "Visszaállító link küldése",
+    "success": "Ha az e-mail cím létezik, elküldtük a jelszó-visszaállítási utasításokat.",
+    "errorGeneric": "Hiba történt. Próbáld újra.",
+    "backToLogin": "Vissza a bejelentkezéshez"
+  },
+  "resetPassword": {
+    "title": "Jelszó visszaállítása",
+    "subtitle": "Válassz új jelszót a fiókodhoz",
+    "password": "Új jelszó",
+    "confirmPassword": "Jelszó megerősítése",
+    "submit": "Jelszó visszaállítása",
+    "success": "A jelszavadat sikeresen visszaállítottuk. Most már bejelentkezhetsz.",
+    "errorInvalidToken": "A visszaállító link érvénytelen vagy lejárt.",
+    "errorGeneric": "Hiba történt. Próbáld újra.",
+    "backToLogin": "Vissza a bejelentkezéshez"
+  },
   "common": {
     "loading": "Betöltés...",
     "error": "Hiba történt.",

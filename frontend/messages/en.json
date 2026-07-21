@@ -657,6 +657,26 @@
     "errorConflict": "Username or email already in use.",
     "errorGeneric": "An error occurred. Try again."
   },
+  "forgotPassword": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email address and we'll send you a reset link",
+    "email": "Email",
+    "submit": "Send reset link",
+    "success": "If that email exists, we've sent instructions to reset your password.",
+    "errorGeneric": "An error occurred. Try again.",
+    "backToLogin": "Back to sign in"
+  },
+  "resetPassword": {
+    "title": "Reset your password",
+    "subtitle": "Choose a new password for your account",
+    "password": "New password",
+    "confirmPassword": "Confirm password",
+    "submit": "Reset password",
+    "success": "Your password has been reset. You can sign in now.",
+    "errorInvalidToken": "This reset link is invalid or has expired.",
+    "errorGeneric": "An error occurred. Try again.",
+    "backToLogin": "Back to sign in"
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred.",
