@@ -873,3 +873,95 @@ export const LessonReadSchema = z.object({
   is_completed: z.boolean(),
 });
 export type LessonRead = z.infer<typeof LessonReadSchema>;
+
+export const CTF_CATEGORIES = [
+  "web",
+  "crypto",
+  "pwn",
+  "reverse",
+  "forensics",
+  "osint",
+  "misc",
+] as const;
+export const CtfCategorySchema = z.enum(CTF_CATEGORIES);
+export type CtfCategory = z.infer<typeof CtfCategorySchema>;
+
+export const CtfScoringSchema = z.enum(["static", "dynamic"]);
+export type CtfScoring = z.infer<typeof CtfScoringSchema>;
+
+export const CtfChallengeSummarySchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  title: z.string(),
+  category: CtfCategorySchema,
+  difficulty: z.number().int().min(1).max(10),
+  scoring: CtfScoringSchema,
+  base_points: z.number().int(),
+  current_points: z.number().int(),
+  solve_count: z.number().int(),
+  published: z.boolean(),
+  solved_by_user: z.boolean().nullable(),
+  first_blood_username: z.string().nullable(),
+  created_at: z.string(),
+});
+export type CtfChallengeSummary = z.infer<typeof CtfChallengeSummarySchema>;
+
+export const CtfChallengeListResponseSchema = z.object({
+  items: z.array(CtfChallengeSummarySchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  per_page: z.number().int(),
+  pages: z.number().int(),
+});
+export type CtfChallengeListResponse = z.infer<typeof CtfChallengeListResponseSchema>;
+
+export const CtfAttachmentSchema = z.object({
+  id: z.string().uuid(),
+  filename: z.string(),
+});
+export type CtfAttachment = z.infer<typeof CtfAttachmentSchema>;
+
+export const CtfHintSchema = z.object({
+  id: z.string().uuid(),
+  ordinal: z.number().int(),
+  cost: z.number().int(),
+  revealed: z.boolean(),
+  content_md: z.string().nullable(),
+});
+export type CtfHint = z.infer<typeof CtfHintSchema>;
+
+export const CtfChallengeDetailSchema = CtfChallengeSummarySchema.extend({
+  statement_md: z.string(),
+  flag_case_sensitive: z.boolean(),
+  attachments: z.array(CtfAttachmentSchema),
+  hints: z.array(CtfHintSchema),
+});
+export type CtfChallengeDetail = z.infer<typeof CtfChallengeDetailSchema>;
+
+export const CtfFlagSubmitResultSchema = z.object({
+  correct: z.boolean(),
+  already_solved: z.boolean(),
+  first_blood: z.boolean(),
+  points_awarded: z.number().int().nullable(),
+  message: z.string(),
+});
+export type CtfFlagSubmitResult = z.infer<typeof CtfFlagSubmitResultSchema>;
+
+export const CtfScoreboardEntrySchema = z.object({
+  rank: z.number().int(),
+  user_id: z.string().uuid(),
+  username: z.string(),
+  display_name: z.string(),
+  avatar_url: z.string().nullable(),
+  total_points: z.number().int(),
+  solve_count: z.number().int(),
+  last_solved_at: z.string(),
+  category_points: z.record(z.string(), z.number().int()),
+});
+export type CtfScoreboardEntry = z.infer<typeof CtfScoreboardEntrySchema>;
+
+export const CtfScoreboardResponseSchema = z.object({
+  entries: z.array(CtfScoreboardEntrySchema),
+  generated_at: z.string(),
+});
+export type CtfScoreboardResponse = z.infer<typeof CtfScoreboardResponseSchema>;

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CtfTabContent } from "@/components/ctf/ctf-tab-content";
 import { DifficultyIndicator } from "@/components/problems/difficulty-indicator";
 import { StatusIcon } from "@/components/problems/status-icon";
 import { Link } from "@/i18n/navigation";
@@ -217,11 +218,7 @@ export default function ProblemeClient() {
         </TabsList>
       </Tabs>
 
-      {!showList && (
-        <div className="flex items-center justify-center rounded border border-dashed border-border py-24 text-sm text-muted-foreground">
-          {t("emptyTabContent")}
-        </div>
-      )}
+      {tab === "ctf" && <CtfTabContent />}
 
       {showList && (
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">

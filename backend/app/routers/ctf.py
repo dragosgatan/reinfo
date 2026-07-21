@@ -33,6 +33,8 @@ from app.schemas.ctf import (
     CtfFlagSubmitResult,
     CtfHintCreate,
     CtfHintRead,
+    CtfScoreboardEntry,
+    CtfScoreboardResponse,
 )
 from app.security import hash_flag, verify_flag
 from app.storage import delete_ctf_attachment, read_ctf_attachment, save_ctf_attachment
@@ -83,6 +85,22 @@ def _solve_count_subquery():
     )
 
 
+def _first_blood_subquery():
+    """One row per challenge: the username of whoever solved it first."""
+    ranked = (
+        select(
+            CtfSolve.challenge_id,
+            User.username.label("username"),
+            func.row_number()
+            .over(partition_by=CtfSolve.challenge_id, order_by=CtfSolve.solved_at.asc())
+            .label("rn"),
+        )
+        .join(User, User.id == CtfSolve.user_id)
+        .subquery()
+    )
+    return select(ranked.c.challenge_id, ranked.c.username).where(ranked.c.rn == 1).subquery()
+
+
 @router.get("", response_model=CtfChallengeListResponse)
 async def list_challenges(
     page: int = Query(1, ge=1),
@@ -101,9 +119,16 @@ async def list_challenges(
         )
 
     solve_sq = _solve_count_subquery()
-    stmt = select(
-        CtfChallenge, func.coalesce(solve_sq.c.solve_count, 0).label("solve_count")
-    ).outerjoin(solve_sq, CtfChallenge.id == solve_sq.c.challenge_id)
+    fb_sq = _first_blood_subquery()
+    stmt = (
+        select(
+            CtfChallenge,
+            func.coalesce(solve_sq.c.solve_count, 0).label("solve_count"),
+            fb_sq.c.username.label("first_blood_username"),
+        )
+        .outerjoin(solve_sq, CtfChallenge.id == solve_sq.c.challenge_id)
+        .outerjoin(fb_sq, CtfChallenge.id == fb_sq.c.challenge_id)
+    )
 
     if current_user is None:
         stmt = stmt.where(CtfChallenge.published.is_(True))
@@ -154,15 +179,71 @@ async def list_challenges(
             solve_count=solve_count,
             published=c.published,
             solved_by_user=(c.id in solved_ids) if current_user is not None else None,
+            first_blood_username=first_blood_username,
             created_at=c.created_at,
         )
-        for c, solve_count in rows
+        for c, solve_count, first_blood_username in rows
     ]
 
     pages = math.ceil(total / per_page) if total > 0 else 0
     return CtfChallengeListResponse(
         items=items, total=total, page=page, per_page=per_page, pages=pages
     )
+
+
+@router.get("/scoreboard", response_model=CtfScoreboardResponse)
+async def get_scoreboard(session: AsyncSession = Depends(get_session)) -> CtfScoreboardResponse:
+    """Clasament CTF: puncte totale, departajat după cea mai recentă rezolvare.
+
+    Registered before /{slug} so "scoreboard" is never matched as a challenge slug.
+    """
+    rows = (
+        await session.execute(
+            select(
+                CtfSolve.user_id,
+                User.username,
+                User.display_name,
+                User.avatar_url,
+                func.sum(CtfSolve.points_awarded).label("total_points"),
+                func.count().label("solve_count"),
+                func.max(CtfSolve.solved_at).label("last_solved_at"),
+            )
+            .join(User, User.id == CtfSolve.user_id)
+            .group_by(CtfSolve.user_id, User.username, User.display_name, User.avatar_url)
+            .order_by(func.sum(CtfSolve.points_awarded).desc(), func.max(CtfSolve.solved_at).asc())
+        )
+    ).all()
+
+    category_rows = (
+        await session.execute(
+            select(
+                CtfSolve.user_id,
+                CtfChallenge.category,
+                func.sum(CtfSolve.points_awarded).label("points"),
+            )
+            .join(CtfChallenge, CtfChallenge.id == CtfSolve.challenge_id)
+            .group_by(CtfSolve.user_id, CtfChallenge.category)
+        )
+    ).all()
+    category_by_user: dict[uuid.UUID, dict[str, int]] = {}
+    for user_id, category, points in category_rows:
+        category_by_user.setdefault(user_id, {})[category.value] = points
+
+    entries = [
+        CtfScoreboardEntry(
+            rank=i + 1,
+            user_id=row.user_id,
+            username=row.username,
+            display_name=row.display_name,
+            avatar_url=row.avatar_url,
+            total_points=row.total_points,
+            solve_count=row.solve_count,
+            last_solved_at=row.last_solved_at,
+            category_points=category_by_user.get(row.user_id, {}),
+        )
+        for i, row in enumerate(rows)
+    ]
+    return CtfScoreboardResponse(entries=entries, generated_at=datetime.now(UTC))
 
 
 @router.post("", response_model=CtfChallengeDetail, status_code=201)

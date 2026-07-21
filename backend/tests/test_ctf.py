@@ -240,6 +240,57 @@ async def test_hint_reveal_deducts_cost_from_solve(
 
 
 @pytest.mark.asyncio
+async def test_list_challenges_includes_first_blood(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    author = await _make_user(db_session, "ctf-author9", UserRole.teacher)
+    await _make_user(db_session, "ctf-lister")
+    challenge = await _make_challenge(db_session, author.id, slug="listed", flag="reinfo{listed}")
+
+    r0 = await client.get("/api/ctf")
+    item0 = next(i for i in r0.json()["items"] if i["slug"] == "listed")
+    assert item0["first_blood_username"] is None
+
+    await _login(client, "ctf-lister")
+    await client.post(f"/api/ctf/{challenge.slug}/submit-flag", json={"flag": "reinfo{listed}"})
+
+    r1 = await client.get("/api/ctf")
+    item1 = next(i for i in r1.json()["items"] if i["slug"] == "listed")
+    assert item1["first_blood_username"] == "ctf-lister"
+    assert item1["solve_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_scoreboard_ranks_by_points(client: AsyncClient, db_session: AsyncSession) -> None:
+    author = await _make_user(db_session, "ctf-author10", UserRole.teacher)
+    chal_a = await _make_challenge(
+        db_session, author.id, slug="score-a", flag="reinfo{a}", base_points=100
+    )
+    chal_b = await _make_challenge(
+        db_session, author.id, slug="score-b", flag="reinfo{b}", base_points=50
+    )
+
+    await _make_user(db_session, "ctf-top")
+    await _login(client, "ctf-top")
+    await client.post(f"/api/ctf/{chal_a.slug}/submit-flag", json={"flag": "reinfo{a}"})
+    await client.post(f"/api/ctf/{chal_b.slug}/submit-flag", json={"flag": "reinfo{b}"})
+
+    await _make_user(db_session, "ctf-second")
+    await _login(client, "ctf-second")
+    await client.post(f"/api/ctf/{chal_a.slug}/submit-flag", json={"flag": "reinfo{a}"})
+
+    r = await client.get("/api/ctf/scoreboard")
+    assert r.status_code == 200
+    entries = r.json()["entries"]
+    assert entries[0]["username"] == "ctf-top"
+    assert entries[0]["total_points"] == 150
+    assert entries[0]["rank"] == 1
+    assert entries[1]["username"] == "ctf-second"
+    assert entries[1]["total_points"] == 100
+    assert entries[0]["category_points"]["misc"] == 150
+
+
+@pytest.mark.asyncio
 async def test_dynamic_scoring_end_to_end(client: AsyncClient, db_session: AsyncSession) -> None:
     author = await _make_user(db_session, "ctf-author8", UserRole.teacher)
     challenge = await _make_challenge(

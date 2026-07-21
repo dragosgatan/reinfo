@@ -93,3 +93,20 @@ class CtfFlagSubmitResult(BaseModel):
     first_blood: bool
     points_awarded: int | None = None
     message: str
+
+
+class CtfScoreboardEntry(BaseModel):
+    rank: int
+    user_id: uuid.UUID
+    username: str
+    display_name: str
+    avatar_url: str | None
+    total_points: int
+    solve_count: int
+    last_solved_at: datetime
+    category_points: dict[str, int]
+
+
+class CtfScoreboardResponse(BaseModel):
+    entries: list[CtfScoreboardEntry]
+    generated_at: datetime
