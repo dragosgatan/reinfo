@@ -171,31 +171,35 @@ function SubmissionDetail({ submission }: { submission: Submission }) {
         </>
       )}
 
-      <Separator className="mb-5" />
+      {submission.submitted_code != null && (
+        <>
+          <Separator className="mb-5" />
 
-      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        {t("sourceCode")}
-      </p>
-      <div className="overflow-hidden rounded border border-border">
-        <MonacoEditor
-          height="420px"
-          language={MONACO_LANGUAGE_MAP[submission.language] ?? "plaintext"}
-          value={submission.submitted_code}
-          theme={mounted && resolvedTheme === "dark" ? "vs-dark" : "light"}
-          options={{
-            readOnly: true,
-            minimap: { enabled: false },
-            fontSize: 13,
-            fontFamily: "'JetBrains Mono', monospace",
-            lineNumbers: "on",
-            scrollBeyondLastLine: false,
-            wordWrap: "off",
-            tabSize: 2,
-            padding: { top: 8, bottom: 8 },
-          }}
-          onMount={(_editor, monaco) => monaco.editor.remeasureFonts()}
-        />
-      </div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t("sourceCode")}
+          </p>
+          <div className="overflow-hidden rounded border border-border">
+            <MonacoEditor
+              height="420px"
+              language={MONACO_LANGUAGE_MAP[submission.language] ?? "plaintext"}
+              value={submission.submitted_code}
+              theme={mounted && resolvedTheme === "dark" ? "vs-dark" : "light"}
+              options={{
+                readOnly: true,
+                minimap: { enabled: false },
+                fontSize: 13,
+                fontFamily: "'JetBrains Mono', monospace",
+                lineNumbers: "on",
+                scrollBeyondLastLine: false,
+                wordWrap: "off",
+                tabSize: 2,
+                padding: { top: 8, bottom: 8 },
+              }}
+              onMount={(_editor, monaco) => monaco.editor.remeasureFonts()}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

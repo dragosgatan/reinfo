@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     piston_url: str = "http://localhost:2000"
     sentry_dsn: str = ""
     cookie_domain: str = ""
+    enable_dataset_repro: bool = False
 
 
 settings = Settings()

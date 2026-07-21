@@ -3,7 +3,17 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,6 +42,13 @@ class ProblemType(StrEnum):
     standard = "standard"
     quiz = "quiz"
     dataset = "dataset"
+
+
+class DatasetMetric(StrEnum):
+    accuracy = "accuracy"
+    f1 = "f1"
+    rmse = "rmse"
+    mae = "mae"
 
 
 class Problem(Base, TimestampMixin):
@@ -80,6 +97,16 @@ class Problem(Base, TimestampMixin):
         Enum(ProblemType, name="problemtype"),
         nullable=False,
         server_default=text("'standard'"),
+    )
+    dataset_metric: Mapped[DatasetMetric | None] = mapped_column(
+        Enum(DatasetMetric, name="datasetmetric"), nullable=True
+    )
+    metric_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dataset_id_column: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    dataset_target_column: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    dataset_expected_rows: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    require_source_in_contest: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
     )
 
     author: Mapped["User | None"] = relationship("User", back_populates="problems")

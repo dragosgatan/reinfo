@@ -10,7 +10,14 @@ from app.models.duel import (
 )
 from app.models.judging_job import JobStatus, JudgingJob
 from app.models.lesson import Lesson, LessonCategory, LessonLevel, LessonProgress
-from app.models.problem import ComparisonMode, Problem, TestCase, Visibility
+from app.models.problem import (
+    ComparisonMode,
+    DatasetMetric,
+    Problem,
+    ProblemType,
+    TestCase,
+    Visibility,
+)
 from app.models.roadmap import (
     NodeLinkType,
     NodeStatus,
@@ -20,7 +27,7 @@ from app.models.roadmap import (
     RoadmapNodeLink,
     UserRoadmapProgress,
 )
-from app.models.submission import Submission, SubmissionResult, Verdict
+from app.models.submission import Submission, SubmissionKind, SubmissionResult, Verdict
 from app.models.user import Session, User, UserRole
 
 __all__ = [
@@ -28,10 +35,13 @@ __all__ = [
     "UserRole",
     "Session",
     "Problem",
+    "ProblemType",
     "Visibility",
     "ComparisonMode",
+    "DatasetMetric",
     "TestCase",
     "Submission",
+    "SubmissionKind",
     "SubmissionResult",
     "Verdict",
     "JudgingJob",

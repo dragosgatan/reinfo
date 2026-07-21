@@ -9,9 +9,11 @@ from datetime import UTC, datetime
 from fastapi import (
     APIRouter,
     Depends,
+    File,
     Form,
     HTTPException,
     Query,
+    UploadFile,
     WebSocket,
     WebSocketDisconnect,
 )
@@ -20,6 +22,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import storage
 from app.db import async_session_factory, get_session
 from app.dependencies import get_current_user, get_optional_user, require_role
 from app.flagging import detect_flag
@@ -33,8 +36,8 @@ from app.models.contest import (
     ScoringMode,
 )
 from app.models.judging_job import JudgingJob
-from app.models.problem import Problem, Visibility
-from app.models.submission import Submission, Verdict
+from app.models.problem import Problem, ProblemType, Visibility
+from app.models.submission import Submission, SubmissionKind, Verdict
 from app.models.user import User, UserRole
 from app.piston import SUPPORTED_LANGUAGES
 from app.realtime import hub
@@ -57,6 +60,7 @@ from app.schemas.submission import SubmissionRead
 router = APIRouter(prefix="/api/contests", tags=["contests"])
 
 _MAX_CODE_BYTES = 512 * 1024
+_MAX_CSV_BYTES = 10 * 1024 * 1024
 
 # in-process leaderboard cache: contest_id → (unix_timestamp, LeaderboardResponse)
 _lb_cache: dict[str, tuple[float, LeaderboardResponse]] = {}
@@ -478,6 +482,101 @@ async def contest_submit(
     await session.commit()
 
     from sqlalchemy.orm import selectinload
+
+    sub = await session.scalar(
+        select(Submission)
+        .where(Submission.id == submission_id)
+        .options(selectinload(Submission.results))
+    )
+    return SubmissionRead.model_validate(sub)
+
+
+@router.post(
+    "/{slug}/problems/{problem_slug}/submit-dataset",
+    response_model=SubmissionRead,
+    status_code=201,
+)
+async def contest_submit_dataset(
+    slug: str,
+    problem_slug: str,
+    csv_file: UploadFile = File(...),
+    source_file: UploadFile | None = File(None),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> SubmissionRead:
+    """Trimite un CSV de predicții pentru o problemă de tip dataset/AI din concurs."""
+    csv_bytes = await csv_file.read()
+    if len(csv_bytes) > _MAX_CSV_BYTES:
+        raise HTTPException(status_code=413, detail="Fișierul CSV este prea mare (max 10 MB)")
+
+    contest = await session.scalar(select(Contest).where(Contest.slug == slug))
+    if contest is None:
+        raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
+
+    await _assert_class_test_access(contest, current_user, session)
+
+    now = datetime.now(UTC)
+    status = contest_status(now, contest.start_time, contest.end_time)
+    if status != "ongoing":
+        raise HTTPException(status_code=400, detail="Concursul nu este activ")
+
+    participant = await session.scalar(
+        select(ContestParticipant).where(
+            ContestParticipant.contest_id == contest.id,
+            ContestParticipant.user_id == current_user.id,
+        )
+    )
+    if participant is None:
+        raise HTTPException(status_code=403, detail="Nu ești înregistrat la acest concurs")
+
+    problem = await session.scalar(select(Problem).where(Problem.slug == problem_slug))
+    if problem is None:
+        raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
+    if problem.problem_type != ProblemType.dataset:
+        raise HTTPException(status_code=400, detail="Problema nu este de tip dataset")
+
+    in_contest = await session.scalar(
+        select(ContestProblem).where(
+            ContestProblem.contest_id == contest.id,
+            ContestProblem.problem_id == problem.id,
+        )
+    )
+    if in_contest is None:
+        raise HTTPException(status_code=404, detail="Problema nu face parte din acest concurs")
+
+    if problem.require_source_in_contest and source_file is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Fișierul sursă (.py) este obligatoriu pentru această problemă în concurs",
+        )
+
+    source_code: str | None = None
+    if source_file is not None:
+        source_bytes = await source_file.read()
+        if len(source_bytes) > _MAX_CODE_BYTES:
+            raise HTTPException(status_code=413, detail="Codul sursă este prea mare (max 512 KB)")
+        source_code = source_bytes.decode("utf-8", errors="replace")
+
+    submission_id = uuid.uuid4()
+    csv_path = await storage.save_submission_csv(current_user.id, submission_id, csv_bytes)
+    flag = detect_flag(source_code, contest.start_time, now) if source_code else None
+
+    submission = Submission(
+        id=submission_id,
+        user_id=current_user.id,
+        problem_id=problem.id,
+        contest_id=contest.id,
+        submitted_code=source_code,
+        language="python",
+        submission_kind=SubmissionKind.dataset,
+        dataset_csv_path=csv_path,
+        verdict=Verdict.pending,
+        score=0,
+        flag_reason=flag,
+    )
+    session.add(submission)
+    session.add(JudgingJob(submission_id=submission_id))
+    await session.commit()
 
     sub = await session.scalar(
         select(Submission)

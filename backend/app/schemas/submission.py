@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models.submission import Verdict
+from app.models.submission import SubmissionKind, Verdict
 
 
 class SubmissionCreate(BaseModel):
@@ -16,7 +16,7 @@ class SubmissionResultRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    test_case_id: uuid.UUID
+    test_case_id: uuid.UUID | None
     verdict: Verdict
     score: int
     message: str | None
@@ -24,6 +24,7 @@ class SubmissionResultRead(BaseModel):
     expected_output_snippet: str | None
     execution_time_ms: int | None
     memory_kb: int | None
+    metric_value: float | None = None
 
 
 class SubmissionRead(BaseModel):
@@ -39,10 +40,12 @@ class SubmissionRead(BaseModel):
     verdict: Verdict
     score: int
     language: str
-    submitted_code: str
+    submitted_code: str | None
     created_at: datetime
     judged_at: datetime | None
     flag_reason: str | None = None
+    submission_kind: SubmissionKind = SubmissionKind.code
+    manual_review: bool = False
     results: list[SubmissionResultRead] = []
 
 
@@ -61,6 +64,8 @@ class SubmissionSummary(BaseModel):
     created_at: datetime
     judged_at: datetime | None
     flag_reason: str | None = None
+    submission_kind: SubmissionKind = SubmissionKind.code
+    manual_review: bool = False
 
 
 class SubmissionListResponse(BaseModel):

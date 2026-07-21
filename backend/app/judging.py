@@ -5,20 +5,27 @@ per-test verdicts (CE/TLE/MLE/RE/AC/WA), then sets the submission's overall
 verdict and score.
 """
 
+import io
 import uuid
 from datetime import UTC, datetime
 
 import aiofiles
+import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app import piston as piston_client
+from app import storage
+from app.config import settings
+from app.metrics import FormatError, compute_metric, score_from_metric, validate_submission_shape
 from app.models.contest import Contest
 from app.models.duel import Duel, DuelStatus
-from app.models.problem import ComparisonMode, Problem
+from app.models.problem import ComparisonMode, DatasetMetric, Problem, ProblemType
 from app.models.submission import Submission, SubmissionResult, Verdict
 from app.realtime import publish_contest_update, publish_duel_update
+
+_DATASET_REPRO_SCORE_TOLERANCE = 5
 
 _SNIPPET_MAX_LINES = 50
 
@@ -80,6 +87,11 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
         return
 
     problem = submission.problem
+
+    if problem.problem_type == ProblemType.dataset:
+        await judge_dataset_submission(submission, problem, session)
+        return
+
     test_cases = [tc for tc in problem.test_cases if not tc.is_sample]
 
     now = datetime.now(UTC)
@@ -232,6 +244,146 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
     await _notify_contest_if_any(session, submission)
     await _update_duel_if_any(session, submission)
     await session.commit()
+
+
+async def judge_dataset_submission(
+    submission: Submission, problem: Problem, session: AsyncSession
+) -> None:
+    """Judge a CSV submission for a dataset/AI problem against answer.csv.
+
+    Never runs Piston - pure pandas comparison. Any malformed input (missing
+    file, unparseable CSV, wrong columns/rows/ids) results in verdict
+    INVALID_FORMAT with a clear message instead of raising.
+    """
+    now = datetime.now(UTC)
+
+    async def _fail(message: str) -> None:
+        submission.verdict = Verdict.INVALID_FORMAT
+        submission.score = 0
+        submission.judged_at = now
+        session.add(
+            SubmissionResult(
+                submission_id=submission.id,
+                verdict=Verdict.INVALID_FORMAT,
+                score=0,
+                message=message,
+            )
+        )
+        await _notify_contest_if_any(session, submission)
+        await session.commit()
+
+    if submission.dataset_csv_path is None:
+        await _fail("Nu a fost trimis niciun fișier CSV")
+        return
+
+    try:
+        csv_bytes = await storage.read_test_case(submission.dataset_csv_path)
+    except FileNotFoundError:
+        await _fail("Fișierul CSV trimis nu a putut fi citit de pe server")
+        return
+
+    try:
+        submission_df = pd.read_csv(io.BytesIO(csv_bytes))
+    except Exception as exc:
+        await _fail(f"CSV invalid: {exc}")
+        return
+
+    try:
+        answer_bytes = await storage.read_dataset_file(problem.slug, "answer.csv")
+    except FileNotFoundError:
+        await _fail("Configurarea setului de date a problemei este incompletă")
+        return
+
+    answer_df = pd.read_csv(io.BytesIO(answer_bytes))
+    id_column = problem.dataset_id_column or "id"
+    target_column = problem.dataset_target_column or "target"
+
+    try:
+        validate_submission_shape(
+            submission_df, answer_df, id_column, target_column, problem.dataset_expected_rows
+        )
+    except FormatError as exc:
+        await _fail(str(exc))
+        return
+    except Exception as exc:
+        await _fail(f"CSV invalid: {exc}")
+        return
+
+    metric = problem.dataset_metric
+    if metric is None:
+        await _fail("Problema nu are configurată o metrică de evaluare")
+        return
+
+    metric_value = compute_metric(metric, submission_df, answer_df, id_column, target_column)
+    score = score_from_metric(metric, metric_value, problem.metric_threshold)
+    verdict = Verdict.AC if score >= 100 else (Verdict.PARTIAL if score > 0 else Verdict.WA)
+
+    submission.verdict = verdict
+    submission.score = score
+    submission.judged_at = now
+    session.add(
+        SubmissionResult(
+            submission_id=submission.id,
+            verdict=verdict,
+            score=score,
+            message=f"{metric.value} = {metric_value:.4f}",
+            metric_value=metric_value,
+        )
+    )
+
+    if settings.enable_dataset_repro and submission.submitted_code:
+        await _run_dataset_repro(submission, problem, metric, score)
+
+    await _notify_contest_if_any(session, submission)
+    await session.commit()
+
+
+async def _run_dataset_repro(
+    submission: Submission,
+    problem: Problem,
+    metric: DatasetMetric,
+    graded_score: int,
+) -> None:
+    """Re-run the submitted .py against test.csv and flag manual review on a material mismatch.
+
+    Contract: the script receives test.csv on stdin and must print a predictions
+    CSV (same id/target columns) to stdout. Never changes verdict/score - only
+    sets manual_review, mirroring flag_reason's "informational only" contract.
+    """
+    try:
+        test_csv = await storage.read_dataset_file(problem.slug, "test.csv")
+    except FileNotFoundError:
+        return
+
+    exec_result = await piston_client.execute(
+        language="python",
+        code=submission.submitted_code or "",
+        stdin=test_csv.decode("utf-8", errors="replace"),
+        time_limit_ms=problem.time_limit_ms,
+        memory_limit_kb=problem.memory_limit_kb,
+    )
+
+    if exec_result.compile_error or exec_result.timed_out or exec_result.exit_code != 0:
+        submission.manual_review = True
+        return
+
+    try:
+        repro_df = pd.read_csv(io.StringIO(exec_result.stdout))
+        answer_bytes = await storage.read_dataset_file(problem.slug, "answer.csv")
+        answer_df = pd.read_csv(io.BytesIO(answer_bytes))
+        id_column = problem.dataset_id_column or "id"
+        target_column = problem.dataset_target_column or "target"
+        validate_submission_shape(
+            repro_df, answer_df, id_column, target_column, problem.dataset_expected_rows
+        )
+        repro_value = compute_metric(metric, repro_df, answer_df, id_column, target_column)
+        repro_score = score_from_metric(metric, repro_value, problem.metric_threshold)
+    except Exception:
+        submission.manual_review = True
+        return
+
+    if abs(repro_score - graded_score) > _DATASET_REPRO_SCORE_TOLERANCE:
+        submission.manual_review = True
 
 
 async def _notify_contest_if_any(session: AsyncSession, submission: Submission) -> None:

@@ -12,6 +12,7 @@ import { api, ApiError } from "@/lib/api";
 import { ContestDetailSchema, ProblemDetailSchema } from "@/lib/types";
 import { ProblemStatement } from "@/components/problems/problem-statement";
 import { SubmissionPanel } from "@/components/problems/submission-panel";
+import { DatasetPanel } from "@/components/problems/dataset-panel";
 import { DifficultyIndicator } from "@/components/problems/difficulty-indicator";
 
 interface Props {
@@ -182,7 +183,10 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
     );
   }
 
-  const submitUrl = `/api/contests/${contestSlug}/problems/${problemSlug}/submit`;
+  const isDataset = problem.problem_type === "dataset";
+  const submitUrl = isDataset
+    ? `/api/contests/${contestSlug}/problems/${problemSlug}/submit-dataset`
+    : `/api/contests/${contestSlug}/problems/${problemSlug}/submit`;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -234,15 +238,26 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
         </div>
 
         <div>
-          <SubmissionPanel
-            slug={problemSlug}
-            scoreTotal={problem.score_total}
-            bestScore={null}
-            isAuthenticated={isAuthenticated}
-            editorFocused={editorFocused}
-            onToggleEditorFocus={() => setEditorFocused((v) => !v)}
-            submitUrl={submitUrl}
-          />
+          {isDataset ? (
+            <DatasetPanel
+              slug={problemSlug}
+              isAuthenticated={isAuthenticated}
+              bestScore={null}
+              metric={problem.dataset_metric ?? null}
+              requireSource={problem.require_source_in_contest ?? true}
+              submitUrl={submitUrl}
+            />
+          ) : (
+            <SubmissionPanel
+              slug={problemSlug}
+              scoreTotal={problem.score_total}
+              bestScore={null}
+              isAuthenticated={isAuthenticated}
+              editorFocused={editorFocused}
+              onToggleEditorFocus={() => setEditorFocused((v) => !v)}
+              submitUrl={submitUrl}
+            />
+          )}
         </div>
       </div>
     </div>

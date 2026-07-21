@@ -3,6 +3,16 @@ import { z } from "zod";
 export const ProblemTypeSchema = z.enum(["standard", "quiz", "dataset"]);
 export type ProblemType = z.infer<typeof ProblemTypeSchema>;
 
+export const DatasetMetricSchema = z.enum(["accuracy", "f1", "rmse", "mae"]);
+export type DatasetMetric = z.infer<typeof DatasetMetricSchema>;
+
+export const DATASET_METRIC_LABELS: Record<DatasetMetric, string> = {
+  accuracy: "Accuracy",
+  f1: "F1",
+  rmse: "RMSE",
+  mae: "MAE",
+};
+
 export const QuizOptionReadSchema = z.object({
   id: z.string().uuid(),
   ordinal: z.number().int(),
@@ -37,6 +47,7 @@ export const ProblemListItemSchema = z.object({
   solve_count: z.number().int(),
   user_status: z.enum(["solved", "attempted", "unsolved"]).nullable(),
   problem_type: ProblemTypeSchema,
+  dataset_metric: DatasetMetricSchema.nullable().optional(),
 });
 export type ProblemListItem = z.infer<typeof ProblemListItemSchema>;
 
@@ -90,19 +101,44 @@ export const ProblemDetailSchema = z.object({
   comparison_mode: z.enum(["exact", "whitespace_insensitive", "float_epsilon"]),
   float_epsilon: z.number().nullable(),
   problem_type: ProblemTypeSchema,
+  dataset_metric: DatasetMetricSchema.nullable().optional(),
+  metric_threshold: z.number().nullable().optional(),
+  dataset_id_column: z.string().nullable().optional(),
+  dataset_target_column: z.string().nullable().optional(),
+  dataset_expected_rows: z.number().int().nullable().optional(),
+  require_source_in_contest: z.boolean().optional(),
   solve_count: z.number().int(),
   sample_test_cases: z.array(TestCaseSummarySchema),
   quiz_options: z.array(QuizOptionReadSchema),
   origin_contest: z.object({ slug: z.string(), title: z.string() }).nullable(),
+  dataset_files: z.array(z.string()).optional(),
 });
 export type ProblemDetail = z.infer<typeof ProblemDetailSchema>;
 
-export const VerdictSchema = z.enum(["pending", "AC", "WA", "CE", "RE", "TLE", "MLE", "PARTIAL"]);
+export const DatasetFilesStatusSchema = z.object({
+  train_csv: z.boolean(),
+  test_csv: z.boolean(),
+  sample_submission_csv: z.boolean(),
+  answer_csv: z.boolean(),
+});
+export type DatasetFilesStatus = z.infer<typeof DatasetFilesStatusSchema>;
+
+export const VerdictSchema = z.enum([
+  "pending",
+  "AC",
+  "WA",
+  "CE",
+  "RE",
+  "TLE",
+  "MLE",
+  "PARTIAL",
+  "INVALID_FORMAT",
+]);
 export type VerdictType = z.infer<typeof VerdictSchema>;
 
 export const SubmissionResultSchema = z.object({
   id: z.string().uuid(),
-  test_case_id: z.string().uuid(),
+  test_case_id: z.string().uuid().nullable(),
   verdict: VerdictSchema,
   score: z.number().int(),
   message: z.string().nullable(),
@@ -110,8 +146,12 @@ export const SubmissionResultSchema = z.object({
   expected_output_snippet: z.string().nullable(),
   execution_time_ms: z.number().int().nullable(),
   memory_kb: z.number().int().nullable(),
+  metric_value: z.number().nullable().optional(),
 });
 export type SubmissionResult = z.infer<typeof SubmissionResultSchema>;
+
+export const SubmissionKindSchema = z.enum(["code", "dataset"]);
+export type SubmissionKind = z.infer<typeof SubmissionKindSchema>;
 
 export const SubmissionSchema = z.object({
   id: z.string().uuid(),
@@ -122,10 +162,12 @@ export const SubmissionSchema = z.object({
   verdict: VerdictSchema,
   score: z.number().int(),
   language: z.string(),
-  submitted_code: z.string(),
+  submitted_code: z.string().nullable(),
   created_at: z.string(),
   judged_at: z.string().nullable(),
   flag_reason: z.string().nullable().optional(),
+  submission_kind: SubmissionKindSchema.optional(),
+  manual_review: z.boolean().optional(),
   results: z.array(SubmissionResultSchema),
 });
 export type Submission = z.infer<typeof SubmissionSchema>;
@@ -143,6 +185,8 @@ export const SubmissionSummarySchema = z.object({
   created_at: z.string(),
   judged_at: z.string().nullable(),
   flag_reason: z.string().nullable().optional(),
+  submission_kind: SubmissionKindSchema.optional(),
+  manual_review: z.boolean().optional(),
 });
 export type SubmissionSummary = z.infer<typeof SubmissionSummarySchema>;
 
@@ -176,6 +220,12 @@ export const ProblemReadSchema = z.object({
   comparison_mode: z.enum(["exact", "whitespace_insensitive", "float_epsilon"]),
   float_epsilon: z.number().nullable(),
   problem_type: ProblemTypeSchema,
+  dataset_metric: DatasetMetricSchema.nullable().optional(),
+  metric_threshold: z.number().nullable().optional(),
+  dataset_id_column: z.string().nullable().optional(),
+  dataset_target_column: z.string().nullable().optional(),
+  dataset_expected_rows: z.number().int().nullable().optional(),
+  require_source_in_contest: z.boolean().optional(),
 });
 export type ProblemRead = z.infer<typeof ProblemReadSchema>;
 

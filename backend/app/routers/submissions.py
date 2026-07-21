@@ -7,19 +7,20 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, date, datetime, time
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import storage
 from app.db import get_session
 from app.dependencies import get_current_user, get_optional_user
 from app.flagging import detect_flag
 from app.models.contest import Contest
 from app.models.judging_job import JobStatus, JudgingJob
-from app.models.problem import Problem, Visibility
-from app.models.submission import Submission, Verdict
+from app.models.problem import Problem, ProblemType, Visibility
+from app.models.submission import Submission, SubmissionKind, Verdict
 from app.models.user import User, UserRole
 from app.piston import SUPPORTED_LANGUAGES
 from app.schemas.submission import (
@@ -31,6 +32,7 @@ from app.schemas.submission import (
 router = APIRouter(tags=["submissions"])
 
 _MAX_CODE_BYTES = 512 * 1024  # 512 KB
+_MAX_CSV_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 def _can_view_submission(sub: Submission, user: User | None, problem: Problem) -> bool:
@@ -87,6 +89,74 @@ async def submit(
         problem_id=problem.id,
         submitted_code=source_code,
         language=language,
+        verdict=Verdict.pending,
+        score=0,
+        flag_reason=flag,
+    )
+    session.add(submission)
+    session.add(JudgingJob(submission_id=submission_id))
+    await session.commit()
+
+    sub = await session.scalar(
+        select(Submission)
+        .where(Submission.id == submission_id)
+        .options(selectinload(Submission.results))
+    )
+    return SubmissionRead.model_validate(sub)
+
+
+@router.post("/api/problems/{slug}/submit-dataset", response_model=SubmissionRead, status_code=201)
+async def submit_dataset(
+    slug: str,
+    csv_file: UploadFile = File(...),
+    source_file: UploadFile | None = File(None),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> SubmissionRead:
+    """Trimite un CSV de predicții pentru o problemă de tip dataset/AI (fără concurs)."""
+    problem = await session.scalar(select(Problem).where(Problem.slug == slug))
+    if problem is None:
+        raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
+    if problem.problem_type != ProblemType.dataset:
+        raise HTTPException(status_code=400, detail="Problema nu este de tip dataset")
+
+    contest_ended = False
+    if problem.origin_contest_id:
+        origin = await session.get(Contest, problem.origin_contest_id)
+        if origin is not None and origin.end_time < datetime.now(UTC):
+            contest_ended = True
+
+    if (
+        problem.visibility != Visibility.public
+        and not (problem.visibility == Visibility.contest and contest_ended)
+        and current_user.role not in (UserRole.admin, UserRole.superuser)
+        and problem.author_id != current_user.id
+    ):
+        raise HTTPException(status_code=403, detail="Acces interzis")
+
+    csv_bytes = await csv_file.read()
+    if len(csv_bytes) > _MAX_CSV_BYTES:
+        raise HTTPException(status_code=413, detail="Fișierul CSV este prea mare (max 10 MB)")
+
+    source_code: str | None = None
+    if source_file is not None:
+        source_bytes = await source_file.read()
+        if len(source_bytes) > _MAX_CODE_BYTES:
+            raise HTTPException(status_code=413, detail="Codul sursă este prea mare (max 512 KB)")
+        source_code = source_bytes.decode("utf-8", errors="replace")
+
+    submission_id = uuid.uuid4()
+    csv_path = await storage.save_submission_csv(current_user.id, submission_id, csv_bytes)
+    flag = detect_flag(source_code, None, datetime.now(UTC)) if source_code else None
+
+    submission = Submission(
+        id=submission_id,
+        user_id=current_user.id,
+        problem_id=problem.id,
+        submitted_code=source_code,
+        language="python",
+        submission_kind=SubmissionKind.dataset,
+        dataset_csv_path=csv_path,
         verdict=Verdict.pending,
         score=0,
         flag_reason=flag,
@@ -252,6 +322,8 @@ async def list_submissions(
             created_at=row.Submission.created_at,
             judged_at=row.Submission.judged_at,
             flag_reason=row.Submission.flag_reason,
+            submission_kind=row.Submission.submission_kind,
+            manual_review=row.Submission.manual_review,
         )
         for row in rows
     ]
@@ -319,6 +391,8 @@ async def get_user_submissions(
             language=row.Submission.language,
             created_at=row.Submission.created_at,
             judged_at=row.Submission.judged_at,
+            submission_kind=row.Submission.submission_kind,
+            manual_review=row.Submission.manual_review,
         )
         for row in rows
     ]

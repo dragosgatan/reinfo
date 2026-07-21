@@ -16,10 +16,11 @@ from sqlalchemy.orm import selectinload
 from app.db import get_session
 from app.dependencies import get_current_user, get_optional_user
 from app.models.contest import Contest
-from app.models.problem import Problem, ProblemType, QuizOption, TestCase, Visibility
+from app.models.problem import DatasetMetric, Problem, ProblemType, QuizOption, TestCase, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
 from app.schemas.problem import (
+    DatasetFilesStatus,
     OriginContest,
     ProblemCreate,
     ProblemDetail,
@@ -36,7 +37,14 @@ from app.schemas.problem import (
     TestCaseSummary,
     UserProblemStatus,
 )
-from app.storage import delete_test_case, read_test_case, save_test_case
+from app.storage import (
+    dataset_file_exists,
+    delete_test_case,
+    read_dataset_file,
+    read_test_case,
+    save_dataset_file,
+    save_test_case,
+)
 
 router = APIRouter(prefix="/api/problems", tags=["problems"])
 
@@ -117,6 +125,7 @@ async def list_problems(
     status: Literal["solved", "attempted", "unsolved"] | None = Query(None),
     sort: Literal["newest", "oldest", "easiest", "hardest", "most_solved"] = Query("oldest"),
     problem_type: Literal["standard", "quiz", "dataset"] | None = Query(None),
+    dataset_metric: Literal["accuracy", "f1", "rmse", "mae"] | None = Query(None),
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ProblemListResponse:
@@ -178,6 +187,8 @@ async def list_problems(
         stmt = stmt.where(func.coalesce(user_sq.c.user_status, "unsolved") == status)
     if problem_type is not None:
         stmt = stmt.where(Problem.problem_type == ProblemType(problem_type))
+    if dataset_metric is not None:
+        stmt = stmt.where(Problem.dataset_metric == DatasetMetric(dataset_metric))
 
     # count before pagination
     total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
@@ -214,6 +225,7 @@ async def list_problems(
                 solve_count=solve_count,
                 user_status=UserProblemStatus(raw_status) if raw_status else None,
                 problem_type=problem.problem_type,
+                dataset_metric=problem.dataset_metric,
             )
         )
 
@@ -290,6 +302,14 @@ async def get_problem(
     sample_tcs = [TestCaseSummary.model_validate(tc) for tc in problem.test_cases if tc.is_sample]
     quiz_opts = [QuizOptionRead.model_validate(o) for o in problem.quiz_options]
 
+    dataset_files: list[str] = []
+    if problem.problem_type == ProblemType.dataset:
+        dataset_files = [
+            name
+            for name in ("train.csv", "test.csv", "sample_submission.csv")
+            if dataset_file_exists(problem.slug, name)
+        ]
+
     pr = ProblemRead.model_validate(problem)
     return ProblemDetail(
         **pr.model_dump(),
@@ -297,6 +317,7 @@ async def get_problem(
         sample_test_cases=sample_tcs,
         quiz_options=quiz_opts,
         origin_contest=OriginContest(slug=origin.slug, title=origin.title) if origin else None,
+        dataset_files=dataset_files,
     )
 
 
@@ -507,6 +528,99 @@ async def download_input(
         content=content,
         media_type="text/plain; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{ordinal}.in"'},
+    )
+
+
+_DATASET_DOWNLOADABLE_FILES = ("train.csv", "test.csv", "sample_submission.csv")
+
+
+@router.get("/{slug}/dataset-files", response_model=DatasetFilesStatus)
+async def get_dataset_files_status(
+    slug: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> DatasetFilesStatus:
+    """Ce fișiere CSV au fost încărcate pentru o problemă de tip dataset. Autorul sau administratorul."""
+    problem = await _get_problem_or_404(slug, session)
+    _assert_can_edit(problem, current_user)
+    if problem.problem_type != ProblemType.dataset:
+        raise HTTPException(status_code=400, detail="Problema nu este de tip dataset")
+
+    return DatasetFilesStatus(
+        train_csv=dataset_file_exists(slug, "train.csv"),
+        test_csv=dataset_file_exists(slug, "test.csv"),
+        sample_submission_csv=dataset_file_exists(slug, "sample_submission.csv"),
+        answer_csv=dataset_file_exists(slug, "answer.csv"),
+    )
+
+
+@router.post("/{slug}/dataset-files", response_model=DatasetFilesStatus, status_code=201)
+async def upload_dataset_files(
+    slug: str,
+    train_csv: UploadFile | None = File(None),
+    test_csv: UploadFile | None = File(None),
+    sample_submission_csv: UploadFile | None = File(None),
+    answer_csv: UploadFile | None = File(None),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> DatasetFilesStatus:
+    """Încarcă (sau înlocuiește) fișierele CSV ale unei probleme dataset. Autorul sau administratorul.
+
+    answer.csv nu este niciodată expus prin descărcare - doar folosit la corectare.
+    """
+    problem = await _get_problem_or_404(slug, session)
+    _assert_can_edit(problem, current_user)
+    if problem.problem_type != ProblemType.dataset:
+        raise HTTPException(status_code=400, detail="Problema nu este de tip dataset")
+
+    uploads = {
+        "train.csv": train_csv,
+        "test.csv": test_csv,
+        "sample_submission.csv": sample_submission_csv,
+        "answer.csv": answer_csv,
+    }
+    for filename, upload in uploads.items():
+        if upload is None:
+            continue
+        data = await upload.read()
+        if len(data) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413, detail=f"Fișierul {filename} este prea mare (max 10 MB)"
+            )
+        await save_dataset_file(slug, filename, data)
+
+    return DatasetFilesStatus(
+        train_csv=dataset_file_exists(slug, "train.csv"),
+        test_csv=dataset_file_exists(slug, "test.csv"),
+        sample_submission_csv=dataset_file_exists(slug, "sample_submission.csv"),
+        answer_csv=dataset_file_exists(slug, "answer.csv"),
+    )
+
+
+@router.get("/{slug}/dataset/{filename}")
+async def download_dataset_file(
+    slug: str,
+    filename: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: User | None = Depends(get_optional_user),
+) -> Response:
+    """Descarcă unul dintre fișierele publice ale problemei dataset (nu answer.csv)."""
+    problem = await _get_problem_or_404(slug, session)
+    _assert_can_view(problem, current_user)
+    if problem.problem_type != ProblemType.dataset:
+        raise HTTPException(status_code=400, detail="Problema nu este de tip dataset")
+    if filename not in _DATASET_DOWNLOADABLE_FILES:
+        raise HTTPException(status_code=404, detail="Fișierul nu a fost găsit")
+
+    try:
+        content = await read_dataset_file(slug, filename)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Fișierul nu a fost găsit") from None
+
+    return Response(
+        content=content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

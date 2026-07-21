@@ -24,7 +24,12 @@ import { StatusIcon } from "@/components/problems/status-icon";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { ProblemListResponseSchema, ALL_TAGS, getTagLabel } from "@/lib/types";
+import {
+  ProblemListResponseSchema,
+  ALL_TAGS,
+  DATASET_METRIC_LABELS,
+  getTagLabel,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { ProblemListItem } from "@/lib/types";
 
@@ -37,7 +42,10 @@ type Tab = (typeof TABS)[number];
 const TAB_PROBLEM_TYPE: Partial<Record<Tab, string>> = {
   algoritmica: "standard",
   exercitii: "quiz",
+  ai: "dataset",
 };
+
+const METRIC_OPTIONS = ["accuracy", "f1", "rmse", "mae"] as const;
 
 export default function ProblemeClient() {
   const router = useRouter();
@@ -73,7 +81,8 @@ export default function ProblemeClient() {
   const rawTab = params.get("tab");
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "algoritmica";
   const problemType = TAB_PROBLEM_TYPE[tab] ?? "";
-  const showList = tab === "algoritmica" || tab === "exercitii";
+  const showList = tab === "algoritmica" || tab === "exercitii" || tab === "ai";
+  const metric = params.get("metric") ?? "";
 
   const setParam = useCallback(
     (key: string, value: string | null) => {
@@ -138,18 +147,30 @@ export default function ProblemeClient() {
     if (status && isAuthenticated) p.set("status", status);
     p.set("sort", sort);
     if (problemType) p.set("problem_type", problemType);
+    if (tab === "ai" && metric) p.set("dataset_metric", metric);
     return p.toString();
   };
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["problems", q, diffMin, diffMax, activeTags.join(","), status, sort, page, problemType],
+    queryKey: [
+      "problems",
+      q,
+      diffMin,
+      diffMax,
+      activeTags.join(","),
+      status,
+      sort,
+      page,
+      problemType,
+      metric,
+    ],
     queryFn: () => api.get(`/api/problems/?${buildQuery()}`, ProblemListResponseSchema),
     placeholderData: (prev) => prev,
     staleTime: 30 * 1000,
     enabled: showList,
   });
 
-  const hasFilters = q || diffMin || diffMax || activeTags.length > 0 || status;
+  const hasFilters = q || diffMin || diffMax || activeTags.length > 0 || status || metric;
 
   const STATUS_OPTIONS = [
     { value: "", label: t("statusAll") },
@@ -236,97 +257,140 @@ export default function ProblemeClient() {
             </Select>
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("difficulty")}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <p className="mb-1 text-xs text-muted-foreground">Min</p>
-                <Select
-                  value={diffMin || DIFF_ANY}
-                  onValueChange={(v) => setParam("diff_min", v === DIFF_ANY ? "" : v)}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIFFICULTY_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <p className="mb-1 text-xs text-muted-foreground">Max</p>
-                <Select
-                  value={diffMax || DIFF_ANY}
-                  onValueChange={(v) => setParam("diff_max", v === DIFF_ANY ? "" : v)}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIFFICULTY_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {isAuthenticated && (
+          {tab === "ai" ? (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {t("statusLabel")}
+                {t("metricLabel")}
               </p>
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("statusLabel")}>
-                {STATUS_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setParam("status", opt.value)}
-                    aria-pressed={status === opt.value}
-                    className={cn(
-                      "rounded border px-2 py-1 text-xs transition-colors",
-                      status === opt.value
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("tags")}
-            </p>
-            <div className="flex flex-wrap gap-1" role="group" aria-label={t("tags")}>
-              {ALL_TAGS.map((tag) => (
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("metricLabel")}>
                 <button
-                  key={tag}
-                  onClick={() => toggleTag(tag)}
-                  aria-pressed={activeTags.includes(tag)}
+                  onClick={() => setParam("metric", null)}
+                  aria-pressed={metric === ""}
                   className={cn(
-                    "rounded border px-2 py-0.5 text-xs transition-colors",
-                    activeTags.includes(tag)
+                    "rounded border px-2 py-1 text-xs transition-colors",
+                    metric === ""
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
                   )}
                 >
-                  {getTagLabel(tag, t as (key: string) => string)}
+                  {t("typeAll")}
                 </button>
-              ))}
+                {METRIC_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => setParam("metric", opt)}
+                    aria-pressed={metric === opt}
+                    className={cn(
+                      "rounded border px-2 py-1 text-xs transition-colors",
+                      metric === opt
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                    )}
+                  >
+                    {DATASET_METRIC_LABELS[opt]}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("difficulty")}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="mb-1 text-xs text-muted-foreground">Min</p>
+                    <Select
+                      value={diffMin || DIFF_ANY}
+                      onValueChange={(v) => setParam("diff_min", v === DIFF_ANY ? "" : v)}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DIFFICULTY_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs text-muted-foreground">Max</p>
+                    <Select
+                      value={diffMax || DIFF_ANY}
+                      onValueChange={(v) => setParam("diff_max", v === DIFF_ANY ? "" : v)}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DIFFICULTY_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {isAuthenticated && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("statusLabel")}
+                  </p>
+                  <div
+                    className="flex flex-wrap gap-1.5"
+                    role="group"
+                    aria-label={t("statusLabel")}
+                  >
+                    {STATUS_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setParam("status", opt.value)}
+                        aria-pressed={status === opt.value}
+                        className={cn(
+                          "rounded border px-2 py-1 text-xs transition-colors",
+                          status === opt.value
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("tags")}
+                </p>
+                <div className="flex flex-wrap gap-1" role="group" aria-label={t("tags")}>
+                  {ALL_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      aria-pressed={activeTags.includes(tag)}
+                      className={cn(
+                        "rounded border px-2 py-0.5 text-xs transition-colors",
+                        activeTags.includes(tag)
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                      )}
+                    >
+                      {getTagLabel(tag, t as (key: string) => string)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {hasFilters && (
             <button
@@ -501,6 +565,11 @@ function ProblemRow({
           {problem.problem_type === "quiz" && (
             <span className="rounded border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-xs text-blue-600 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400">
               quiz
+            </span>
+          )}
+          {problem.problem_type === "dataset" && problem.dataset_metric && (
+            <span className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-xs text-emerald-600 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400">
+              {DATASET_METRIC_LABELS[problem.dataset_metric]}
             </span>
           )}
         </div>

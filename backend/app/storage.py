@@ -144,6 +144,55 @@ def avatars_directory() -> Path:
     return d
 
 
+_DATASET_DOWNLOADABLE_FILES = {"train.csv", "test.csv", "sample_submission.csv"}
+_DATASET_FILES = _DATASET_DOWNLOADABLE_FILES | {"answer.csv"}
+
+
+def _dataset_path(slug: str, filename: str) -> Path:
+    if filename not in _DATASET_FILES:
+        raise ValueError(f"Invalid dataset filename: {filename}")
+    return _data_root() / "datasets" / slug / filename
+
+
+async def save_dataset_file(slug: str, filename: str, data: bytes) -> str:
+    """Write one of a dataset problem's fixed CSV files (train/test/sample_submission/answer)."""
+    path = _dataset_path(slug, filename)
+    _assert_inside_data_root(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    async with aiofiles.open(path, "wb") as fh:
+        await fh.write(data)
+    return str(path)
+
+
+async def read_dataset_file(slug: str, filename: str) -> bytes:
+    """Read one of a dataset problem's CSV files by slug + filename.
+
+    Raises FileNotFoundError if missing, ValueError for a disallowed filename.
+    """
+    path = _dataset_path(slug, filename)
+    _assert_inside_data_root(path)
+    async with aiofiles.open(path, "rb") as fh:
+        return await fh.read()
+
+
+def dataset_file_exists(slug: str, filename: str) -> bool:
+    return _dataset_path(slug, filename).exists()
+
+
+async def save_submission_csv(
+    user_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    file_bytes: bytes,
+) -> str:
+    """Write the submitted predictions CSV for a dataset-problem submission."""
+    path = _submission_path(user_id, submission_id, "predictions.csv")
+    _assert_inside_data_root(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    async with aiofiles.open(path, "wb") as fh:
+        await fh.write(file_bytes)
+    return str(path)
+
+
 async def save_submission_code(
     user_id: uuid.UUID,
     submission_id: uuid.UUID,

@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DifficultyIndicator, getDifficultyLabel } from "./difficulty-indicator";
 import { ProblemStatement } from "./problem-statement";
 import { QuizPanel } from "./quiz-panel";
+import { DatasetPanel } from "./dataset-panel";
 import { SubmissionPanel } from "./submission-panel";
 import { VerdictBadge } from "./verdict-badge";
 import { Link } from "@/i18n/navigation";
@@ -98,6 +99,7 @@ export function ProblemDetailClient({ slug }: ProblemDetailClientProps) {
   });
 
   const isQuiz = problem?.problem_type === "quiz";
+  const isDataset = problem?.problem_type === "dataset";
 
   const { data: submissionsData } = useQuery({
     queryKey: ["submissions", slug, user?.id],
@@ -109,7 +111,7 @@ export function ProblemDetailClient({ slug }: ProblemDetailClientProps) {
 
   const bestScore =
     submissionsData?.items.reduce(
-      (best, s) => (s.verdict === "AC" ? Math.max(best, s.score) : best),
+      (best, s) => (isDataset || s.verdict === "AC" ? Math.max(best, s.score) : best),
       -1,
     ) ?? -1;
 
@@ -164,6 +166,7 @@ function ProblemDetailLayout({
   const memoryMb = Math.round(problem.memory_limit_kb / 1024);
   const [editorFocused, setEditorFocused] = useState(false);
   const isQuiz = problem.problem_type === "quiz";
+  const isDataset = problem.problem_type === "dataset";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -278,13 +281,33 @@ function ProblemDetailLayout({
                 </>
               )}
 
-              {!isQuiz && (
+              {!isQuiz && !isDataset && (
                 <>
                   <Separator className="my-5" />
                   <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/30 dark:bg-amber-950/20">
                     <p className="text-xs text-amber-800 dark:text-amber-300">
                       {t("ioNote")}
                     </p>
+                  </div>
+                </>
+              )}
+
+              {isDataset && problem.dataset_files && problem.dataset_files.length > 0 && (
+                <>
+                  <Separator className="my-5" />
+                  <h3 className="mb-3 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                    {t("datasetDownloadFiles")}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {problem.dataset_files.map((filename) => (
+                      <a
+                        key={filename}
+                        href={`/api/problems/${problem.slug}/dataset/${filename}`}
+                        className="rounded border border-border px-2.5 py-1 font-mono text-xs transition-colors hover:border-foreground/30 hover:text-foreground"
+                      >
+                        {filename}
+                      </a>
+                    ))}
                   </div>
                 </>
               )}
@@ -314,10 +337,17 @@ function ProblemDetailLayout({
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <div className="rounded border border-border p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {isQuiz ? t("quizAnswerTitle") : t("submitTitle")}
+              {isQuiz ? t("quizAnswerTitle") : isDataset ? t("datasetSubmitAction") : t("submitTitle")}
             </p>
             {isQuiz ? (
               <QuizPanel slug={problem.slug} options={problem.quiz_options} />
+            ) : isDataset ? (
+              <DatasetPanel
+                slug={problem.slug}
+                isAuthenticated={isAuthenticated}
+                bestScore={bestScore}
+                metric={problem.dataset_metric ?? null}
+              />
             ) : (
               <SubmissionPanel
                 slug={problem.slug}
@@ -330,7 +360,7 @@ function ProblemDetailLayout({
             )}
           </div>
 
-          {!isQuiz && (
+          {!isQuiz && !isDataset && (
             <div className="rounded border border-border p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {t("restrictions")}

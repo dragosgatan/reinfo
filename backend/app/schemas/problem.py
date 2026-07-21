@@ -4,7 +4,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.problem import ComparisonMode, ProblemType, Visibility
+from app.models.problem import ComparisonMode, DatasetMetric, ProblemType, Visibility
 
 
 class QuizOptionRead(BaseModel):
@@ -67,6 +67,12 @@ class ProblemCreate(BaseModel):
     comparison_mode: ComparisonMode = ComparisonMode.exact
     float_epsilon: float | None = None
     problem_type: ProblemType = ProblemType.standard
+    dataset_metric: DatasetMetric | None = None
+    metric_threshold: float | None = None
+    dataset_id_column: str | None = None
+    dataset_target_column: str | None = None
+    dataset_expected_rows: int | None = Field(default=None, ge=1)
+    require_source_in_contest: bool = True
 
 
 class ProblemUpdate(BaseModel):
@@ -84,6 +90,12 @@ class ProblemUpdate(BaseModel):
     comparison_mode: ComparisonMode | None = None
     float_epsilon: float | None = None
     problem_type: ProblemType | None = None
+    dataset_metric: DatasetMetric | None = None
+    metric_threshold: float | None = None
+    dataset_id_column: str | None = None
+    dataset_target_column: str | None = None
+    dataset_expected_rows: int | None = Field(default=None, ge=1)
+    require_source_in_contest: bool | None = None
 
 
 class ProblemRead(BaseModel):
@@ -109,6 +121,12 @@ class ProblemRead(BaseModel):
     comparison_mode: ComparisonMode
     float_epsilon: float | None
     problem_type: ProblemType
+    dataset_metric: DatasetMetric | None
+    metric_threshold: float | None
+    dataset_id_column: str | None
+    dataset_target_column: str | None
+    dataset_expected_rows: int | None
+    require_source_in_contest: bool
 
 
 class ProblemSummary(BaseModel):
@@ -168,6 +186,7 @@ class ProblemListItem(BaseModel):
     solve_count: int
     user_status: UserProblemStatus | None
     problem_type: ProblemType
+    dataset_metric: DatasetMetric | None = None
 
 
 class ProblemListResponse(BaseModel):
@@ -206,7 +225,23 @@ class ProblemDetail(BaseModel):
     comparison_mode: ComparisonMode
     float_epsilon: float | None
     problem_type: ProblemType
+    dataset_metric: DatasetMetric | None
+    metric_threshold: float | None
+    dataset_id_column: str | None
+    dataset_target_column: str | None
+    dataset_expected_rows: int | None
+    require_source_in_contest: bool
     solve_count: int
     sample_test_cases: list[TestCaseSummary]
     quiz_options: list[QuizOptionRead] = []
     origin_contest: OriginContest | None = None
+    dataset_files: list[str] = []
+
+
+class DatasetFilesStatus(BaseModel):
+    """Which of a dataset problem's fixed CSV files have been uploaded."""
+
+    train_csv: bool
+    test_csv: bool
+    sample_submission_csv: bool
+    answer_csv: bool

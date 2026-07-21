@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import type { UseFormSetValue, UseFormRegister } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, Trash2, Upload, X, ArrowLeft, Languages } from "lucide-react";
@@ -34,7 +35,15 @@ import {
 import { ProblemStatement } from "@/components/problems/problem-statement";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { ProblemReadSchema, TestCaseListSchema, ALL_TAGS, getTagLabel } from "@/lib/types";
+import {
+  ProblemReadSchema,
+  TestCaseListSchema,
+  DatasetFilesStatusSchema,
+  DATASET_METRIC_LABELS,
+  ALL_TAGS,
+  getTagLabel,
+} from "@/lib/types";
+import type { DatasetFilesStatus } from "@/lib/types";
 import { getDifficultyLabel } from "@/components/problems/difficulty-indicator";
 import type { TestCaseRead } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -54,6 +63,12 @@ const schema = z.object({
   float_epsilon: z.coerce.number().optional().nullable(),
   tags: z.array(z.string()).default([]),
   visibility: z.enum(["draft", "public", "private", "contest"]),
+  dataset_metric: z.enum(["accuracy", "f1", "rmse", "mae"]).default("accuracy"),
+  metric_threshold: z.coerce.number().optional().nullable(),
+  dataset_id_column: z.string().default("id"),
+  dataset_target_column: z.string().default("target"),
+  dataset_expected_rows: z.coerce.number().int().optional().nullable(),
+  require_source_in_contest: z.boolean().default(true),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -90,6 +105,16 @@ export default function EditProblemPage() {
   const watchTags = watch("tags");
   const watchComparisonMode = watch("comparison_mode");
   const watchVisibility = watch("visibility");
+  const watchMetric = watch("dataset_metric");
+
+  const [problemType, setProblemType] = useState<string | null>(null);
+  const [datasetFilesStatus, setDatasetFilesStatus] = useState<DatasetFilesStatus | null>(null);
+  const [datasetFiles, setDatasetFiles] = useState<{
+    train_csv: File | null;
+    test_csv: File | null;
+    sample_submission_csv: File | null;
+    answer_csv: File | null;
+  }>({ train_csv: null, test_csv: null, sample_submission_csv: null, answer_csv: null });
 
   useEffect(() => {
     if (authLoading) return;
@@ -115,8 +140,22 @@ export default function EditProblemPage() {
           float_epsilon: problem.float_epsilon ?? null,
           tags: problem.tags,
           visibility: problem.visibility as FormValues["visibility"],
+          dataset_metric: (problem.dataset_metric ?? "accuracy") as FormValues["dataset_metric"],
+          metric_threshold: problem.metric_threshold ?? null,
+          dataset_id_column: problem.dataset_id_column ?? "id",
+          dataset_target_column: problem.dataset_target_column ?? "target",
+          dataset_expected_rows: problem.dataset_expected_rows ?? null,
+          require_source_in_contest: problem.require_source_in_contest ?? true,
         });
+        setProblemType(problem.problem_type);
         setLoaded(true);
+
+        if (problem.problem_type === "dataset") {
+          api
+            .get(`/api/problems/${slug}/dataset-files`, DatasetFilesStatusSchema)
+            .then(setDatasetFilesStatus)
+            .catch(() => {});
+        }
       })
       .catch(() => setLoadError(t("loadErrorProblem")));
   }, [authLoading, user, slug, reset, t]);
@@ -180,6 +219,7 @@ export default function EditProblemPage() {
     async (values: FormValues) => {
       setSubmitting(true);
       try {
+        const isDataset = problemType === "dataset";
         await api.patch(
           `/api/problems/${slug}`,
           {
@@ -197,9 +237,38 @@ export default function EditProblemPage() {
             comparison_mode: values.comparison_mode,
             float_epsilon:
               values.comparison_mode === "float_epsilon" ? values.float_epsilon : null,
+            ...(isDataset && {
+              dataset_metric: values.dataset_metric,
+              metric_threshold: values.metric_threshold,
+              dataset_id_column: values.dataset_id_column,
+              dataset_target_column: values.dataset_target_column,
+              dataset_expected_rows: values.dataset_expected_rows,
+              require_source_in_contest: values.require_source_in_contest,
+            }),
           },
           ProblemReadSchema,
         );
+
+        if (isDataset && Object.values(datasetFiles).some((f) => f !== null)) {
+          const formData = new FormData();
+          if (datasetFiles.train_csv) formData.append("train_csv", datasetFiles.train_csv);
+          if (datasetFiles.test_csv) formData.append("test_csv", datasetFiles.test_csv);
+          if (datasetFiles.sample_submission_csv) {
+            formData.append("sample_submission_csv", datasetFiles.sample_submission_csv);
+          }
+          if (datasetFiles.answer_csv) formData.append("answer_csv", datasetFiles.answer_csv);
+
+          const res = await fetch(`/api/problems/${slug}/dataset-files`, {
+            method: "POST",
+            credentials: "include",
+            body: formData,
+          });
+          if (!res.ok) {
+            const payload = await res.json().catch(() => ({}));
+            throw new Error((payload as { detail?: string }).detail ?? t("errorGeneric"));
+          }
+        }
+
         toast.success(t("changesSaved"));
         router.push(`/probleme/${slug}`);
       } catch (err) {
@@ -208,7 +277,7 @@ export default function EditProblemPage() {
         setSubmitting(false);
       }
     },
-    [slug, router, t],
+    [slug, router, t, problemType, datasetFiles],
   );
 
   const handleDelete = useCallback(async () => {
@@ -424,26 +493,42 @@ export default function EditProblemPage() {
             </Tabs>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="input_format">{t("inputFormatLabel")}</Label>
-              <textarea
-                id="input_format"
-                {...register("input_format")}
-                rows={4}
-                className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
+          {problemType !== "dataset" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="input_format">{t("inputFormatLabel")}</Label>
+                <textarea
+                  id="input_format"
+                  {...register("input_format")}
+                  rows={4}
+                  className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="output_format">{t("outputFormatLabel")}</Label>
+                <textarea
+                  id="output_format"
+                  {...register("output_format")}
+                  rows={4}
+                  className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="output_format">{t("outputFormatLabel")}</Label>
-              <textarea
-                id="output_format"
-                {...register("output_format")}
-                rows={4}
-                className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          )}
+
+          {problemType === "dataset" && (
+            <>
+              <Separator />
+              <DatasetEditFields
+                register={register}
+                setValue={setValue}
+                metric={watchMetric}
+                filesStatus={datasetFilesStatus}
+                datasetFiles={datasetFiles}
+                setDatasetFiles={setDatasetFiles}
               />
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
         <aside className="space-y-4">
@@ -630,8 +715,137 @@ export default function EditProblemPage() {
       </div>
     </form>
 
-    <TestCaseManager slug={slug} />
+    {problemType !== "dataset" && problemType !== "quiz" && <TestCaseManager slug={slug} />}
     </>
+  );
+}
+
+interface DatasetFilesState {
+  train_csv: File | null;
+  test_csv: File | null;
+  sample_submission_csv: File | null;
+  answer_csv: File | null;
+}
+
+function DatasetEditFields({
+  register,
+  setValue,
+  metric,
+  filesStatus,
+  datasetFiles,
+  setDatasetFiles,
+}: {
+  register: UseFormRegister<FormValues>;
+  setValue: UseFormSetValue<FormValues>;
+  metric: FormValues["dataset_metric"];
+  filesStatus: DatasetFilesStatus | null;
+  datasetFiles: DatasetFilesState;
+  setDatasetFiles: (files: DatasetFilesState) => void;
+}) {
+  const t = useTranslations("problems");
+
+  const fileFields: { key: keyof DatasetFilesState; label: string; uploaded?: boolean }[] = [
+    { key: "train_csv", label: t("datasetFileTrain"), uploaded: filesStatus?.train_csv },
+    { key: "test_csv", label: t("datasetFileTest"), uploaded: filesStatus?.test_csv },
+    {
+      key: "sample_submission_csv",
+      label: t("datasetFileSampleSubmission"),
+      uploaded: filesStatus?.sample_submission_csv,
+    },
+    { key: "answer_csv", label: t("datasetFileAnswer"), uploaded: filesStatus?.answer_csv },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>{t("datasetMetricLabel")}</Label>
+          <Select
+            value={metric}
+            onValueChange={(v) => setValue("dataset_metric", v as FormValues["dataset_metric"])}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="accuracy">{DATASET_METRIC_LABELS.accuracy}</SelectItem>
+              <SelectItem value="f1">{DATASET_METRIC_LABELS.f1}</SelectItem>
+              <SelectItem value="rmse">{DATASET_METRIC_LABELS.rmse}</SelectItem>
+              <SelectItem value="mae">{DATASET_METRIC_LABELS.mae}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="metric_threshold">
+            {t("datasetThresholdLabel")}
+            {(metric === "rmse" || metric === "mae") && (
+              <span className="ml-1 text-destructive">*</span>
+            )}
+          </Label>
+          <Input
+            id="metric_threshold"
+            type="number"
+            step="any"
+            {...register("metric_threshold")}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="dataset_id_column">{t("datasetIdColumnLabel")}</Label>
+          <Input id="dataset_id_column" {...register("dataset_id_column")} className="h-9" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="dataset_target_column">{t("datasetTargetColumnLabel")}</Label>
+          <Input
+            id="dataset_target_column"
+            {...register("dataset_target_column")}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="dataset_expected_rows">{t("datasetExpectedRowsLabel")}</Label>
+          <Input
+            id="dataset_expected_rows"
+            type="number"
+            {...register("dataset_expected_rows")}
+            className="h-9"
+          />
+        </div>
+      </div>
+
+      <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          {...register("require_source_in_contest")}
+          className="h-3.5 w-3.5 rounded border-border"
+        />
+        {t("datasetRequireSourceLabel")}
+      </label>
+
+      <Separator />
+
+      <div>
+        <Label className="mb-2 block">{t("datasetFilesLabel")}</Label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {fileFields.map(({ key, label, uploaded }) => (
+            <div key={key} className="space-y-1">
+              <Label htmlFor={`dataset-file-${key}`} className="text-xs text-muted-foreground">
+                {label} {uploaded ? "✓" : ""}
+              </Label>
+              <input
+                id={`dataset-file-${key}`}
+                type="file"
+                accept=".csv"
+                onChange={(e) =>
+                  setDatasetFiles({ ...datasetFiles, [key]: e.target.files?.[0] ?? null })
+                }
+                className="block w-full text-xs file:mr-2 file:rounded file:border file:border-border file:bg-muted file:px-2 file:py-1 file:text-xs"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 

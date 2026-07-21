@@ -25,7 +25,7 @@ import {
 import { ProblemStatement } from "@/components/problems/problem-statement";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { ProblemReadSchema, ALL_TAGS, getTagLabel } from "@/lib/types";
+import { ProblemReadSchema, ALL_TAGS, DATASET_METRIC_LABELS, getTagLabel } from "@/lib/types";
 import { getDifficultyLabel } from "@/components/problems/difficulty-indicator";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
@@ -38,7 +38,13 @@ const schema = z.object({
     .max(128)
     .regex(/^[a-z0-9-]+$/, "Only lowercase letters, digits and hyphens"),
   difficulty: z.coerce.number().int().min(1).max(10),
-  problem_type: z.enum(["standard", "quiz"]).default("standard"),
+  problem_type: z.enum(["standard", "quiz", "dataset"]).default("standard"),
+  dataset_metric: z.enum(["accuracy", "f1", "rmse", "mae"]).default("accuracy"),
+  metric_threshold: z.coerce.number().optional().nullable(),
+  dataset_id_column: z.string().default("id"),
+  dataset_target_column: z.string().default("target"),
+  dataset_expected_rows: z.coerce.number().int().optional().nullable(),
+  require_source_in_contest: z.boolean().default(true),
   statement_md: z.string().min(1, "Statement (Romanian) is required"),
   statement_md_en: z.string().default(""),
   statement_md_hu: z.string().default(""),
@@ -115,8 +121,19 @@ export default function NouProblemPage() {
       quizOptions: [],
       statement_md_en: "",
       statement_md_hu: "",
+      dataset_metric: "accuracy",
+      dataset_id_column: "id",
+      dataset_target_column: "target",
+      require_source_in_contest: true,
     },
   });
+
+  const [datasetFiles, setDatasetFiles] = useState<{
+    train_csv: File | null;
+    test_csv: File | null;
+    sample_submission_csv: File | null;
+    answer_csv: File | null;
+  }>({ train_csv: null, test_csv: null, sample_submission_csv: null, answer_csv: null });
 
   const { fields: testCaseFields, append, remove } = useFieldArray({
     control,
@@ -215,6 +232,7 @@ export default function NouProblemPage() {
         const visibility = contestSlug ? "contest" : publishMode === "public" ? "public" : "draft";
 
         const isQuiz = values.problem_type === "quiz";
+        const isDataset = values.problem_type === "dataset";
 
         const problem = await api.post(
           "/api/problems/",
@@ -224,20 +242,27 @@ export default function NouProblemPage() {
             statement_md: values.statement_md,
             statement_md_en: values.statement_md_en || null,
             statement_md_hu: values.statement_md_hu || null,
-            input_format: isQuiz ? "" : (values.input_format ?? ""),
-            output_format: isQuiz ? "" : (values.output_format ?? ""),
+            input_format: isQuiz || isDataset ? "" : (values.input_format ?? ""),
+            output_format: isQuiz || isDataset ? "" : (values.output_format ?? ""),
             difficulty: values.difficulty,
             tags: values.tags,
             visibility,
             problem_type: values.problem_type,
             time_limit_ms: values.time_limit_ms,
             memory_limit_kb: values.memory_limit_kb,
-            score_total: isQuiz
-              ? 100
-              : values.testCases.reduce((sum, tc) => sum + (tc.score ?? 0), 0) || 100,
+            score_total:
+              isQuiz || isDataset
+                ? 100
+                : values.testCases.reduce((sum, tc) => sum + (tc.score ?? 0), 0) || 100,
             comparison_mode: values.comparison_mode,
             float_epsilon:
               values.comparison_mode === "float_epsilon" ? values.float_epsilon : null,
+            dataset_metric: isDataset ? values.dataset_metric : null,
+            metric_threshold: isDataset ? values.metric_threshold : null,
+            dataset_id_column: isDataset ? values.dataset_id_column : null,
+            dataset_target_column: isDataset ? values.dataset_target_column : null,
+            dataset_expected_rows: isDataset ? values.dataset_expected_rows : null,
+            require_source_in_contest: isDataset ? values.require_source_in_contest : true,
           },
           ProblemReadSchema,
         );
@@ -254,7 +279,30 @@ export default function NouProblemPage() {
           );
         }
 
-        if (!isQuiz) {
+        if (isDataset) {
+          const hasFiles = Object.values(datasetFiles).some((f) => f !== null);
+          if (hasFiles) {
+            const formData = new FormData();
+            if (datasetFiles.train_csv) formData.append("train_csv", datasetFiles.train_csv);
+            if (datasetFiles.test_csv) formData.append("test_csv", datasetFiles.test_csv);
+            if (datasetFiles.sample_submission_csv) {
+              formData.append("sample_submission_csv", datasetFiles.sample_submission_csv);
+            }
+            if (datasetFiles.answer_csv) formData.append("answer_csv", datasetFiles.answer_csv);
+
+            const res = await fetch(`/api/problems/${problem.slug}/dataset-files`, {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            });
+            if (!res.ok) {
+              const payload = await res.json().catch(() => ({}));
+              throw new Error((payload as { detail?: string }).detail ?? t("errorGeneric"));
+            }
+          }
+        }
+
+        if (!isQuiz && !isDataset) {
           for (let i = 0; i < values.testCases.length; i++) {
             const tc = values.testCases[i];
             const formData = new FormData();
@@ -311,7 +359,7 @@ export default function NouProblemPage() {
         setSubmitting(false);
       }
     },
-    [publishMode, contestSlug, router, t],
+    [publishMode, contestSlug, router, t, datasetFiles],
   );
 
   if (isLoading) return null;
@@ -561,7 +609,7 @@ export default function NouProblemPage() {
             </Tabs>
           </div>
 
-          {watchProblemType !== "quiz" && (
+          {watchProblemType === "standard" && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="input_format">{t("inputFormatLabel")}</Label>
@@ -588,7 +636,15 @@ export default function NouProblemPage() {
 
           <Separator />
 
-          {watchProblemType === "quiz" ? (
+          {watchProblemType === "dataset" ? (
+            <DatasetConfigFields
+              register={register}
+              setValue={setValue}
+              watch={watch}
+              datasetFiles={datasetFiles}
+              setDatasetFiles={setDatasetFiles}
+            />
+          ) : watchProblemType === "quiz" ? (
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <Label>{t("quizOptionsLabel")}</Label>
@@ -695,7 +751,7 @@ export default function NouProblemPage() {
             <Label>{t("typeLabel")}</Label>
             <Select
               defaultValue="standard"
-              onValueChange={(v) => setValue("problem_type", v as "standard" | "quiz")}
+              onValueChange={(v) => setValue("problem_type", v as FormValues["problem_type"])}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -703,6 +759,7 @@ export default function NouProblemPage() {
               <SelectContent>
                 <SelectItem value="standard">{t("typeStandardDesc")}</SelectItem>
                 <SelectItem value="quiz">{t("typeQuizDesc")}</SelectItem>
+                <SelectItem value="dataset">{t("typeDatasetDesc")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -826,6 +883,132 @@ export default function NouProblemPage() {
 
 type RegisterFn = ReturnType<typeof useForm<FormValues>>["register"];
 type ErrorsType = ReturnType<typeof useForm<FormValues>>["formState"]["errors"];
+type WatchFn = ReturnType<typeof useForm<FormValues>>["watch"];
+
+interface DatasetFilesState {
+  train_csv: File | null;
+  test_csv: File | null;
+  sample_submission_csv: File | null;
+  answer_csv: File | null;
+}
+
+function DatasetConfigFields({
+  register,
+  setValue,
+  watch,
+  datasetFiles,
+  setDatasetFiles,
+}: {
+  register: RegisterFn;
+  setValue: UseFormSetValue<FormValues>;
+  watch: WatchFn;
+  datasetFiles: DatasetFilesState;
+  setDatasetFiles: (files: DatasetFilesState) => void;
+}) {
+  const t = useTranslations("problems");
+  const metric = watch("dataset_metric");
+
+  const fileFields: { key: keyof DatasetFilesState; label: string }[] = [
+    { key: "train_csv", label: t("datasetFileTrain") },
+    { key: "test_csv", label: t("datasetFileTest") },
+    { key: "sample_submission_csv", label: t("datasetFileSampleSubmission") },
+    { key: "answer_csv", label: t("datasetFileAnswer") },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>{t("datasetMetricLabel")}</Label>
+          <Select
+            defaultValue="accuracy"
+            onValueChange={(v) => setValue("dataset_metric", v as FormValues["dataset_metric"])}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="accuracy">{DATASET_METRIC_LABELS.accuracy}</SelectItem>
+              <SelectItem value="f1">{DATASET_METRIC_LABELS.f1}</SelectItem>
+              <SelectItem value="rmse">{DATASET_METRIC_LABELS.rmse}</SelectItem>
+              <SelectItem value="mae">{DATASET_METRIC_LABELS.mae}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="metric_threshold">
+            {t("datasetThresholdLabel")}
+            {(metric === "rmse" || metric === "mae") && (
+              <span className="ml-1 text-destructive">*</span>
+            )}
+          </Label>
+          <Input
+            id="metric_threshold"
+            type="number"
+            step="any"
+            {...register("metric_threshold")}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="dataset_id_column">{t("datasetIdColumnLabel")}</Label>
+          <Input id="dataset_id_column" {...register("dataset_id_column")} className="h-9" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="dataset_target_column">{t("datasetTargetColumnLabel")}</Label>
+          <Input
+            id="dataset_target_column"
+            {...register("dataset_target_column")}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="dataset_expected_rows">{t("datasetExpectedRowsLabel")}</Label>
+          <Input
+            id="dataset_expected_rows"
+            type="number"
+            {...register("dataset_expected_rows")}
+            className="h-9"
+          />
+        </div>
+      </div>
+
+      <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          defaultChecked
+          {...register("require_source_in_contest")}
+          className="h-3.5 w-3.5 rounded border-border"
+        />
+        {t("datasetRequireSourceLabel")}
+      </label>
+
+      <Separator />
+
+      <div>
+        <Label className="mb-2 block">{t("datasetFilesLabel")}</Label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {fileFields.map(({ key, label }) => (
+            <div key={key} className="space-y-1">
+              <Label htmlFor={`dataset-file-${key}`} className="text-xs text-muted-foreground">
+                {label}
+              </Label>
+              <input
+                id={`dataset-file-${key}`}
+                type="file"
+                accept=".csv"
+                onChange={(e) =>
+                  setDatasetFiles({ ...datasetFiles, [key]: e.target.files?.[0] ?? null })
+                }
+                className="block w-full text-xs file:mr-2 file:rounded file:border file:border-border file:bg-muted file:px-2 file:py-1 file:text-xs"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function QuizOptionRow({
   index,

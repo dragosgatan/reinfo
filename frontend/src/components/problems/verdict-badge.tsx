@@ -13,6 +13,7 @@ const VERDICT_CLASS: Record<VerdictType, string> = {
   TLE: "bg-warning/10 text-warning border-warning/20",
   MLE: "bg-warning/10 text-warning border-warning/20",
   PARTIAL: "bg-primary/10 text-primary border-primary/20",
+  INVALID_FORMAT: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
 interface VerdictBadgeProps {
