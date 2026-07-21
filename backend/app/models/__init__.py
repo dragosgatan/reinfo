@@ -1,4 +1,14 @@
 from app.models.contest import Contest, ContestParticipant, ContestProblem, ScoringMode
+from app.models.ctf import (
+    CtfAttachment,
+    CtfCategory,
+    CtfChallenge,
+    CtfFlagAttempt,
+    CtfHint,
+    CtfHintReveal,
+    CtfScoring,
+    CtfSolve,
+)
 from app.models.duel import (
     Duel,
     DuelQueue,
@@ -50,6 +60,14 @@ __all__ = [
     "ContestProblem",
     "ContestParticipant",
     "ScoringMode",
+    "CtfChallenge",
+    "CtfCategory",
+    "CtfScoring",
+    "CtfAttachment",
+    "CtfSolve",
+    "CtfFlagAttempt",
+    "CtfHint",
+    "CtfHintReveal",
     "Duel",
     "DuelStatus",
     "DuelRequest",

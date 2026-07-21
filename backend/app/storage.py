@@ -193,6 +193,34 @@ async def save_submission_csv(
     return str(path)
 
 
+def _ctf_attachment_path(challenge_id: uuid.UUID, filename: str) -> Path:
+    safe_name = Path(filename).name
+    return _data_root() / "ctf" / str(challenge_id) / safe_name
+
+
+async def save_ctf_attachment(challenge_id: uuid.UUID, filename: str, data: bytes) -> str:
+    path = _ctf_attachment_path(challenge_id, filename)
+    _assert_inside_data_root(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    async with aiofiles.open(path, "wb") as fh:
+        await fh.write(data)
+    return str(path)
+
+
+async def read_ctf_attachment(path: str) -> bytes:
+    resolved = Path(path).resolve()
+    _assert_inside_data_root(resolved)
+    async with aiofiles.open(resolved, "rb") as fh:
+        return await fh.read()
+
+
+async def delete_ctf_attachment(path: str) -> None:
+    resolved = Path(path).resolve()
+    _assert_inside_data_root(resolved)
+    if resolved.exists():
+        resolved.unlink()
+
+
 async def save_submission_code(
     user_id: uuid.UUID,
     submission_id: uuid.UUID,
