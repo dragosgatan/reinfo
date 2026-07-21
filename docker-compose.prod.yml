@@ -23,7 +23,8 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/health || exit 1"]
+      # curl isn't installed in the python:3.11-slim runtime image - use urllib instead.
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\""]
       interval: 30s
       timeout: 10s
       retries: 3
