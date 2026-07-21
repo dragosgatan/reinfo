@@ -38,7 +38,7 @@ def _can_view_submission(sub: Submission, user: User | None, problem: Problem) -
         return False
     if user.id == sub.user_id:
         return True
-    if user.role == UserRole.admin:
+    if user.role in (UserRole.admin, UserRole.superuser):
         return True
     return problem.author_id is not None and problem.author_id == user.id
 
@@ -74,7 +74,7 @@ async def submit(
     if (
         problem.visibility != Visibility.public
         and not (problem.visibility == Visibility.contest and contest_ended)
-        and current_user.role != UserRole.admin
+        and current_user.role not in (UserRole.admin, UserRole.superuser)
         and problem.author_id != current_user.id
     ):
         raise HTTPException(status_code=403, detail="Acces interzis")
@@ -199,7 +199,7 @@ async def list_submissions(
     """Lista paginată a submisiilor. Utilizatorii văd doar ale proprii; adminii pot filtra după orice user_id."""
     filters = []
 
-    if current_user.role != UserRole.admin:
+    if current_user.role not in (UserRole.admin, UserRole.superuser):
         filters.append(Submission.user_id == current_user.id)
         if user_id is not None and user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Permisiuni insuficiente")

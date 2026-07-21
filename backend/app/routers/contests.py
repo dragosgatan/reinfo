@@ -112,7 +112,11 @@ def _build_detail(
     is_registered: bool,
 ) -> ContestDetail:
     status = contest_status(now, contest.start_time, contest.end_time)
-    is_staff = current_user is not None and current_user.role in (UserRole.teacher, UserRole.admin)
+    is_staff = current_user is not None and current_user.role in (
+        UserRole.teacher,
+        UserRole.admin,
+        UserRole.superuser,
+    )
     show_problems = status != "upcoming" or is_staff
 
     problems: list[ContestProblemEntry] = []
@@ -208,7 +212,7 @@ async def get_contest(
 async def create_contest(
     data: ContestCreate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> ContestDetail:
     """Creează un concurs nou. Necesită rolul de profesor sau administrator."""
     if data.contest_type == ContestType.class_test:
@@ -247,12 +251,15 @@ async def update_contest(
     slug: str,
     data: ContestUpdate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> ContestDetail:
     """Editează un concurs. Doar creatorul sau administratorul."""
     contest = await _get_contest_or_404(slug, session)
 
-    if current_user.role != UserRole.admin and contest.created_by != current_user.id:
+    if (
+        current_user.role not in (UserRole.admin, UserRole.superuser)
+        and contest.created_by != current_user.id
+    ):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     for field, value in data.model_dump(exclude_unset=True).items():
@@ -269,14 +276,17 @@ async def update_contest(
 async def delete_contest(
     slug: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> dict[str, str]:
     """Șterge un concurs. Doar creatorul sau administratorul."""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
 
-    if current_user.role != UserRole.admin and contest.created_by != current_user.id:
+    if (
+        current_user.role not in (UserRole.admin, UserRole.superuser)
+        and contest.created_by != current_user.id
+    ):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     await session.delete(contest)
@@ -321,14 +331,17 @@ async def add_problem_to_contest(
     slug: str,
     problem_slug: str = Query(...),
     session: AsyncSession = Depends(get_session),
-    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> dict[str, str]:
     """Adaugă o problemă la concurs și o marchează ca privată (visibility=contest)."""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
 
-    if current_user.role != UserRole.admin and contest.created_by != current_user.id:
+    if (
+        current_user.role not in (UserRole.admin, UserRole.superuser)
+        and contest.created_by != current_user.id
+    ):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     problem = await session.scalar(select(Problem).where(Problem.slug == problem_slug))
@@ -361,14 +374,17 @@ async def remove_problem_from_contest(
     slug: str,
     problem_slug: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> dict[str, str]:
     """Elimină o problemă din concurs și o readuce la draft."""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
 
-    if current_user.role != UserRole.admin and contest.created_by != current_user.id:
+    if (
+        current_user.role not in (UserRole.admin, UserRole.superuser)
+        and contest.created_by != current_user.id
+    ):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     problem = await session.scalar(select(Problem).where(Problem.slug == problem_slug))
@@ -547,14 +563,17 @@ async def check_fingerprint(
 async def list_violations(
     slug: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> list[ContestViolation]:
     """Listează toate încălcările de securitate pentru un concurs. Doar profesori/admini."""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
 
-    if current_user.role != UserRole.admin and contest.created_by != current_user.id:
+    if (
+        current_user.role not in (UserRole.admin, UserRole.superuser)
+        and contest.created_by != current_user.id
+    ):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     violations = list(
@@ -571,7 +590,7 @@ async def list_violations(
 async def list_flagged_submissions(
     slug: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = require_role(UserRole.teacher, UserRole.admin),
+    current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> list:
     """Listează submisiile marcate automat ca suspecte. Doar profesori/admini."""
     from app.schemas.submission import SubmissionSummary
@@ -580,7 +599,10 @@ async def list_flagged_submissions(
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
 
-    if current_user.role != UserRole.admin and contest.created_by != current_user.id:
+    if (
+        current_user.role not in (UserRole.admin, UserRole.superuser)
+        and contest.created_by != current_user.id
+    ):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     from app.models.problem import Problem
@@ -618,7 +640,11 @@ async def list_flagged_submissions(
 
 
 def _is_staff(user: User | None) -> bool:
-    return user is not None and user.role in (UserRole.teacher, UserRole.admin)
+    return user is not None and user.role in (
+        UserRole.teacher,
+        UserRole.admin,
+        UserRole.superuser,
+    )
 
 
 async def _assert_class_test_access(
