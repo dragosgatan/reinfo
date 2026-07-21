@@ -94,14 +94,14 @@ def _assert_can_view(
         return
     if user is None:
         raise HTTPException(status_code=403, detail="Acces interzis")
-    if user.role == UserRole.admin or problem.author_id == user.id:
+    if user.role in (UserRole.admin, UserRole.superuser) or problem.author_id == user.id:
         return
     raise HTTPException(status_code=403, detail="Acces interzis")
 
 
 def _assert_can_edit(problem: Problem, user: User) -> None:
     """Raise 403 if user is neither the author nor an admin."""
-    if user.role == UserRole.admin or problem.author_id == user.id:
+    if user.role in (UserRole.admin, UserRole.superuser) or problem.author_id == user.id:
         return
     raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -154,7 +154,7 @@ async def list_problems(
                 and_(Problem.visibility == Visibility.contest, _ended_contest),
             )
         )
-    elif current_user.role == UserRole.admin:
+    elif current_user.role in (UserRole.admin, UserRole.superuser):
         stmt = stmt.where(Problem.visibility != Visibility.private)
     else:
         stmt = stmt.where(
@@ -307,7 +307,7 @@ async def create_problem(
     current_user: User = Depends(get_current_user),
 ) -> ProblemRead:
     """Crează o problemă nouă. Necesită rolul de profesor sau administrator."""
-    if current_user.role not in (UserRole.teacher, UserRole.admin):
+    if current_user.role not in (UserRole.teacher, UserRole.admin, UserRole.superuser):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     existing = await session.scalar(select(Problem).where(Problem.slug == data.slug))
@@ -352,7 +352,7 @@ async def delete_problem(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
     """Ascunde problema (soft-delete: visibility → private). Doar administratorul."""
-    if current_user.role != UserRole.admin:
+    if current_user.role not in (UserRole.admin, UserRole.superuser):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     problem = await _get_problem_or_404(slug, session)
@@ -490,7 +490,8 @@ async def download_input(
         raise HTTPException(status_code=404, detail="Cazul de test nu a fost găsit")
 
     is_author_or_admin = current_user is not None and (
-        current_user.role == UserRole.admin or current_user.id == problem.author_id
+        current_user.role in (UserRole.admin, UserRole.superuser)
+        or current_user.id == problem.author_id
     )
     if not tc.is_sample and not is_author_or_admin:
         raise HTTPException(status_code=403, detail="Acces interzis la cazuri de test non-eșantion")

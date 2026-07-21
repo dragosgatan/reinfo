@@ -424,7 +424,7 @@ async def delete_external_result(
 async def verify_external_result(
     username: str,
     result_id: uuid.UUID,
-    admin: User = require_role(UserRole.admin),
+    admin: User = require_role(UserRole.admin, UserRole.superuser),
     session: AsyncSession = Depends(get_session),
 ) -> ExternalResultRead:
     """Verifică sau anulează verificarea unui rezultat extern (doar admin)."""

@@ -152,7 +152,7 @@ async def create_class(
     """Creează o clasă nouă (profesori și admini)."""
     from app.models.user import UserRole
 
-    if user.role not in (UserRole.teacher, UserRole.admin):
+    if user.role not in (UserRole.teacher, UserRole.admin, UserRole.superuser):
         raise HTTPException(status_code=403, detail="Doar profesorii pot crea clase")
 
     for _ in range(10):

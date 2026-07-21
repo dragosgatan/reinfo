@@ -46,7 +46,7 @@ async def _is_completed(lesson_id: uuid.UUID, user: User | None, session: AsyncS
 
 
 def _can_manage(user: User) -> bool:
-    return user.role in (UserRole.teacher, UserRole.admin)
+    return user.role in (UserRole.teacher, UserRole.admin, UserRole.superuser)
 
 
 def _lesson_to_read(lesson: Lesson, *, is_completed: bool, show_teacher_notes: bool) -> LessonRead:
@@ -184,7 +184,7 @@ async def delete_lesson(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
     """Șterge permanent o lecție. Necesită rolul de administrator."""
-    if current_user.role != UserRole.admin:
+    if current_user.role not in (UserRole.admin, UserRole.superuser):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
     lesson = await _get_lesson_or_404(slug, session)

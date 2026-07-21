@@ -27,6 +27,8 @@ export function ClassesClient() {
   const [joining, setJoining] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", description_md: "" });
+  const canCreateClass =
+    user?.role === "teacher" || user?.role === "admin" || user?.role === "superuser";
 
   const { data: classes = [], isLoading } = useQuery({
     queryKey: ["classes"],
@@ -83,7 +85,7 @@ export function ClassesClient() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className={`grid grid-cols-1 gap-4 ${canCreateClass ? "sm:grid-cols-2" : ""}`}>
         <div className="rounded-md border border-border p-4 space-y-3">
           <p className="text-sm font-semibold">{t("joinWithCode")}</p>
           <div className="flex gap-2">
@@ -102,35 +104,37 @@ export function ClassesClient() {
           </div>
         </div>
 
-        <div className="rounded-md border border-border p-4 space-y-3">
-          <p className="text-sm font-semibold">{t("createClass")}</p>
-          {!creating ? (
-            <Button size="sm" variant="outline" onClick={() => setCreating(true)} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
-              {t("newClass")}
-            </Button>
-          ) : (
-            <div className="space-y-2">
-              <Input
-                placeholder={t("classNamePlaceholder")}
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              />
-              <textarea
-                className="w-full min-h-[60px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                placeholder={t("descriptionOptional")}
-                value={form.description_md}
-                onChange={(e) => setForm((f) => ({ ...f, description_md: e.target.value }))}
-              />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleCreate}>{t("create")}</Button>
-                <Button size="sm" variant="outline" onClick={() => { setCreating(false); setForm({ name: "", description_md: "" }); }}>
-                  {tCommon("cancel")}
-                </Button>
+        {canCreateClass && (
+          <div className="rounded-md border border-border p-4 space-y-3">
+            <p className="text-sm font-semibold">{t("createClass")}</p>
+            {!creating ? (
+              <Button size="sm" variant="outline" onClick={() => setCreating(true)} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                {t("newClass")}
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  placeholder={t("classNamePlaceholder")}
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                />
+                <textarea
+                  className="w-full min-h-[60px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  placeholder={t("descriptionOptional")}
+                  value={form.description_md}
+                  onChange={(e) => setForm((f) => ({ ...f, description_md: e.target.value }))}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleCreate}>{t("create")}</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setCreating(false); setForm({ name: "", description_md: "" }); }}>
+                    {tCommon("cancel")}
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {isLoading ? (
