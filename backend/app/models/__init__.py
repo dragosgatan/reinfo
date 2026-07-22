@@ -38,6 +38,14 @@ from app.models.roadmap import (
     UserRoadmapProgress,
 )
 from app.models.submission import Submission, SubmissionKind, SubmissionResult, Verdict
+from app.models.track import (
+    Track,
+    TrackItem,
+    TrackItemStatus,
+    TrackItemType,
+    TrackOlympiad,
+    TrackProgress,
+)
 from app.models.user import Session, User, UserRole
 
 __all__ = [
@@ -86,4 +94,10 @@ __all__ = [
     "UserRoadmapProgress",
     "NodeStatus",
     "NodeLinkType",
+    "Track",
+    "TrackItem",
+    "TrackProgress",
+    "TrackOlympiad",
+    "TrackItemType",
+    "TrackItemStatus",
 ]

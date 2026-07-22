@@ -874,6 +874,57 @@ export const LessonReadSchema = z.object({
 });
 export type LessonRead = z.infer<typeof LessonReadSchema>;
 
+export const TRACK_OLYMPIADS = ["ONI", "ONIA", "ONSC", "IOAI", "CTF", "Linux", "other"] as const;
+export const TrackOlympiadSchema = z.enum(TRACK_OLYMPIADS);
+export type TrackOlympiad = z.infer<typeof TrackOlympiadSchema>;
+
+export const TrackItemTypeSchema = z.enum(["lesson", "problem", "ctf_challenge"]);
+export type TrackItemType = z.infer<typeof TrackItemTypeSchema>;
+
+export const TrackItemStatusSchema = z.enum(["not_started", "in_progress", "done"]);
+export type TrackItemStatus = z.infer<typeof TrackItemStatusSchema>;
+
+export const TrackItemUnlockStatusSchema = z.enum(["locked", "available", "done"]);
+export type TrackItemUnlockStatus = z.infer<typeof TrackItemUnlockStatusSchema>;
+
+export const TrackItemSchema = z.object({
+  id: z.string().uuid(),
+  item_type: TrackItemTypeSchema,
+  ref_id: z.string().uuid(),
+  ref_title: z.string(),
+  ref_slug: z.string(),
+  order: z.number().int(),
+  prerequisite_item_id: z.string().uuid().nullable(),
+  status: TrackItemStatusSchema,
+  unlock_status: TrackItemUnlockStatusSchema,
+});
+export type TrackItem = z.infer<typeof TrackItemSchema>;
+
+export const TrackSummarySchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  title: z.string(),
+  olympiad: TrackOlympiadSchema,
+  order: z.number().int(),
+  published: z.boolean(),
+  item_count: z.number().int(),
+  completed_items: z.number().int(),
+  completion_pct: z.number(),
+});
+export type TrackSummary = z.infer<typeof TrackSummarySchema>;
+
+export const TrackDetailSchema = TrackSummarySchema.extend({
+  description_md: z.string().nullable(),
+  items: z.array(TrackItemSchema),
+});
+export type TrackDetail = z.infer<typeof TrackDetailSchema>;
+
+export const TrackListResponseSchema = z.object({
+  items: z.array(TrackSummarySchema),
+  total: z.number().int(),
+});
+export type TrackListResponse = z.infer<typeof TrackListResponseSchema>;
+
 export const CTF_CATEGORIES = [
   "web",
   "crypto",

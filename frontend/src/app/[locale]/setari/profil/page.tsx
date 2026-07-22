@@ -251,7 +251,7 @@ export default function ProfileSettingsPage() {
               id="language"
               value={form.language}
               onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-9 w-full max-w-sm rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="ro">Română</option>
               <option value="en">English</option>

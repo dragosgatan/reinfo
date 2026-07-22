@@ -29,6 +29,7 @@ from app.routers import (
     roadmaps,
     social,
     submissions,
+    tracks,
 )
 from app.routers import users as users_router
 from app.routers.contests import dispatch_leaderboard_update
@@ -125,6 +126,7 @@ app.include_router(roadmaps.router)
 app.include_router(social.router)
 app.include_router(classrooms.router)
 app.include_router(ctf.router)
+app.include_router(tracks.router)
 
 app.mount("/avatars", StaticFiles(directory=str(avatars_directory())), name="avatars")
 
