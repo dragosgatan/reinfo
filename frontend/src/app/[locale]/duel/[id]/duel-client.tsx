@@ -39,7 +39,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { VerdictBadge } from "@/components/problems/verdict-badge";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { useDuelWs } from "@/lib/use-duel-ws";
@@ -622,7 +622,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
                       {problem.time_limit_ms}ms · {problem.memory_limit_kb}KB
                     </span>
                   </div>
-                  <ProblemStatement markdown={problem.statement_md} />
+                  <MarkdownContent markdown={problem.statement_md} />
                 </>
               ) : (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">

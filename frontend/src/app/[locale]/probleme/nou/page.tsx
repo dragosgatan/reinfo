@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { ProblemReadSchema, ALL_TAGS, DATASET_METRIC_LABELS, getTagLabel } from "@/lib/types";
@@ -596,7 +596,7 @@ export default function NouProblemPage() {
               <TabsContent value="preview">
                 {(statementLang === "ro" ? watchStatement : statementLang === "en" ? watchStatementEn : watchStatementHu) ? (
                   <div className="min-h-[200px] rounded border border-border p-4">
-                    <ProblemStatement
+                    <MarkdownContent
                       markdown={(statementLang === "ro" ? watchStatement : statementLang === "en" ? watchStatementEn : watchStatementHu) ?? ""}
                     />
                   </div>

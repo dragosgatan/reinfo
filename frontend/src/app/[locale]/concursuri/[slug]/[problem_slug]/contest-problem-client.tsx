@@ -10,7 +10,7 @@ import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { ContestDetailSchema, ProblemDetailSchema } from "@/lib/types";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { SubmissionPanel } from "@/components/problems/submission-panel";
 import { DatasetPanel } from "@/components/problems/dataset-panel";
 import { DifficultyIndicator } from "@/components/problems/difficulty-indicator";
@@ -232,7 +232,7 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
               <TabsTrigger value="statement">{t("enunt")}</TabsTrigger>
             </TabsList>
             <TabsContent value="statement">
-              <ProblemStatement markdown={problem.statement_md} />
+              <MarkdownContent markdown={problem.statement_md} />
             </TabsContent>
           </Tabs>
         </div>

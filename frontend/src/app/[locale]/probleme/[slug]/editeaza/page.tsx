@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import {
@@ -480,7 +480,7 @@ export default function EditProblemPage() {
               <TabsContent value="preview">
                 {(statementLang === "ro" ? watchStatement : statementLang === "en" ? watchStatementEn : watchStatementHu) ? (
                   <div className="min-h-[200px] rounded border border-border p-4">
-                    <ProblemStatement
+                    <MarkdownContent
                       markdown={(statementLang === "ro" ? watchStatement : statementLang === "en" ? watchStatementEn : watchStatementHu) ?? ""}
                     />
                   </div>

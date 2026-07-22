@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Pin, PinOff, Pencil, Trash2, Plus, X, Check } from "lucide-react";
 import { z } from "zod";
-import ReactMarkdown from "react-markdown";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,9 +170,7 @@ export function AnnouncementsTab({ classId, isTeacher }: Props) {
                   </div>
                 )}
               </div>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown>{ann.body_md}</ReactMarkdown>
-              </div>
+              <MarkdownContent markdown={ann.body_md} />
               <div className="mt-3 flex items-center gap-2">
                 <Avatar className="h-5 w-5">
                   {ann.author_avatar_url && <AvatarImage src={resolveMediaUrl(ann.author_avatar_url)} />}

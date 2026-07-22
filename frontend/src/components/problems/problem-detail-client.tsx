@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DifficultyIndicator, getDifficultyLabel } from "./difficulty-indicator";
-import { ProblemStatement } from "./problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { QuizPanel } from "./quiz-panel";
 import { DatasetPanel } from "./dataset-panel";
 import { SubmissionPanel } from "./submission-panel";
@@ -70,7 +70,7 @@ function StatementLangToggle({
           )}
         </div>
       </div>
-      <ProblemStatement markdown={activeMarkdown} />
+      <MarkdownContent markdown={activeMarkdown} />
     </div>
   );
 }
@@ -244,7 +244,7 @@ function ProblemDetailLayout({
                   markdownHu={problem.statement_md_hu}
                 />
               ) : (
-                <ProblemStatement markdown={problem.statement_md} />
+                <MarkdownContent markdown={problem.statement_md} />
               )}
 
               {(problem.input_format || problem.output_format) && (
@@ -256,7 +256,7 @@ function ProblemDetailLayout({
                         <h3 className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                           {t("inputFormat")}
                         </h3>
-                        <ProblemStatement markdown={problem.input_format} />
+                        <MarkdownContent markdown={problem.input_format} />
                       </div>
                     )}
                     {problem.output_format && (
@@ -264,7 +264,7 @@ function ProblemDetailLayout({
                         <h3 className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                           {t("outputFormat")}
                         </h3>
-                        <ProblemStatement markdown={problem.output_format} />
+                        <MarkdownContent markdown={problem.output_format} />
                       </div>
                     )}
                   </div>

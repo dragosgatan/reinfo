@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { CTF_CATEGORIES } from "@/lib/types";
@@ -234,7 +234,7 @@ export default function NouCtfChallengePage() {
               <TabsContent value="preview">
                 {watchStatement ? (
                   <div className="min-h-[200px] rounded border border-border p-4">
-                    <ProblemStatement markdown={watchStatement} />
+                    <MarkdownContent markdown={watchStatement} />
                   </div>
                 ) : (
                   <div className="flex min-h-[200px] items-center justify-center rounded border border-border text-sm text-muted-foreground">

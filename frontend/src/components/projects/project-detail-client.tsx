@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
@@ -91,7 +91,7 @@ export function ProjectDetailClient({ slug }: Props) {
       </div>
 
       <Separator className="my-4" />
-      <ProblemStatement markdown={project.brief_md} />
+      <MarkdownContent markdown={project.brief_md} />
 
       <Separator className="my-5" />
 
@@ -177,7 +177,7 @@ function StudentSubmitForm({
             )}
           </div>
           {mySubmission.grade.feedback_md && (
-            <ProblemStatement markdown={mySubmission.grade.feedback_md} className="text-xs" />
+            <MarkdownContent markdown={mySubmission.grade.feedback_md} className="text-xs" />
           )}
         </div>
       )}
@@ -340,7 +340,7 @@ function SubmissionRow({
 
       {submission.notes_md && (
         <div className="mb-2">
-          <ProblemStatement markdown={submission.notes_md} className="text-xs" />
+          <MarkdownContent markdown={submission.notes_md} className="text-xs" />
         </div>
       )}
 

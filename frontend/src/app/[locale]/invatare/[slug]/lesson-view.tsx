@@ -2,17 +2,12 @@
 
 import {
   createContext,
-  isValidElement,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
-import remarkMath from "remark-math";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -27,14 +22,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { MarkdownContent, type CodeBlockRenderer } from "@/components/shared/markdown-content";
 import {
   type LessonListItem,
   type LessonRead,
   type QuizQuestion,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import "katex/dist/katex.min.css";
-import "highlight.js/styles/github.css";
 
 declare global {
   interface Window {
@@ -59,16 +53,6 @@ interface PyodideCtxValue {
 const PyodideCtx = createContext<PyodideCtxValue | null>(null);
 
 const QUIZ_MARKER_RE = /<!--\s*quiz:([\w-]+)\s*-->/g;
-
-function childrenToString(node: React.ReactNode): string {
-  if (typeof node === "string") return node;
-  if (typeof node === "number") return String(node);
-  if (Array.isArray(node)) return node.map(childrenToString).join("");
-  if (isValidElement(node)) {
-    return childrenToString((node.props as { children?: React.ReactNode }).children ?? "");
-  }
-  return "";
-}
 
 function splitContentByQuizzes(
   content: string,
@@ -256,144 +240,7 @@ function QuizBlock({ quiz }: { quiz: QuizQuestion }) {
   );
 }
 
-function CodeRenderer({
-  className,
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLElement> & { inline?: boolean }) {
-  const language = /language-(\w+)/.exec(className || "")?.[1];
-  const codeStr = childrenToString(children).replace(/\n$/, "");
-  const isBlock = Boolean(className);
-
-  if (language === "python" && !props.inline) {
-    return <RunnablePython code={codeStr} />;
-  }
-
-  if (isBlock) {
-    return (
-      <code className={cn("text-xs", className)} {...props}>
-        {children}
-      </code>
-    );
-  }
-
-  return (
-    <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs" {...props}>
-      {children}
-    </code>
-  );
-}
-
-const MD_COMPONENTS = {
-  p: ({ children }: React.HTMLAttributes<HTMLParagraphElement>) => (
-    <p className="mb-4 text-sm leading-7 last:mb-0">{children}</p>
-  ),
-  h1: ({ children }: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h1 className="mb-3 mt-8 text-xl font-bold first:mt-0">{children}</h1>
-  ),
-  h2: ({ children }: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h2 className="mb-2 mt-6 text-base font-semibold first:mt-0">{children}</h2>
-  ),
-  h3: ({ children }: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h3 className="mb-2 mt-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground first:mt-0">
-      {children}
-    </h3>
-  ),
-  ul: ({ children }: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul className="mb-4 list-disc space-y-1 pl-5 text-sm">{children}</ul>
-  ),
-  ol: ({ children }: React.HTMLAttributes<HTMLOListElement>) => (
-    <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm">{children}</ol>
-  ),
-  li: ({ children }: React.HTMLAttributes<HTMLLIElement>) => (
-    <li className="leading-relaxed">{children}</li>
-  ),
-  strong: ({ children }: React.HTMLAttributes<HTMLElement>) => (
-    <strong className="font-semibold">{children}</strong>
-  ),
-  em: ({ children }: React.HTMLAttributes<HTMLElement>) => <em className="italic">{children}</em>,
-  blockquote: ({ children }: React.HTMLAttributes<HTMLElement>) => (
-    <blockquote className="mb-4 border-l-2 border-border pl-4 italic text-muted-foreground text-sm">
-      {children}
-    </blockquote>
-  ),
-  pre: ({ children }: React.HTMLAttributes<HTMLPreElement>) => (
-    <pre className="mb-4 overflow-x-auto rounded border border-border bg-muted p-4 font-mono text-xs leading-relaxed">
-      {children}
-    </pre>
-  ),
-  a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a
-      href={href}
-      className="text-primary underline underline-offset-2 hover:text-primary/80"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {children}
-    </a>
-  ),
-  hr: () => <hr className="my-6 border-border" />,
-  table: ({ children }: React.HTMLAttributes<HTMLTableElement>) => (
-    <div className="mb-4 overflow-x-auto">
-      <table className="min-w-full border-collapse text-sm">{children}</table>
-    </div>
-  ),
-  th: ({ children }: React.HTMLAttributes<HTMLTableCellElement>) => (
-    <th className="border border-border bg-muted px-3 py-1.5 text-left text-xs font-semibold">
-      {children}
-    </th>
-  ),
-  td: ({ children }: React.HTMLAttributes<HTMLTableCellElement>) => (
-    <td className="border border-border px-3 py-1.5 text-sm">{children}</td>
-  ),
-  code: CodeRenderer,
-};
-
 type ChatMessage = { role: "user" | "assistant"; content: string };
-
-const CHAT_MD_COMPONENTS = {
-  p: ({ children }: React.HTMLAttributes<HTMLParagraphElement>) => (
-    <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
-  ),
-  strong: ({ children }: React.HTMLAttributes<HTMLElement>) => (
-    <strong className="font-semibold">{children}</strong>
-  ),
-  em: ({ children }: React.HTMLAttributes<HTMLElement>) => (
-    <em className="italic">{children}</em>
-  ),
-  ul: ({ children }: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul className="mb-2 list-disc space-y-0.5 pl-4">{children}</ul>
-  ),
-  ol: ({ children }: React.HTMLAttributes<HTMLOListElement>) => (
-    <ol className="mb-2 list-decimal space-y-0.5 pl-4">{children}</ol>
-  ),
-  li: ({ children }: React.HTMLAttributes<HTMLLIElement>) => (
-    <li className="leading-relaxed">{children}</li>
-  ),
-  code: ({ className, children, ...props }: React.HTMLAttributes<HTMLElement> & { inline?: boolean }) => {
-    const isBlock = !props.inline && !className?.includes("language-");
-    if (props.inline || (!className && typeof children === "string" && !(children as string).includes("\n"))) {
-      return (
-        <code className="rounded bg-black/10 dark:bg-white/10 px-1 py-0.5 font-mono text-xs">
-          {children}
-        </code>
-      );
-    }
-    return (
-      <code className={cn("font-mono text-xs", isBlock && "block", className)} {...props}>
-        {children}
-      </code>
-    );
-  },
-  pre: ({ children }: React.HTMLAttributes<HTMLPreElement>) => (
-    <pre className="mb-2 overflow-x-auto rounded border border-border/50 bg-black/5 dark:bg-white/5 px-3 py-2 font-mono text-xs leading-relaxed">
-      {children}
-    </pre>
-  ),
-  blockquote: ({ children }: React.HTMLAttributes<HTMLElement>) => (
-    <blockquote className="mb-2 border-l-2 border-current/30 pl-3 opacity-80">{children}</blockquote>
-  ),
-};
 
 function LessonChat({ lesson }: { lesson: LessonRead }) {
   const t = useTranslations("learning");
@@ -513,9 +360,7 @@ function LessonChat({ lesson }: { lesson: LessonRead }) {
                   {loading && i === messages.length - 1 && msg.role === "assistant" && !msg.content ? (
                     <span className="text-muted-foreground">{t("aiChatThinking")}</span>
                   ) : msg.role === "assistant" ? (
-                    <ReactMarkdown components={CHAT_MD_COMPONENTS as never}>
-                      {msg.content}
-                    </ReactMarkdown>
+                    <MarkdownContent markdown={msg.content} variant="compact" />
                   ) : (
                     <span className="whitespace-pre-wrap">{msg.content}</span>
                   )}
@@ -578,6 +423,9 @@ export function LessonView({ lesson, prevLesson, nextLesson }: LessonViewProps) 
 
   const parts = splitContentByQuizzes(lesson.content_md);
 
+  const renderLessonCodeBlock: CodeBlockRenderer = ({ language, code }) =>
+    language === "python" ? <RunnablePython code={code} /> : undefined;
+
   const toggleComplete = useCallback(async () => {
     if (!user) return;
     setCompleting(true);
@@ -639,17 +487,7 @@ export function LessonView({ lesson, prevLesson, nextLesson }: LessonViewProps) 
                   return quiz ? <QuizBlock key={i} quiz={quiz} /> : null;
                 }
                 return (
-                  <ReactMarkdown
-                    key={i}
-                    remarkPlugins={[remarkMath]}
-                    rehypePlugins={[
-                      rehypeKatex,
-                      [rehypeHighlight, { detect: true, ignoreMissing: true }],
-                    ]}
-                    components={MD_COMPONENTS as never}
-                  >
-                    {part.value}
-                  </ReactMarkdown>
+                  <MarkdownContent key={i} markdown={part.value} renderCodeBlock={renderLessonCodeBlock} />
                 );
               })}
             </div>
@@ -663,8 +501,8 @@ export function LessonView({ lesson, prevLesson, nextLesson }: LessonViewProps) 
                   {t("teacherNotes")}
                 </span>
               </div>
-              <div className="text-sm leading-7 text-amber-900 dark:text-amber-200">
-                <ReactMarkdown>{lesson.teacher_notes_md}</ReactMarkdown>
+              <div className="text-amber-900 dark:text-amber-200">
+                <MarkdownContent markdown={lesson.teacher_notes_md} />
               </div>
             </div>
           )}

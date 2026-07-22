@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
@@ -114,7 +114,7 @@ export function TrackDetailClient({ slug }: Props) {
 
       {track.description_md && (
         <div className="mb-5">
-          <ProblemStatement markdown={track.description_md} />
+          <MarkdownContent markdown={track.description_md} />
         </div>
       )}
 

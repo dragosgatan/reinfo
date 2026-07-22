@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Link } from "@/i18n/navigation";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { api, ApiError } from "@/lib/api";
 import {
   LESSON_CATEGORIES,
@@ -749,7 +749,7 @@ function ContentPreview({ markdown }: { markdown: string }) {
   }
   return (
     <div className="min-h-[120px] rounded border border-border p-4">
-      <ProblemStatement markdown={markdown} />
+      <MarkdownContent markdown={markdown} />
     </div>
   );
 }

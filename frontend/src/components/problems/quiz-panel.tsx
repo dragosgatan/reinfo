@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { CheckCircle2, XCircle, Circle, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProblemStatement } from "./problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { api } from "@/lib/api";
 import { QuizAttemptResultSchema } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -131,7 +131,7 @@ export function QuizPanel({ slug, options, lang = "ro" }: QuizPanelProps) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-snug">
-                    <ProblemStatement markdown={optText} />
+                    <MarkdownContent markdown={optText} />
                   </div>
                   {expMd && (
                     <div className="mt-1.5 border-t border-border/50 pt-1.5">
@@ -139,7 +139,7 @@ export function QuizPanel({ slug, options, lang = "ro" }: QuizPanelProps) {
                         {t("quizExplanation")}
                       </p>
                       <div className="prose prose-sm dark:prose-invert max-w-none text-xs text-muted-foreground">
-                        <ProblemStatement markdown={expMd} />
+                        <MarkdownContent markdown={expMd} />
                       </div>
                     </div>
                   )}

@@ -80,6 +80,10 @@ jobs:
         working-directory: frontend
         run: npm run typecheck
 
+      - name: Run tests (Vitest)
+        working-directory: frontend
+        run: npm test
+
       - name: Build
         working-directory: frontend
         run: npm run build

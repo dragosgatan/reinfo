@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { CTF_CATEGORIES, CtfChallengeDetailSchema } from "@/lib/types";
@@ -237,7 +237,7 @@ export default function EditCtfChallengePage() {
                 </TabsContent>
                 <TabsContent value="preview">
                   <div className="min-h-[200px] rounded border border-border p-4">
-                    <ProblemStatement markdown={watchStatement ?? ""} />
+                    <MarkdownContent markdown={watchStatement ?? ""} />
                   </div>
                 </TabsContent>
               </Tabs>

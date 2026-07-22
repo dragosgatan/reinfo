@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ProblemStatement } from "@/components/problems/problem-statement";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
@@ -129,7 +129,7 @@ function CtfChallengeLayout({
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-5">
-          <ProblemStatement markdown={challenge.statement_md} />
+          <MarkdownContent markdown={challenge.statement_md} />
 
           {challenge.attachments.length > 0 && (
             <div>
@@ -203,7 +203,7 @@ function HintRow({ challengeSlug, hint }: { challengeSlug: string; hint: CtfHint
             </span>
           )}
         </div>
-        <ProblemStatement markdown={hint.content_md ?? ""} className="text-xs" />
+        <MarkdownContent markdown={hint.content_md ?? ""} className="text-xs" />
       </div>
     );
   }
