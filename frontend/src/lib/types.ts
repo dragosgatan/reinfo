@@ -350,6 +350,37 @@ export const MONACO_LANGUAGE_MAP: Record<string, string> = {
   javascript: "javascript",
 };
 
+export const RunSampleResultSchema = z.object({
+  ordinal: z.number().int(),
+  passed: z.boolean(),
+  stdout: z.string(),
+  stderr: z.string(),
+  expected_output: z.string(),
+  time_ms: z.number().int(),
+  memory_kb: z.number().int(),
+  timed_out: z.boolean(),
+  compile_error: z.boolean(),
+});
+export type RunSampleResult = z.infer<typeof RunSampleResultSchema>;
+
+export const RunCustomResultSchema = z.object({
+  stdout: z.string(),
+  stderr: z.string(),
+  time_ms: z.number().int(),
+  memory_kb: z.number().int(),
+  timed_out: z.boolean(),
+  compile_error: z.boolean(),
+});
+export type RunCustomResult = z.infer<typeof RunCustomResultSchema>;
+
+export const RunResponseSchema = z.object({
+  mode: z.enum(["samples", "custom"]),
+  compile_error: z.boolean(),
+  samples: z.array(RunSampleResultSchema),
+  custom: RunCustomResultSchema.nullable(),
+});
+export type RunResponse = z.infer<typeof RunResponseSchema>;
+
 export const ALL_TAGS = [
   "sortare",
   "cautare",

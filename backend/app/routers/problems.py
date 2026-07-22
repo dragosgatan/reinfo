@@ -5,7 +5,17 @@ import uuid
 from datetime import UTC, datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+)
 from sqlalchemy import String, and_, case, cast, exists, func, or_, select
 from sqlalchemy import delete as sa_delete
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -13,12 +23,24 @@ from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import piston as piston_client
 from app.db import get_session
 from app.dependencies import get_current_user, get_optional_user
+from app.judging import _compare_exact, _compare_float_epsilon, _compare_whitespace_insensitive
+from app.limiter import limiter
 from app.models.contest import Contest
-from app.models.problem import DatasetMetric, Problem, ProblemType, QuizOption, TestCase, Visibility
+from app.models.problem import (
+    ComparisonMode,
+    DatasetMetric,
+    Problem,
+    ProblemType,
+    QuizOption,
+    TestCase,
+    Visibility,
+)
 from app.models.submission import Submission, Verdict
 from app.models.user import User, UserRole
+from app.piston import SUPPORTED_LANGUAGES
 from app.schemas.problem import (
     DatasetFilesStatus,
     OriginContest,
@@ -33,6 +55,10 @@ from app.schemas.problem import (
     QuizOptionCreate,
     QuizOptionRead,
     QuizOptionWithAnswer,
+    RunCustomResult,
+    RunRequest,
+    RunResponse,
+    RunSampleResult,
     TestCaseRead,
     TestCaseSummary,
     UserProblemStatus,
@@ -49,6 +75,7 @@ from app.storage import (
 router = APIRouter(prefix="/api/problems", tags=["problems"])
 
 _MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+_MAX_CODE_BYTES = 512 * 1024  # 512 KB
 
 
 def _solve_subquery():
@@ -529,6 +556,111 @@ async def download_input(
         media_type="text/plain; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{ordinal}.in"'},
     )
+
+
+@router.post("/{slug}/run", response_model=RunResponse)
+@limiter.limit("15/minute")
+async def run_code(
+    request: Request,
+    slug: str,
+    data: RunRequest,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> RunResponse:
+    """Rulează codul contra cazurilor eșantion (sau a unui stdin custom), fără a crea o submisie."""
+    if data.language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Limbaj nesuportat: {data.language}. Limbaje acceptate: {sorted(SUPPORTED_LANGUAGES)}",
+        )
+    if len(data.source_code.encode("utf-8")) > _MAX_CODE_BYTES:
+        raise HTTPException(status_code=413, detail="Codul sursă este prea mare (max 512 KB)")
+
+    problem = await session.scalar(
+        select(Problem).where(Problem.slug == slug).options(selectinload(Problem.test_cases))
+    )
+    if problem is None:
+        raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
+    _assert_can_view(problem, current_user)
+
+    if data.stdin is not None:
+        exec_result = await piston_client.execute(
+            language=data.language,
+            code=data.source_code,
+            stdin=data.stdin,
+            time_limit_ms=problem.time_limit_ms,
+            memory_limit_kb=problem.memory_limit_kb,
+        )
+        return RunResponse(
+            mode="custom",
+            compile_error=exec_result.compile_error,
+            custom=RunCustomResult(
+                stdout=exec_result.stdout,
+                stderr=exec_result.stderr,
+                time_ms=exec_result.time_ms,
+                memory_kb=exec_result.memory_kb,
+                timed_out=exec_result.timed_out,
+                compile_error=exec_result.compile_error,
+            ),
+        )
+
+    samples = [tc for tc in problem.test_cases if tc.is_sample]
+    results: list[RunSampleResult] = []
+    got_compile_error = False
+
+    for tc in samples:
+        if got_compile_error:
+            break
+
+        try:
+            stdin_bytes = await read_test_case(tc.input_path)
+            expected_bytes = await read_test_case(tc.output_path)
+        except FileNotFoundError:
+            continue
+
+        exec_result = await piston_client.execute(
+            language=data.language,
+            code=data.source_code,
+            stdin=stdin_bytes.decode("utf-8", errors="replace"),
+            time_limit_ms=problem.time_limit_ms,
+            memory_limit_kb=problem.memory_limit_kb,
+        )
+
+        if exec_result.compile_error:
+            got_compile_error = True
+
+        passed = False
+        if (
+            not exec_result.compile_error
+            and not exec_result.timed_out
+            and exec_result.memory_kb <= problem.memory_limit_kb
+            and exec_result.exit_code == 0
+        ):
+            actual_bytes = exec_result.stdout.encode("utf-8")
+            if problem.comparison_mode == ComparisonMode.exact:
+                passed, _ = _compare_exact(expected_bytes, actual_bytes)
+            elif problem.comparison_mode == ComparisonMode.whitespace_insensitive:
+                passed, _ = _compare_whitespace_insensitive(expected_bytes, actual_bytes)
+            else:
+                passed, _ = _compare_float_epsilon(
+                    expected_bytes, actual_bytes, problem.float_epsilon or 1e-9
+                )
+
+        results.append(
+            RunSampleResult(
+                ordinal=tc.ordinal,
+                passed=passed,
+                stdout=exec_result.stdout,
+                stderr=exec_result.stderr,
+                expected_output=expected_bytes.decode("utf-8", errors="replace"),
+                time_ms=exec_result.time_ms,
+                memory_kb=exec_result.memory_kb,
+                timed_out=exec_result.timed_out,
+                compile_error=exec_result.compile_error,
+            )
+        )
+
+    return RunResponse(mode="samples", compile_error=got_compile_error, samples=results)
 
 
 _DATASET_DOWNLOADABLE_FILES = ("train.csv", "test.csv", "sample_submission.csv")

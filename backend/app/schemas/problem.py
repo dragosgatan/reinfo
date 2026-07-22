@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -245,3 +246,41 @@ class DatasetFilesStatus(BaseModel):
     test_csv: bool
     sample_submission_csv: bool
     answer_csv: bool
+
+
+class RunRequest(BaseModel):
+    """Ephemeral run request. If stdin is set, runs against it instead of the sample tests."""
+
+    source_code: str
+    language: str
+    stdin: str | None = None
+
+
+class RunSampleResult(BaseModel):
+    ordinal: int
+    passed: bool
+    stdout: str
+    stderr: str
+    expected_output: str
+    time_ms: int
+    memory_kb: int
+    timed_out: bool
+    compile_error: bool
+
+
+class RunCustomResult(BaseModel):
+    stdout: str
+    stderr: str
+    time_ms: int
+    memory_kb: int
+    timed_out: bool
+    compile_error: bool
+
+
+class RunResponse(BaseModel):
+    """Result of an ephemeral run - nothing is persisted to the database."""
+
+    mode: Literal["samples", "custom"]
+    compile_error: bool
+    samples: list[RunSampleResult] = []
+    custom: RunCustomResult | None = None

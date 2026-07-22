@@ -256,6 +256,7 @@ export default function ContestProblemClient({ contestSlug, problemSlug }: Props
               editorFocused={editorFocused}
               onToggleEditorFocus={() => setEditorFocused((v) => !v)}
               submitUrl={submitUrl}
+              enableRun={false}
             />
           )}
         </div>

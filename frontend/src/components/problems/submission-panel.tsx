@@ -12,6 +12,7 @@ import {
   Maximize2,
   Minimize2,
   X,
+  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,12 +31,14 @@ import { Label } from "@/components/ui/label";
 import { VerdictBadge } from "./verdict-badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { api, ApiError } from "@/lib/api";
 import {
   SUPPORTED_LANGUAGES,
   LANGUAGE_LABELS,
   MONACO_LANGUAGE_MAP,
+  RunResponseSchema,
 } from "@/lib/types";
-import type { Submission, VerdictType } from "@/lib/types";
+import type { Submission, VerdictType, RunResponse } from "@/lib/types";
 import {
   useEditorPrefs,
   EDITOR_THEME_LABELS,
@@ -61,6 +64,7 @@ interface SubmissionPanelProps {
   editorFocused?: boolean;
   onToggleEditorFocus?: () => void;
   submitUrl?: string;
+  enableRun?: boolean;
 }
 
 type PanelState = "idle" | "submitting" | "judging" | "done" | "error";
@@ -79,6 +83,7 @@ export function SubmissionPanel({
   editorFocused = false,
   onToggleEditorFocus,
   submitUrl,
+  enableRun = true,
 }: SubmissionPanelProps) {
   const t = useTranslations("problems");
   const {
@@ -469,12 +474,19 @@ export function SubmissionPanel({
     </>
   );
 
+  const runConsole = enableRun && (
+    <RunConsole slug={slug} code={code} language={language} disabled={isDisabled} />
+  );
+
   if (fullscreen) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col gap-2 bg-background p-3">
         {toolbar}
         {editorNode}
-        <div className="shrink-0">{submitArea}</div>
+        <div className="shrink-0 space-y-2 overflow-y-auto">
+          {runConsole}
+          {submitArea}
+        </div>
       </div>
     );
   }
@@ -492,7 +504,219 @@ export function SubmissionPanel({
 
       {toolbar}
       {editorNode}
+      {runConsole}
       {submitArea}
+    </div>
+  );
+}
+
+function RunConsole({
+  slug,
+  code,
+  language,
+  disabled,
+}: {
+  slug: string;
+  code: string;
+  language: string;
+  disabled: boolean;
+}) {
+  const t = useTranslations("problems");
+  const [tab, setTab] = useState<"samples" | "custom">("samples");
+  const [customStdin, setCustomStdin] = useState("");
+  const [state, setState] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [result, setResult] = useState<RunResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleRun = useCallback(async () => {
+    if (!code.trim()) {
+      toast.error(t("emptyCode"));
+      return;
+    }
+    setState("running");
+    setError(null);
+    try {
+      const body: { source_code: string; language: string; stdin?: string } = {
+        source_code: code,
+        language,
+      };
+      if (tab === "custom") body.stdin = customStdin;
+      const data = await api.post(`/api/problems/${slug}/run`, body, RunResponseSchema);
+      setResult(data);
+      setState("done");
+    } catch (err) {
+      setState("error");
+      setError(err instanceof ApiError ? err.message : t("errorGeneric"));
+    }
+  }, [code, language, slug, tab, customStdin, t]);
+
+  return (
+    <div className="rounded border border-border">
+      <div className="flex items-center justify-between border-b border-border px-2 py-1.5">
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setTab("samples")}
+            className={cn(
+              "rounded px-2 py-1 text-xs font-medium transition-colors",
+              tab === "samples"
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t("runSamplesTab")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("custom")}
+            className={cn(
+              "rounded px-2 py-1 text-xs font-medium transition-colors",
+              tab === "custom"
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t("runCustomTab")}
+          </button>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1.5 px-2.5"
+          onClick={handleRun}
+          disabled={disabled || state === "running"}
+        >
+          {state === "running" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Play className="h-3.5 w-3.5" />
+          )}
+          {t("runAction")}
+        </Button>
+      </div>
+
+      {tab === "custom" && (
+        <div className="px-2 pt-2">
+          <textarea
+            value={customStdin}
+            onChange={(e) => setCustomStdin(e.target.value)}
+            rows={3}
+            placeholder={t("customStdinPlaceholder")}
+            className="w-full rounded border border-input bg-background px-2 py-1.5 font-mono text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </div>
+      )}
+
+      <div className="px-2 py-2">
+        {state === "idle" && (
+          <p className="py-1 text-center text-xs text-muted-foreground">{t("runIdleHint")}</p>
+        )}
+        {state === "error" && <p className="py-1 text-xs text-destructive">{error}</p>}
+        {state === "done" && result && <RunResultView result={result} />}
+      </div>
+    </div>
+  );
+}
+
+function RunResultView({ result }: { result: RunResponse }) {
+  const t = useTranslations("problems");
+
+  if (result.mode === "custom" && result.custom) {
+    const c = result.custom;
+    return (
+      <div className="space-y-1.5">
+        {c.compile_error ? (
+          <div className="space-y-0.5">
+            <p className="text-[10px] uppercase text-muted-foreground">{t("compileError")}</p>
+            <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted p-1.5 font-mono text-[11px] text-destructive">
+              {c.stderr}
+            </pre>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase text-muted-foreground">stdout</p>
+              <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted p-1.5 font-mono text-[11px]">
+                {c.stdout || "—"}
+              </pre>
+            </div>
+            {c.stderr && (
+              <div className="space-y-0.5">
+                <p className="text-[10px] uppercase text-muted-foreground">stderr</p>
+                <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted p-1.5 font-mono text-[11px] text-destructive">
+                  {c.stderr}
+                </pre>
+              </div>
+            )}
+            <div className="flex gap-3 font-mono text-[11px] text-muted-foreground">
+              <span>{c.time_ms}ms</span>
+              <span>{c.memory_kb}KB</span>
+              {c.timed_out && <span className="text-destructive">TLE</span>}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  if (result.samples.length === 0) {
+    return <p className="py-1 text-center text-xs text-muted-foreground">{t("runNoSamples")}</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {result.samples.map((s) => (
+        <div
+          key={s.ordinal}
+          className={cn(
+            "rounded border p-2",
+            s.passed ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5",
+          )}
+        >
+          <div className="mb-1 flex items-center justify-between font-mono text-xs font-semibold">
+            <span className={s.passed ? "text-success" : "text-destructive"}>
+              #{s.ordinal} —{" "}
+              {s.compile_error
+                ? t("compileError")
+                : s.timed_out
+                  ? "TLE"
+                  : s.passed
+                    ? t("runPassed")
+                    : t("runFailed")}
+            </span>
+            <span className="font-normal text-muted-foreground">
+              {s.time_ms}ms · {s.memory_kb}KB
+            </span>
+          </div>
+          {s.compile_error ? (
+            <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-destructive">
+              {s.stderr}
+            </pre>
+          ) : (
+            !s.passed && (
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                <div>
+                  <p className="mb-0.5 text-[10px] uppercase text-muted-foreground">
+                    {t("yourOutput")}
+                  </p>
+                  <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted p-1.5 font-mono text-[11px]">
+                    {s.stdout || "—"}
+                  </pre>
+                </div>
+                <div>
+                  <p className="mb-0.5 text-[10px] uppercase text-muted-foreground">
+                    {t("expectedOutput")}
+                  </p>
+                  <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted p-1.5 font-mono text-[11px]">
+                    {s.expected_output}
+                  </pre>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      ))}
     </div>
   );
 }
