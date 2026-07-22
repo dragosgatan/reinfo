@@ -44,11 +44,9 @@ import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { useDuelWs } from "@/lib/use-duel-ws";
 import { useEditorPrefs, EDITOR_THEME_LABELS, FONT_SIZES, TAB_SIZES, type EditorTheme } from "@/lib/use-editor-prefs";
+import { useLanguages } from "@/lib/languages";
 import {
-  LANGUAGE_LABELS,
-  MONACO_LANGUAGE_MAP,
   ProblemReadSchema,
-  SUPPORTED_LANGUAGES,
   type DuelPlayerState,
   type DuelRead,
   type ProblemRead,
@@ -126,61 +124,6 @@ const DRACULA_THEME = {
     "editorCursor.foreground": "#f8f8f2",
     "editorGutter.background": "#282a36",
   },
-};
-
-const DEFAULT_CODE: Record<string, string> = {
-  cpp: `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    // TODO
-
-    return 0;
-}`,
-  c: `#include <stdio.h>
-#include <stdlib.h>
-
-int main() {
-    // TODO
-    return 0;
-}`,
-  python: `# TODO`,
-  java: `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        // TODO
-    }
-}`,
-  kotlin: `import java.util.Scanner\n\nfun main() {\n    val sc = Scanner(System.\`in\`)\n    // TODO\n}`,
-  rust: `use std::io::{self, BufRead};
-
-fn main() {
-    let stdin = io::stdin();
-    // TODO
-}`,
-  go: `package main
-
-import (
-    "bufio"
-    "fmt"
-    "os"
-)
-
-func main() {
-    reader := bufio.NewReader(os.Stdin)
-    _ = reader
-    fmt.Println()
-}`,
-  javascript: `const lines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\\n');
-let i = 0;
-
-// TODO`,
 };
 
 function PlayerPanel({
@@ -295,6 +238,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
   const t = useTranslations("duel");
   const { user } = useAuth();
   const { duel, secondsRemaining, status } = useDuelWs(duelId);
+  const { languages, bySlug } = useLanguages();
 
   const {
     language,
@@ -308,7 +252,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
     setTabSize,
   } = useEditorPrefs("python");
 
-  const [code, setCode] = useState(DEFAULT_CODE["python"] ?? "");
+  const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showResignDialog, setShowResignDialog] = useState(false);
   const [showDrawDialog, setShowDrawDialog] = useState(false);
@@ -317,6 +261,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
   const [problem, setProblem] = useState<ProblemRead | null>(null);
   const prevStatusRef = useRef<string | null>(null);
   const submitCallbackRef = useRef<(() => void)>(() => {});
+  const seededRef = useRef(false);
 
   // Fetch problem statement once we know the slug
   useEffect(() => {
@@ -329,14 +274,23 @@ export function DuelClient({ duelId }: DuelClientProps) {
       .catch(() => {});
   }, [duel?.problem_slug]);
 
+  useEffect(() => {
+    if (!seededRef.current && bySlug[language]) {
+      setCode(bySlug[language].starter_template);
+      seededRef.current = true;
+    }
+  }, [bySlug, language]);
+
   // When language changes, reset code to template if still on a default
   const handleLanguageChange = useCallback(
     (lang: string) => {
-      const currentDefault = DEFAULT_CODE[language] ?? "";
+      const currentDefault = bySlug[language]?.starter_template ?? "";
       setLanguage(lang);
-      setCode((prev) => (prev === currentDefault || !prev.trim() ? DEFAULT_CODE[lang] ?? "" : prev));
+      setCode((prev) =>
+        prev === currentDefault || !prev.trim() ? (bySlug[lang]?.starter_template ?? "") : prev,
+      );
     },
-    [language, setLanguage],
+    [language, bySlug, setLanguage],
   );
 
   useEffect(() => {
@@ -688,9 +642,9 @@ export function DuelClient({ duelId }: DuelClientProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {SUPPORTED_LANGUAGES.map((lang) => (
-                    <SelectItem key={lang} value={lang} className="text-xs">
-                      {LANGUAGE_LABELS[lang]}
+                  {languages.map((lang) => (
+                    <SelectItem key={lang.slug} value={lang.slug} className="text-xs">
+                      {lang.display_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -782,7 +736,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
             <div className="flex-1 min-h-0">
               <MonacoEditor
                 height="100%"
-                language={MONACO_LANGUAGE_MAP[language] ?? language}
+                language={bySlug[language]?.monaco_id ?? "plaintext"}
                 value={code}
                 onChange={(v) => setCode(v ?? "")}
                 theme={activeMonacoTheme}

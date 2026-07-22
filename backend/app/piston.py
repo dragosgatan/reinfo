@@ -5,30 +5,17 @@ from dataclasses import dataclass
 import httpx
 
 from app.config import settings
+from app.languages import LANGUAGES_BY_SLUG, STABLE_LANGUAGES
 
-LANGUAGE_MAP: dict[str, str] = {
-    "c": "c",
-    "cpp": "c++",
-    "python": "python",
-    "rust": "rust",
-    "go": "go",
-    "java": "java",
-    "kotlin": "kotlin",
-    "javascript": "javascript",
-}
-
+LANGUAGE_MAP: dict[str, str] = {lang.slug: lang.piston_language for lang in STABLE_LANGUAGES}
 SUPPORTED_LANGUAGES: frozenset[str] = frozenset(LANGUAGE_MAP)
+_FILE_NAMES: dict[str, str] = {lang.slug: lang.file_name for lang in STABLE_LANGUAGES}
 
-_FILE_NAMES: dict[str, str] = {
-    "c": "main.c",
-    "cpp": "main.cpp",
-    "python": "main.py",
-    "rust": "main.rs",
-    "go": "main.go",
-    "java": "Main.java",
-    "kotlin": "main.kt",
-    "javascript": "main.js",
-}
+# Matches PISTON_RUN_TIMEOUT in docker-compose(.prod).yml - clamps our own request so a
+# problem's time limit combined with a slow-language multiplier can never trigger a hard
+# 400 from Piston (it would just fail the submission) instead of a graceful TLE.
+_MAX_RUN_TIMEOUT_MS = 15_000
+_COMPILE_TIMEOUT_MS = 30_000
 
 
 @dataclass
@@ -51,18 +38,26 @@ async def execute(
 ) -> ExecutionResult:
     """Execute code in the Piston sandbox and return structured results.
 
+    time_limit_ms is the problem's own limit; it gets scaled by the language's
+    time_limit_multiplier (e.g. Python/Java run slower than C++) before being sent
+    to Piston, and TLE detection uses that same scaled value.
+
     Raises RuntimeError on HTTP or network errors.
     """
-    piston_lang = LANGUAGE_MAP.get(language, language)
-    filename = _FILE_NAMES.get(language, "main.txt")
+    spec = LANGUAGES_BY_SLUG.get(language)
+    piston_lang = spec.piston_language if spec else language
+    piston_version = spec.version if spec else "*"
+    filename = spec.file_name if spec else "main.txt"
+    multiplier = spec.time_limit_multiplier if spec else 1.0
+    effective_time_limit_ms = min(int(time_limit_ms * multiplier), _MAX_RUN_TIMEOUT_MS)
 
     payload = {
         "language": piston_lang,
-        "version": "*",
+        "version": piston_version,
         "files": [{"name": filename, "content": code}],
         "stdin": stdin,
-        "run_timeout": time_limit_ms,
-        "compile_timeout": 10_000,
+        "run_timeout": effective_time_limit_ms,
+        "compile_timeout": _COMPILE_TIMEOUT_MS,
         "run_memory_limit": memory_limit_kb * 1024,
     }
 
@@ -84,7 +79,7 @@ async def execute(
     memory_bytes = run.get("memory") or 0
     memory_kb = memory_bytes // 1024
 
-    timed_out = run.get("signal") == "SIGKILL" and time_ms >= time_limit_ms * 0.9
+    timed_out = run.get("signal") == "SIGKILL" and time_ms >= effective_time_limit_ms * 0.9
 
     return ExecutionResult(
         stdout=run.get("stdout") or "",

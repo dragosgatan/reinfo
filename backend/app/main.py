@@ -24,6 +24,7 @@ from app.routers import (
     contests,
     ctf,
     duels,
+    languages,
     lessons,
     problems,
     projects,
@@ -119,6 +120,7 @@ app.include_router(users_router.router)
 app.include_router(admin.router)
 app.include_router(ai.router)
 app.include_router(problems.router)
+app.include_router(languages.router)
 app.include_router(submissions.router)
 app.include_router(contests.router)
 app.include_router(duels.router)

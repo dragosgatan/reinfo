@@ -32,13 +32,9 @@ import { VerdictBadge } from "./verdict-badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { api, ApiError } from "@/lib/api";
-import {
-  SUPPORTED_LANGUAGES,
-  LANGUAGE_LABELS,
-  MONACO_LANGUAGE_MAP,
-  RunResponseSchema,
-} from "@/lib/types";
+import { RunResponseSchema } from "@/lib/types";
 import type { Submission, VerdictType, RunResponse } from "@/lib/types";
+import { useLanguages } from "@/lib/languages";
 import {
   useEditorPrefs,
   EDITOR_THEME_LABELS,
@@ -86,6 +82,7 @@ export function SubmissionPanel({
   enableRun = true,
 }: SubmissionPanelProps) {
   const t = useTranslations("problems");
+  const { languages, bySlug, isLoading: languagesLoading } = useLanguages();
   const {
     language,
     editorTheme,
@@ -97,7 +94,7 @@ export function SubmissionPanel({
     setFontSize,
     setTabSize,
   } = useEditorPrefs("python");
-  const [code, setCode] = useState(DEFAULT_CODE["python"] ?? "");
+  const [code, setCode] = useState("");
   const [state, setState] = useState<PanelState>("idle");
   const [liveUpdate, setLiveUpdate] = useState<JudgingUpdate | null>(null);
   const [submission, setSubmission] = useState<Submission | null>(null);
@@ -105,15 +102,24 @@ export function SubmissionPanel({
   const [fullscreen, setFullscreen] = useState(false);
   const abortRef = useRef<EventSource | null>(null);
   const submitCallbackRef = useRef<(() => void)>(() => {});
+  const seededRef = useRef(false);
+
+  useEffect(() => {
+    if (!seededRef.current && bySlug[language]) {
+      setCode(bySlug[language].starter_template);
+      seededRef.current = true;
+    }
+  }, [bySlug, language]);
 
   const handleLanguageChange = useCallback(
     (lang: string) => {
+      const prevDefault = bySlug[language]?.starter_template;
       setLanguagePref(lang);
-      if (code === DEFAULT_CODE[language] || !code.trim()) {
-        setCode(DEFAULT_CODE[lang] ?? "");
+      if (!code.trim() || code === prevDefault) {
+        setCode(bySlug[lang]?.starter_template ?? "");
       }
     },
-    [language, code, setLanguagePref],
+    [language, code, bySlug, setLanguagePref],
   );
 
   const handleThemeChange = useCallback((theme: EditorTheme) => {
@@ -266,7 +272,7 @@ export function SubmissionPanel({
     >
       <MonacoEditor
         height={fullscreen ? "100%" : "420px"}
-        language={MONACO_LANGUAGE_MAP[language] ?? "plaintext"}
+        language={bySlug[language]?.monaco_id ?? "plaintext"}
         value={code}
         onChange={(v) => {
           if (v !== undefined) setCode(v);
@@ -295,15 +301,15 @@ export function SubmissionPanel({
       <Select
         value={language}
         onValueChange={handleLanguageChange}
-        disabled={isDisabled}
+        disabled={isDisabled || languagesLoading}
       >
         <SelectTrigger className="flex-1 min-w-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <SelectItem key={lang} value={lang}>
-              {LANGUAGE_LABELS[lang]}
+          {languages.map((lang) => (
+            <SelectItem key={lang.slug} value={lang.slug}>
+              {lang.display_name}
             </SelectItem>
           ))}
         </SelectContent>
@@ -876,59 +882,4 @@ const DRACULA_THEME = {
     "editorIndentGuide.background1": "#3d3f4e",
     "editorIndentGuide.activeBackground1": "#4d4f5e",
   },
-};
-
-const DEFAULT_CODE: Record<string, string> = {
-  cpp: `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    // TODO
-
-    return 0;
-}`,
-  c: `#include <stdio.h>
-#include <stdlib.h>
-
-int main() {
-    // TODO
-    return 0;
-}`,
-  python: `# TODO`,
-  java: `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        // TODO
-    }
-}`,
-  kotlin: `import java.util.Scanner\n\nfun main() {\n    val sc = Scanner(System.\`in\`)\n    // TODO\n}`,
-  rust: `use std::io::{self, BufRead};
-
-fn main() {
-    let stdin = io::stdin();
-    // TODO
-}`,
-  go: `package main
-
-import (
-    "bufio"
-    "fmt"
-    "os"
-)
-
-func main() {
-    reader := bufio.NewReader(os.Stdin)
-    _ = reader
-    fmt.Println()
-}`,
-  javascript: `const lines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\\n');
-let i = 0;
-
-// TODO`,
 };

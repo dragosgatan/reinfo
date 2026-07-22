@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { SubmissionListResponseSchema, SUPPORTED_LANGUAGES, LANGUAGE_LABELS } from "@/lib/types";
+import { useLanguages } from "@/lib/languages";
+import { SubmissionListResponseSchema } from "@/lib/types";
 import type { VerdictType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ function buildQuery(filters: Filters, page: number, tab: Tab, userId?: string): 
 export function SubmisiiClient() {
   const t = useTranslations("submissions");
   const { user, isAuthenticated } = useAuth();
+  const { languages, bySlug } = useLanguages();
   const isAdmin = user?.role === "admin" || user?.role === "superuser";
 
   const [tab, setTab] = useState<Tab>("mine");
@@ -167,9 +169,9 @@ export function SubmisiiClient() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="_all">{t("allLanguages")}</SelectItem>
-            {SUPPORTED_LANGUAGES.map((lang) => (
-              <SelectItem key={lang} value={lang}>
-                {LANGUAGE_LABELS[lang]}
+            {languages.map((lang) => (
+              <SelectItem key={lang.slug} value={lang.slug}>
+                {lang.display_name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -265,7 +267,7 @@ export function SubmisiiClient() {
                 )}
                 <span className="font-mono text-xs text-muted-foreground">{sub.score}p</span>
                 <span className="hidden font-mono text-xs text-muted-foreground sm:block">
-                  {LANGUAGE_LABELS[sub.language] ?? sub.language}
+                  {bySlug[sub.language]?.display_name ?? sub.language}
                 </span>
                 <span className="font-mono text-xs text-muted-foreground">
                   {new Date(sub.created_at).toLocaleDateString("ro")}

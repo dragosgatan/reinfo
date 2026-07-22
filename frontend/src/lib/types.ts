@@ -317,38 +317,19 @@ export const LeaderboardResponseSchema = z.object({
 });
 export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 
-export const SUPPORTED_LANGUAGES = [
-  "c",
-  "cpp",
-  "python",
-  "rust",
-  "go",
-  "java",
-  "kotlin",
-  "javascript",
-] as const;
+export const LanguageSchema = z.object({
+  slug: z.string(),
+  display_name: z.string(),
+  monaco_id: z.string(),
+  file_name: z.string(),
+  starter_template: z.string(),
+  version: z.string(),
+  stable: z.boolean(),
+  blocked_reason: z.string().nullable(),
+});
+export type Language = z.infer<typeof LanguageSchema>;
 
-export const LANGUAGE_LABELS: Record<string, string> = {
-  c: "C",
-  cpp: "C++",
-  python: "Python 3",
-  rust: "Rust",
-  go: "Go",
-  java: "Java",
-  kotlin: "Kotlin",
-  javascript: "JavaScript",
-};
-
-export const MONACO_LANGUAGE_MAP: Record<string, string> = {
-  c: "c",
-  cpp: "cpp",
-  python: "python",
-  rust: "rust",
-  go: "go",
-  java: "java",
-  kotlin: "kotlin",
-  javascript: "javascript",
-};
+export const LanguageListSchema = z.array(LanguageSchema);
 
 export const RunSampleResultSchema = z.object({
   ordinal: z.number().int(),

@@ -11,7 +11,8 @@ import { VerdictBadge } from "@/components/problems/verdict-badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, ApiError } from "@/lib/api";
-import { SubmissionSchema, LANGUAGE_LABELS, MONACO_LANGUAGE_MAP } from "@/lib/types";
+import { useLanguages } from "@/lib/languages";
+import { SubmissionSchema } from "@/lib/types";
 import type { Submission, SubmissionResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +73,7 @@ export function SubmissionDetailClient({ id }: Props) {
 
 function SubmissionDetail({ submission }: { submission: Submission }) {
   const t = useTranslations("submissions");
+  const { bySlug } = useLanguages();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -103,7 +105,7 @@ function SubmissionDetail({ submission }: { submission: Submission }) {
         <VerdictBadge verdict={submission.verdict} className="text-sm px-3 py-1" />
         <span className="font-mono text-sm font-semibold">{submission.score}p</span>
         <span className="rounded border border-border px-2 py-0.5 font-mono text-xs text-muted-foreground">
-          {LANGUAGE_LABELS[submission.language] ?? submission.language}
+          {bySlug[submission.language]?.display_name ?? submission.language}
         </span>
         {submission.problem_slug && (
           <Link
@@ -181,7 +183,7 @@ function SubmissionDetail({ submission }: { submission: Submission }) {
           <div className="overflow-hidden rounded border border-border">
             <MonacoEditor
               height="420px"
-              language={MONACO_LANGUAGE_MAP[submission.language] ?? "plaintext"}
+              language={bySlug[submission.language]?.monaco_id ?? "plaintext"}
               value={submission.submitted_code}
               theme={mounted && resolvedTheme === "dark" ? "vs-dark" : "light"}
               options={{

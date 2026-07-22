@@ -58,6 +58,11 @@ services:
     privileged: true
     ports:
       - "2000:2000"
+    environment:
+      # Piston's own defaults (run 3s / compile 10s) are too tight once per-language
+      # time-limit multipliers and slow-compiling languages like Zig are in play.
+      PISTON_RUN_TIMEOUT: "15000"
+      PISTON_COMPILE_TIMEOUT: "30000"
     tmpfs:
       - /piston/jobs
     volumes:

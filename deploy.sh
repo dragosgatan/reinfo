@@ -27,6 +27,14 @@ docker compose -f docker-compose.prod.yml up -d
 echo "==> Running database migrations..."
 docker compose -f docker-compose.prod.yml exec -T backend alembic upgrade head
 
+echo "==> Ensuring Piston language packages are installed..."
+docker compose -f docker-compose.prod.yml exec -T backend python -c "
+import httpx
+for pkg in [{'language': 'typescript', 'version': '5.0.3'}]:
+    r = httpx.post('http://piston:2000/api/v2/packages', json=pkg, timeout=60)
+    print(pkg['language'], '->', r.json())
+"
+
 echo "==> Reloading nginx..."
 docker compose -f docker-compose.prod.yml exec nginx nginx -s reload 2>/dev/null || true
 
