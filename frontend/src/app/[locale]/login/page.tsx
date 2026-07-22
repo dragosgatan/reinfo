@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { api, ApiError } from "@/lib/api";
 import { UserSchema } from "@/lib/auth";
+import { routing } from "@/i18n/routing";
 import { useQueryClient } from "@tanstack/react-query";
 
 type LoginValues = {
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const tAuth = useTranslations("auth");
   const router = useRouter();
   const queryClient = useQueryClient();
+  const locale = useLocale();
 
   const loginSchema = useMemo(() => z.object({
     username: z.string().min(1, t("validationUsernameRequired")),
@@ -46,7 +48,13 @@ export default function LoginPage() {
     try {
       const user = await api.post("/api/auth/login", values, UserSchema);
       queryClient.setQueryData(["auth", "me"], user);
-      router.push("/");
+
+      const preferredLocale = routing.locales.find((l) => l === user.language);
+      if (preferredLocale && preferredLocale !== locale) {
+        router.push("/", { locale: preferredLocale });
+      } else {
+        router.push("/");
+      }
     } catch (err) {
       const message =
         err instanceof ApiError && err.status === 401

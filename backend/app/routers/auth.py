@@ -146,7 +146,7 @@ async def forgot_password(
         session.add(reset_token)
         await session.commit()
 
-        await send_password_reset_email(user.email, token)
+        await send_password_reset_email(user.email, token, user.language)
 
     return {"message": "Dacă adresa există, am trimis un email cu instrucțiuni"}
 

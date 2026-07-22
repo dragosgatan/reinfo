@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { useTranslations, useLocale } from "next-intl";
+import { useRouter, usePathname } from "@/i18n/navigation";
 import { useAuth, type User } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/utils";
+import { routing } from "@/i18n/routing";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,8 @@ export default function ProfileSettingsPage() {
   const tCommon = useTranslations("common");
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -115,6 +118,11 @@ export default function ProfileSettingsPage() {
       });
       queryClient.setQueryData(["auth", "me"], updated);
       toast.success(t("saveSuccess"));
+
+      const newLocale = routing.locales.find((l) => l === form.language);
+      if (newLocale && newLocale !== locale) {
+        router.replace(pathname, { locale: newLocale });
+      }
     } catch {
       toast.error(t("saveError"));
     } finally {

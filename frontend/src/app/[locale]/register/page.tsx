@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,6 +41,7 @@ export default function RegisterPage() {
   const t = useTranslations("register");
   const tAuth = useTranslations("auth");
   const router = useRouter();
+  const locale = useLocale();
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -54,6 +55,7 @@ export default function RegisterPage() {
         display_name: values.display_name,
         email: values.email,
         password: values.password,
+        language: locale,
       });
       router.push("/login");
       toast.success(t("submit"));
