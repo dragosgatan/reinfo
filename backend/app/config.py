@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = "ReInfo <onboarding@resend.dev>"
     frontend_url: str = "http://localhost:3000"
+    enable_github_integration: bool = False
 
 
 settings = Settings()

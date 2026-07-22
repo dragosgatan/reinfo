@@ -1016,3 +1016,69 @@ export const CtfScoreboardResponseSchema = z.object({
   generated_at: z.string(),
 });
 export type CtfScoreboardResponse = z.infer<typeof CtfScoreboardResponseSchema>;
+
+export const RepoInfoSchema = z.object({
+  ok: z.boolean(),
+  error_reason: z.string().nullable(),
+  language: z.string().nullable(),
+  stars: z.number().int().nullable(),
+  last_commit_at: z.string().nullable(),
+  commit_count_approx: z.number().int().nullable(),
+  readme_md: z.string().nullable(),
+});
+export type RepoInfo = z.infer<typeof RepoInfoSchema>;
+
+export const ProjectGradeSchema = z.object({
+  score: z.number().int().nullable(),
+  feedback_md: z.string().nullable(),
+  graded_at: z.string(),
+  grader_username: z.string().nullable(),
+});
+export type ProjectGrade = z.infer<typeof ProjectGradeSchema>;
+
+export const ProjectSubmissionSchema = z.object({
+  id: z.string().uuid(),
+  project_id: z.string().uuid(),
+  student_id: z.string().uuid(),
+  student_username: z.string(),
+  repo_url: z.string(),
+  notes_md: z.string().nullable(),
+  submitted_at: z.string(),
+  last_updated_at: z.string(),
+  grade: ProjectGradeSchema.nullable().optional(),
+  repo_info: RepoInfoSchema.nullable().optional(),
+});
+export type ProjectSubmission = z.infer<typeof ProjectSubmissionSchema>;
+
+export const ProjectSubmissionListResponseSchema = z.object({
+  items: z.array(ProjectSubmissionSchema),
+  total: z.number().int(),
+});
+export type ProjectSubmissionListResponse = z.infer<typeof ProjectSubmissionListResponseSchema>;
+
+export const ProjectSummarySchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  title: z.string(),
+  class_id: z.string().uuid().nullable(),
+  class_name: z.string().nullable(),
+  teacher_id: z.string().uuid().nullable(),
+  teacher_username: z.string().nullable(),
+  deadline: z.string().nullable(),
+  published: z.boolean(),
+  submission_count: z.number().int(),
+  my_submission_id: z.string().uuid().nullable().optional(),
+});
+export type ProjectSummary = z.infer<typeof ProjectSummarySchema>;
+
+export const ProjectDetailSchema = ProjectSummarySchema.extend({
+  brief_md: z.string(),
+  my_submission: ProjectSubmissionSchema.nullable().optional(),
+});
+export type ProjectDetail = z.infer<typeof ProjectDetailSchema>;
+
+export const ProjectListResponseSchema = z.object({
+  items: z.array(ProjectSummarySchema),
+  total: z.number().int(),
+});
+export type ProjectListResponse = z.infer<typeof ProjectListResponseSchema>;

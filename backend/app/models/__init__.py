@@ -28,6 +28,7 @@ from app.models.problem import (
     TestCase,
     Visibility,
 )
+from app.models.project import GithubRepoCache, Project, ProjectGrade, ProjectSubmission
 from app.models.roadmap import (
     NodeLinkType,
     NodeStatus,
@@ -100,4 +101,8 @@ __all__ = [
     "TrackOlympiad",
     "TrackItemType",
     "TrackItemStatus",
+    "Project",
+    "ProjectSubmission",
+    "ProjectGrade",
+    "GithubRepoCache",
 ]

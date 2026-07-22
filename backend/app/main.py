@@ -26,6 +26,7 @@ from app.routers import (
     duels,
     lessons,
     problems,
+    projects,
     roadmaps,
     social,
     submissions,
@@ -127,6 +128,7 @@ app.include_router(social.router)
 app.include_router(classrooms.router)
 app.include_router(ctf.router)
 app.include_router(tracks.router)
+app.include_router(projects.router)
 
 app.mount("/avatars", StaticFiles(directory=str(avatars_directory())), name="avatars")
 

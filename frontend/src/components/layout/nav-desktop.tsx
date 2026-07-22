@@ -11,6 +11,7 @@ const navItems = [
   { href: "/duel", key: "duels" },
   { href: "/invatare", key: "learning" },
   { href: "/pregatire", key: "prep" },
+  { href: "/proiecte", key: "projects" },
   { href: "/clasament", key: "leaderboard" },
   { href: "/prieteni", key: "friends" },
   { href: "/clase", key: "classes" },
