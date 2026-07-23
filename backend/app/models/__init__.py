@@ -1,3 +1,4 @@
+from app.models.ai_chat import AiChatCache, AiChatUsage
 from app.models.contest import (
     Contest,
     ContestParticipant,
@@ -56,6 +57,8 @@ from app.models.track import (
 from app.models.user import Session, User, UserRole
 
 __all__ = [
+    "AiChatUsage",
+    "AiChatCache",
     "User",
     "UserRole",
     "Session",

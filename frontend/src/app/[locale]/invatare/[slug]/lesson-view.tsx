@@ -267,17 +267,22 @@ function LessonChat({ lesson }: { lesson: LessonRead }) {
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     try {
-      const res = await fetch("/api/lesson-chat", {
+      const res = await fetch("/api/ai/lesson-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages,
-          lessonTitle: lesson.title,
-          lessonContent: lesson.content_md,
+          lesson_slug: lesson.slug,
+          lesson_title: lesson.title,
+          lesson_content: lesson.content_md,
         }),
       });
 
-      if (!res.ok || !res.body) throw new Error("request failed");
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}) as { detail?: string });
+        throw new Error(payload.detail ?? t("aiChatError"));
+      }
+      if (!res.body) throw new Error(t("aiChatError"));
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -310,17 +315,18 @@ function LessonChat({ lesson }: { lesson: LessonRead }) {
           }
         }
       }
-    } catch {
+    } catch (err) {
+      const content = err instanceof Error && err.message ? err.message : t("aiChatError");
       setMessages((prev) => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: t("aiChatError") };
+        updated[updated.length - 1] = { role: "assistant", content };
         return updated;
       });
     } finally {
       setLoading(false);
       inputRef.current?.focus();
     }
-  }, [input, loading, messages, lesson.title, lesson.content_md, t]);
+  }, [input, loading, messages, lesson.slug, lesson.title, lesson.content_md, t]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

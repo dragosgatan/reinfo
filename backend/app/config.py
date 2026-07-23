@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     email_from: str = "ReInfo <onboarding@resend.dev>"
     frontend_url: str = "http://localhost:3000"
     enable_github_integration: bool = False
+    openrouter_api_key: str = ""
+    chatbot_daily_limit: int = 10
+    chatbot_burst_limit: int = 3
+    chatbot_burst_window_seconds: int = 60
 
 
 settings = Settings()
