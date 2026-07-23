@@ -776,7 +776,8 @@
     "deleteResult": "Delete",
     "addResult": "Add",
     "cancelAdd": "Cancel",
-    "privacyHidden": "Hidden by privacy settings."
+    "privacyHidden": "Hidden by privacy settings.",
+    "noBio": "This user hasn't added a bio yet."
   },
   "settings": {
     "profile": {
@@ -784,6 +785,8 @@
       "displayName": "Display name",
       "bio": "About me",
       "bioPlaceholder": "Write something about yourself...",
+      "bioWriteTab": "Write",
+      "bioPreviewTab": "Preview",
       "language": "Preferred language",
       "avatar": "Profile picture",
       "avatarHint": "JPEG, PNG or WebP · max 2 MB",

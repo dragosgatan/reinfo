@@ -27,6 +27,9 @@ interface MarkdownContentProps {
   /** "compact" is for tight spaces like chat bubbles - smaller margins, no h1/h2. */
   variant?: "default" | "compact";
   renderCodeBlock?: CodeBlockRenderer;
+  /** Set false for untrusted user content (e.g. bios) to render images as their alt
+   * text instead of loading them - avoids third-party tracking pixels on public pages. */
+  allowImages?: boolean;
 }
 
 export function MarkdownContent({
@@ -34,6 +37,7 @@ export function MarkdownContent({
   className,
   variant = "default",
   renderCodeBlock,
+  allowImages = true,
 }: MarkdownContentProps) {
   const compact = variant === "compact";
 
@@ -43,7 +47,7 @@ export function MarkdownContent({
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, [rehypeHighlight, { detect: true, ignoreMissing: true }]]}
         urlTransform={sanitizeUrl}
-        components={buildComponents(compact, renderCodeBlock)}
+        components={buildComponents(compact, renderCodeBlock, allowImages)}
       >
         {normalizeMarkdown(markdown)}
       </ReactMarkdown>
@@ -74,13 +78,25 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function buildComponents(compact: boolean, renderCodeBlock?: CodeBlockRenderer) {
+function buildComponents(
+  compact: boolean,
+  renderCodeBlock?: CodeBlockRenderer,
+  allowImages = true,
+) {
   const gap = compact ? "mb-2" : "mb-4";
 
   return {
     p: ({ children }: { children?: ReactNode }) => (
       <p className={cn(gap, "leading-relaxed last:mb-0")}>{children}</p>
     ),
+    img: allowImages
+      ? ({ src, alt }: ComponentProps<"img">) => (
+          // Arbitrary external markdown image URLs can't go through next/image without a domain allowlist.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} className={cn(gap, "max-w-full rounded border border-border")} />
+        )
+      : ({ alt }: ComponentProps<"img">) =>
+          alt ? <span className="italic text-muted-foreground">[{alt}]</span> : null,
     h1: ({ children }: { children?: ReactNode }) =>
       compact ? (
         <p className={cn(gap, "font-semibold")}>{children}</p>

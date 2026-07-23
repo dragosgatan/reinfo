@@ -66,4 +66,19 @@ describe("MarkdownContent", () => {
     const { container } = render(<MarkdownContent markdown="$x^2$" />);
     expect(container.querySelector(".katex")).not.toBeNull();
   });
+
+  it("renders images as real <img> tags by default", () => {
+    const { container } = render(<MarkdownContent markdown="![a cat](https://example.com/cat.png)" />);
+    const img = container.querySelector("img");
+    expect(img).toHaveAttribute("src", "https://example.com/cat.png");
+    expect(img).toHaveAttribute("alt", "a cat");
+  });
+
+  it("renders images as alt text only when allowImages is false", () => {
+    const { container } = render(
+      <MarkdownContent markdown="![a cat](https://example.com/cat.png)" allowImages={false} />,
+    );
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByText("[a cat]")).toBeInTheDocument();
+  });
 });

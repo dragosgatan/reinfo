@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 import { formatDate } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/utils";
 import { CalendarDays, Github, Link as LinkIcon, Mail, Pencil, Swords } from "lucide-react";
@@ -213,8 +214,14 @@ export default async function UserProfilePage({ params }: Props) {
             )}
           </div>
 
-          {profile.bio && (
-            <p className="mt-2 text-sm leading-relaxed max-w-prose">{profile.bio}</p>
+          {profile.bio ? (
+            <MarkdownContent
+              markdown={profile.bio}
+              allowImages={false}
+              className="mt-2 max-w-prose"
+            />
+          ) : (
+            <p className="mt-2 text-sm italic text-muted-foreground">{t("noBio")}</p>
           )}
 
           {(profile.github_url || profile.link_1 || profile.link_2 || profile.link_3) && (

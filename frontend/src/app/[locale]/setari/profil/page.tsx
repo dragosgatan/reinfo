@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useAuth, type User } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { resolveMediaUrl } from "@/lib/utils";
+import { cn, resolveMediaUrl } from "@/lib/utils";
 import { routing } from "@/i18n/routing";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { Link } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Camera, ExternalLink, Github, Link as LinkIcon } from "lucide-react";
+import { MarkdownContent } from "@/components/shared/markdown-content";
 
 function Toggle({
   checked,
@@ -70,6 +71,7 @@ export default function ProfileSettingsPage() {
   });
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [bioTab, setBioTab] = useState<"write" | "preview">("write");
 
   useEffect(() => {
     if (user) {
@@ -228,18 +230,56 @@ export default function ProfileSettingsPage() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="bio" className="text-sm">
-              {t("bio")}
-            </Label>
-            <textarea
-              id="bio"
-              value={form.bio}
-              onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-              placeholder={t("bioPlaceholder")}
-              maxLength={2000}
-              rows={4}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bio" className="text-sm">
+                {t("bio")}
+              </Label>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setBioTab("write")}
+                  className={cn(
+                    "rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                    bioTab === "write"
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t("bioWriteTab")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBioTab("preview")}
+                  className={cn(
+                    "rounded px-2 py-0.5 text-xs font-medium transition-colors",
+                    bioTab === "preview"
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t("bioPreviewTab")}
+                </button>
+              </div>
+            </div>
+            {bioTab === "write" ? (
+              <textarea
+                id="bio"
+                value={form.bio}
+                onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                placeholder={t("bioPlaceholder")}
+                maxLength={2000}
+                rows={4}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+              />
+            ) : (
+              <div className="min-h-[104px] rounded-md border border-input bg-muted/20 px-3 py-2">
+                {form.bio.trim() ? (
+                  <MarkdownContent markdown={form.bio} allowImages={false} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t("bioPlaceholder")}</p>
+                )}
+              </div>
+            )}
             <p className="text-[11px] text-muted-foreground text-right">{form.bio.length}/2000</p>
           </div>
 

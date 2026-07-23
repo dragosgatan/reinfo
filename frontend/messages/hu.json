@@ -778,7 +778,8 @@
     "deleteResult": "Törlés",
     "addResult": "Hozzáadás",
     "cancelAdd": "Mégsem",
-    "privacyHidden": "Adatvédelmi beállítások miatt rejtett."
+    "privacyHidden": "Adatvédelmi beállítások miatt rejtett.",
+    "noBio": "Ez a felhasználó még nem adott meg leírást."
   },
   "settings": {
     "profile": {
@@ -786,6 +787,8 @@
       "displayName": "Megjelenített név",
       "bio": "Rólam",
       "bioPlaceholder": "Írj valamit magadról...",
+      "bioWriteTab": "Írás",
+      "bioPreviewTab": "Előnézet",
       "language": "Előnyben részesített nyelv",
       "avatar": "Profilkép",
       "avatarHint": "JPEG, PNG vagy WebP · max 2 MB",
