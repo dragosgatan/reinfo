@@ -8,10 +8,11 @@ import { Link } from "@/i18n/navigation";
 import { MarkdownContent } from "@/components/shared/markdown-content";
 import { formatDate } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/utils";
-import { CalendarDays, Github, Link as LinkIcon, Mail, Pencil, Swords } from "lucide-react";
+import { CalendarDays, Github, Link as LinkIcon, Mail, Pencil, Swords, Trophy } from "lucide-react";
 import { ChallengeButton } from "@/components/duel/challenge-button";
 import { RatingSparkline } from "@/components/duel/rating-sparkline";
 import { AddFriendButton } from "@/components/social/add-friend-button";
+import { getRatingTier } from "@/lib/contest-rating";
 import {
   Tooltip,
   TooltipContent,
@@ -25,7 +26,7 @@ import type {
   UserProfileRead,
   UserStatsRead,
 } from "@/lib/types";
-import type { DuelRatingHistoryEntry } from "@/lib/types";
+import type { ContestRatingHistoryEntry, DuelRatingHistoryEntry } from "@/lib/types";
 
 interface Props {
   params: Promise<{ username: string; locale: string }>;
@@ -120,6 +121,18 @@ async function fetchRatingHistory(username: string): Promise<DuelRatingHistoryEn
   }
 }
 
+async function fetchContestRatingHistory(username: string): Promise<ContestRatingHistoryEntry[]> {
+  try {
+    const res = await fetch(`${API}/api/contests/users/${username}/rating-history`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    return (await res.json()) as ContestRatingHistoryEntry[];
+  } catch {
+    return [];
+  }
+}
+
 async function fetchCurrentUser(cookieHeader: string): Promise<CurrentUser | null> {
   try {
     const res = await fetch(`${API}/api/auth/me`, {
@@ -145,16 +158,25 @@ export default async function UserProfilePage({ params }: Props) {
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
 
-  const [profile, stats, activity, externalResults, submissions, ratingHistory, currentUser] =
-    await Promise.all([
-      fetchProfile(username),
-      fetchStats(username),
-      fetchActivity(username),
-      fetchExternalResults(username),
-      fetchSubmissions(username),
-      fetchRatingHistory(username),
-      fetchCurrentUser(cookieHeader),
-    ]);
+  const [
+    profile,
+    stats,
+    activity,
+    externalResults,
+    submissions,
+    ratingHistory,
+    contestRatingHistory,
+    currentUser,
+  ] = await Promise.all([
+    fetchProfile(username),
+    fetchStats(username),
+    fetchActivity(username),
+    fetchExternalResults(username),
+    fetchSubmissions(username),
+    fetchRatingHistory(username),
+    fetchContestRatingHistory(username),
+    fetchCurrentUser(cookieHeader),
+  ]);
 
   if (!profile) {
     return (
@@ -170,6 +192,8 @@ export default async function UserProfilePage({ params }: Props) {
   const duelLosses = profile.duel_losses;
   const duelDraws = profile.duel_draws;
   const totalDuels = duelWins + duelLosses + duelDraws;
+  const contestRating = profile.contest_rating;
+  const contestTier = getRatingTier(contestRating);
 
   const isOwnProfile = currentUser?.username === username;
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "superuser";
@@ -314,6 +338,27 @@ export default async function UserProfilePage({ params }: Props) {
                 <span className="text-warning">{duelDraws}R</span>
               </div>
             )}
+          </div>
+
+          <div className="rounded border border-border bg-muted/20 p-3 min-w-[200px]">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Trophy className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("contestRating")}
+              </span>
+            </div>
+            <div className="flex items-end gap-3">
+              <span className="font-mono text-2xl font-bold">{contestRating}</span>
+              <RatingSparkline
+                history={contestRatingHistory}
+                currentRating={contestRating}
+                className="mb-0.5"
+                emptyLabel={t("noRatedContests")}
+              />
+            </div>
+            <p className={`mt-2 text-xs font-medium ${contestTier.colorClass}`}>
+              {contestTier.title}
+            </p>
           </div>
 
           {stats && (

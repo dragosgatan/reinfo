@@ -57,6 +57,7 @@ export default function EditeazaConcursPage({
   const [contestType, setContestType] = useState<ContestType>("competition");
   const [fullscreenRequired, setFullscreenRequired] = useState(false);
   const [copyPasteBlocked, setCopyPasteBlocked] = useState(false);
+  const [isRated, setIsRated] = useState(false);
 
   useEffect(() => {
     if (contest) {
@@ -67,6 +68,7 @@ export default function EditeazaConcursPage({
       setContestType(contest.contest_type);
       setFullscreenRequired(contest.fullscreen_required ?? false);
       setCopyPasteBlocked(contest.copy_paste_blocked ?? false);
+      setIsRated(contest.is_rated ?? false);
     }
   }, [contest]);
 
@@ -130,6 +132,7 @@ export default function EditeazaConcursPage({
       contest_type: contestType,
       fullscreen_required: fullscreenRequired,
       copy_paste_blocked: copyPasteBlocked,
+      is_rated: isRated,
     });
   }
 
@@ -239,6 +242,20 @@ export default function EditeazaConcursPage({
             />
             <span className="text-sm">{t("blockCopyPaste")}</span>
           </label>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">{t("rating")}</p>
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={isRated}
+              onChange={(e) => setIsRated(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            <span className="text-sm">{t("markRated")}</span>
+          </label>
+          <p className="text-xs text-muted-foreground">{t("markRatedHint")}</p>
         </div>
 
         <div className="flex gap-3">

@@ -1,15 +1,21 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { type DuelRatingHistoryEntry } from "@/lib/types";
 
 interface RatingSparklineProps {
-  history: DuelRatingHistoryEntry[];
+  history: { rating_after: number }[];
   currentRating: number;
   className?: string;
+  /** Falls back to the duel-specific "no recent duels" copy for backward compat. */
+  emptyLabel?: string;
 }
 
-export function RatingSparkline({ history, currentRating, className }: RatingSparklineProps) {
+export function RatingSparkline({
+  history,
+  currentRating,
+  className,
+  emptyLabel,
+}: RatingSparklineProps) {
   const t = useTranslations("duel");
 
   const points =
@@ -20,7 +26,9 @@ export function RatingSparkline({ history, currentRating, className }: RatingSpa
   if (points.length < 2) {
     return (
       <div className={className}>
-        <span className="text-xs text-muted-foreground font-mono">{t("noRecentDuels")}</span>
+        <span className="text-xs text-muted-foreground font-mono">
+          {emptyLabel ?? t("noRecentDuels")}
+        </span>
       </div>
     );
   }

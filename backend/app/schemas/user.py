@@ -105,6 +105,7 @@ class UserProfileRead(BaseModel):
     duel_wins: int
     duel_losses: int
     duel_draws: int
+    contest_rating: int
     github_url: str | None
     link_1: str | None
     link_2: str | None

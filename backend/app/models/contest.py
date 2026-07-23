@@ -70,6 +70,12 @@ class Contest(Base, TimestampMixin):
     copy_paste_blocked: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
+    is_rated: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    # set once by the worker's settlement job - doubles as the idempotency guard,
+    # since it only ever processes rated contests where this is still NULL
+    rating_finalized_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     creator: Mapped["User | None"] = relationship("User", back_populates="contests")
     owning_class: Mapped["Class | None"] = relationship("Class", foreign_keys=[class_id])
@@ -125,6 +131,27 @@ class ContestParticipant(Base):
 
     contest: Mapped["Contest"] = relationship("Contest", back_populates="participants")
     user: Mapped["User"] = relationship("User", back_populates="contest_participations")
+
+
+class ContestRatingHistory(Base, TimestampMixin):
+    """One row per participant per settled rated contest - see app.contest_rating."""
+
+    __tablename__ = "contest_rating_history"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    contest_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("contests.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    rating_before: Mapped[int] = mapped_column(Integer, nullable=False)
+    rating_after: Mapped[int] = mapped_column(Integer, nullable=False)
+    delta: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    user: Mapped["User"] = relationship("User")
+    contest: Mapped["Contest"] = relationship("Contest")
 
 
 class ContestViolation(Base):

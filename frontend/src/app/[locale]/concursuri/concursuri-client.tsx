@@ -19,6 +19,7 @@ import { api } from "@/lib/api";
 import { ContestListResponseSchema } from "@/lib/types";
 import type { ContestSummary, ContestStatus } from "@/lib/types";
 import { ContestStatusBadge } from "@/components/contests/contest-status-badge";
+import { Badge } from "@/components/ui/badge";
 
 type Tab = ContestStatus | "all";
 
@@ -122,6 +123,11 @@ export default function ConcursuriClient() {
                       {c.title}
                     </Link>
                     <ContestStatusBadge status={c.status} />
+                    {c.is_rated && (
+                      <Badge variant="outline" className="text-xs">
+                        {t("rating")}
+                      </Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">

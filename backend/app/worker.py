@@ -13,8 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import selectinload
 
 from app.config import settings
+from app.contest_rating import RatingEntrant, compute_rating_deltas
 from app.judging import _elo_change, judge_submission
+from app.leaderboard import build_leaderboard
 from app.models.classroom import Class as _Class  # noqa: F401
+from app.models.contest import Contest, ContestRatingHistory
 from app.models.duel import Duel, DuelQueue, DuelQueueStatus, DuelRatingHistory, DuelStatus
 from app.models.judging_job import JobStatus, JudgingJob
 from app.models.problem import Problem, Visibility
@@ -285,6 +288,73 @@ async def process_duel_queue(session: AsyncSession) -> None:
         await session.commit()
 
 
+async def process_contest_rating_settlement(session: AsyncSession) -> None:
+    """Finalize contest_rating for any rated contest whose end_time has passed.
+
+    Idempotent via Contest.rating_finalized_at: only rated, ended, not-yet-finalized
+    contests are selected, and finalizing always sets that timestamp (even for a
+    contest with fewer than 2 ranked participants, where there's nothing to rate) so
+    it is never reprocessed on a later tick.
+    """
+    now = datetime.now(UTC)
+    contests = (
+        await session.scalars(
+            select(Contest).where(
+                Contest.is_rated.is_(True),
+                Contest.end_time <= now,
+                Contest.rating_finalized_at.is_(None),
+            )
+        )
+    ).all()
+
+    for contest in contests:
+        await _settle_contest_rating(contest, session)
+
+
+async def _settle_contest_rating(contest: Contest, session: AsyncSession) -> None:
+    now = datetime.now(UTC)
+    leaderboard = await build_leaderboard(contest.slug, session)
+
+    if leaderboard is None or len(leaderboard.entries) < 2:
+        contest.rating_finalized_at = now
+        await session.commit()
+        return
+
+    user_ids = [e.user_id for e in leaderboard.entries]
+    users = {
+        u.id: u for u in (await session.scalars(select(User).where(User.id.in_(user_ids)))).all()
+    }
+
+    entrants = [
+        RatingEntrant(user_id=e.user_id, rating=users[e.user_id].contest_rating, rank=e.rank)
+        for e in leaderboard.entries
+        if e.user_id in users
+    ]
+    deltas = compute_rating_deltas(entrants)
+
+    for entry in leaderboard.entries:
+        user = users.get(entry.user_id)
+        if user is None:
+            continue
+        before = user.contest_rating
+        after = max(0, before + deltas.get(entry.user_id, 0))
+        session.add(
+            ContestRatingHistory(
+                user_id=user.id,
+                contest_id=contest.id,
+                rank=entry.rank,
+                rating_before=before,
+                rating_after=after,
+                delta=after - before,
+            )
+        )
+        user.contest_rating = after
+
+    contest.rating_finalized_at = now
+    await session.commit()
+    log.info("settled contest rating for %s (%d entrants)", contest.slug, len(entrants))
+
+
 async def run_worker() -> None:
     """Poll for queued jobs forever, processing one per iteration."""
     engine = create_async_engine(
@@ -303,6 +373,8 @@ async def run_worker() -> None:
                 await process_expired_duels(session)
             async with factory() as session:
                 await process_duel_queue(session)
+            async with factory() as session:
+                await process_contest_rating_settlement(session)
         except Exception:
             log.exception("unhandled error in worker loop")
         await asyncio.sleep(_POLL_INTERVAL)

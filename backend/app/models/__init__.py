@@ -1,4 +1,10 @@
-from app.models.contest import Contest, ContestParticipant, ContestProblem, ScoringMode
+from app.models.contest import (
+    Contest,
+    ContestParticipant,
+    ContestProblem,
+    ContestRatingHistory,
+    ScoringMode,
+)
 from app.models.ctf import (
     CtfAttachment,
     CtfCategory,
@@ -68,6 +74,7 @@ __all__ = [
     "Contest",
     "ContestProblem",
     "ContestParticipant",
+    "ContestRatingHistory",
     "ScoringMode",
     "CtfChallenge",
     "CtfCategory",

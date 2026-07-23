@@ -44,6 +44,9 @@ class User(Base, TimestampMixin):
     duel_wins: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     duel_losses: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     duel_draws: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    contest_rating: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("1500")
+    )
     is_banned: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
     privacy_show_email: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")

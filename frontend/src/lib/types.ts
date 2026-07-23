@@ -254,6 +254,7 @@ export const ContestSummarySchema = z.object({
   status: ContestStatusSchema,
   fullscreen_required: z.boolean(),
   copy_paste_blocked: z.boolean(),
+  is_rated: z.boolean(),
 });
 export type ContestSummary = z.infer<typeof ContestSummarySchema>;
 
@@ -453,6 +454,16 @@ export const DuelRatingHistoryEntrySchema = z.object({
 });
 export type DuelRatingHistoryEntry = z.infer<typeof DuelRatingHistoryEntrySchema>;
 
+export const ContestRatingHistoryEntrySchema = z.object({
+  contest_id: z.string().uuid(),
+  rank: z.number().int(),
+  rating_before: z.number().int(),
+  rating_after: z.number().int(),
+  delta: z.number().int(),
+  created_at: z.string(),
+});
+export type ContestRatingHistoryEntry = z.infer<typeof ContestRatingHistoryEntrySchema>;
+
 export const DuelQueueStatusSchema = z.enum(["waiting", "matched", "cancelled"]);
 export type DuelQueueStatus = z.infer<typeof DuelQueueStatusSchema>;
 
@@ -562,6 +573,7 @@ export const UserProfileReadSchema = z.object({
   duel_wins: z.number().int(),
   duel_losses: z.number().int(),
   duel_draws: z.number().int(),
+  contest_rating: z.number().int(),
   github_url: z.string().nullable().optional(),
   link_1: z.string().nullable().optional(),
   link_2: z.string().nullable().optional(),

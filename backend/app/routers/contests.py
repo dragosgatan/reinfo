@@ -26,11 +26,13 @@ from app import storage
 from app.db import async_session_factory, get_session
 from app.dependencies import get_current_user, get_optional_user, require_role
 from app.flagging import detect_flag
+from app.leaderboard import build_leaderboard
 from app.models.classroom import Class, ClassMember
 from app.models.contest import (
     Contest,
     ContestParticipant,
     ContestProblem,
+    ContestRatingHistory,
     ContestType,
     ContestViolation,
     ScoringMode,
@@ -46,11 +48,11 @@ from app.schemas.contest import (
     ContestDetail,
     ContestListResponse,
     ContestProblemEntry,
+    ContestRatingHistoryEntry,
     ContestSummary,
     ContestUpdate,
     ContestViolationCreate,
     ContestViolationRead,
-    LeaderboardEntry,
     LeaderboardResponse,
     contest_status,
     paginate,
@@ -106,6 +108,7 @@ def _build_summary(contest: Contest, now: datetime) -> ContestSummary:
         status=contest_status(now, contest.start_time, contest.end_time),
         fullscreen_required=contest.fullscreen_required,
         copy_paste_blocked=contest.copy_paste_blocked,
+        is_rated=contest.is_rated,
     )
 
 
@@ -153,6 +156,7 @@ def _build_detail(
         problems=problems,
         fullscreen_required=contest.fullscreen_required,
         copy_paste_blocked=contest.copy_paste_blocked,
+        is_rated=contest.is_rated,
     )
 
 
@@ -241,6 +245,7 @@ async def create_contest(
         created_by=current_user.id,
         fullscreen_required=data.fullscreen_required,
         copy_paste_blocked=data.copy_paste_blocked,
+        is_rated=data.is_rated,
     )
     session.add(contest)
     await session.commit()
@@ -779,92 +784,6 @@ def _is_frozen(contest: Contest, now: datetime, viewer: User | None) -> bool:
     return not _is_staff(viewer)
 
 
-async def _build_leaderboard(slug: str, session: AsyncSession) -> LeaderboardResponse | None:
-    """Compute the full leaderboard for `slug`. Returns None if the contest is missing."""
-    contest = await session.scalar(
-        select(Contest)
-        .where(Contest.slug == slug)
-        .options(
-            selectinload(Contest.contest_problems).selectinload(ContestProblem.problem),
-            selectinload(Contest.participants).selectinload(ContestParticipant.user),
-        )
-    )
-    if contest is None:
-        return None
-
-    problem_slugs = [cp.problem.slug for cp in contest.contest_problems]
-    problem_id_to_slug = {cp.problem_id: cp.problem.slug for cp in contest.contest_problems}
-    participant_ids = [p.user_id for p in contest.participants]
-
-    if not participant_ids or not problem_slugs:
-        return LeaderboardResponse(
-            contest_slug=slug,
-            entries=[],
-            generated_at=datetime.now(UTC),
-        )
-
-    rows = (
-        await session.execute(
-            select(
-                Submission.user_id,
-                Submission.problem_id,
-                func.max(Submission.score).label("best_score"),
-                func.max(Submission.created_at).label("last_at"),
-            )
-            .where(
-                Submission.contest_id == contest.id,
-                Submission.user_id.in_(participant_ids),
-                Submission.problem_id.in_(list(problem_id_to_slug.keys())),
-            )
-            .group_by(Submission.user_id, Submission.problem_id)
-        )
-    ).all()
-
-    participant_map = {p.user_id: p.user for p in contest.participants}
-
-    scores: dict[uuid.UUID, dict[str, int]] = {uid: {} for uid in participant_ids}
-    last_sub: dict[uuid.UUID, datetime | None] = {uid: None for uid in participant_ids}
-
-    for row in rows:
-        uid = row.user_id
-        pslug = problem_id_to_slug.get(row.problem_id)
-        if pslug and uid in scores:
-            scores[uid][pslug] = row.best_score
-            if last_sub[uid] is None or row.last_at > last_sub[uid]:
-                last_sub[uid] = row.last_at
-
-    entries: list[LeaderboardEntry] = []
-    for uid in participant_ids:
-        user = participant_map.get(uid)
-        if user is None:
-            continue
-        total = sum(scores[uid].values())
-        problem_scores = {ps: scores[uid].get(ps, 0) for ps in problem_slugs}
-        entries.append(
-            LeaderboardEntry(
-                rank=0,
-                user_id=uid,
-                username=user.username,
-                display_name=user.display_name,
-                total_score=total,
-                problem_scores=problem_scores,
-                last_submission_at=last_sub[uid],
-            )
-        )
-
-    entries.sort(
-        key=lambda e: (-e.total_score, e.last_submission_at or datetime.max.replace(tzinfo=UTC))
-    )
-    for i, entry in enumerate(entries, start=1):
-        entry.rank = i
-
-    return LeaderboardResponse(
-        contest_slug=slug,
-        entries=entries,
-        generated_at=datetime.now(UTC),
-    )
-
-
 @router.get("/{slug}/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard(
     slug: str,
@@ -887,11 +806,30 @@ async def get_leaderboard(
     if cached and (now_ts - cached[0]) < _LB_TTL:
         return cached[1]
 
-    response = await _build_leaderboard(slug, session)
+    response = await build_leaderboard(slug, session)
     if response is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
     _lb_cache[slug] = (now_ts, response)
     return response
+
+
+@router.get("/users/{username}/rating-history", response_model=list[ContestRatingHistoryEntry])
+async def get_user_contest_rating_history(
+    username: str,
+    session: AsyncSession = Depends(get_session),
+) -> list[ContestRatingHistoryEntry]:
+    """Last 20 rated-contest rating changes for a user (public endpoint)."""
+    target = await session.scalar(select(User).where(User.username == username))
+    if target is None:
+        raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
+
+    rows = await session.scalars(
+        select(ContestRatingHistory)
+        .where(ContestRatingHistory.user_id == target.id)
+        .order_by(ContestRatingHistory.created_at.asc())
+        .limit(20)
+    )
+    return list(rows)
 
 
 @router.websocket("/{slug}/leaderboard/ws")
@@ -933,7 +871,7 @@ async def leaderboard_ws(
             await websocket.close(code=4403)
             return
 
-        snapshot = await _build_leaderboard(slug, session)
+        snapshot = await build_leaderboard(slug, session)
         if snapshot is not None:
             await websocket.send_json(
                 {"type": "snapshot", "data": snapshot.model_dump(mode="json")}
@@ -959,7 +897,7 @@ async def dispatch_leaderboard_update(slug: str) -> None:
     _lb_cache.pop(slug, None)
     try:
         async with async_session_factory() as session:
-            snapshot = await _build_leaderboard(slug, session)
+            snapshot = await build_leaderboard(slug, session)
     except Exception:
         return
     if snapshot is None:

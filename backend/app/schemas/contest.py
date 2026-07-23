@@ -19,6 +19,7 @@ class ContestCreate(BaseModel):
     contest_type: ContestType = ContestType.competition
     fullscreen_required: bool = False
     copy_paste_blocked: bool = False
+    is_rated: bool = False
 
     @model_validator(mode="after")
     def _end_after_start(self) -> "ContestCreate":
@@ -36,6 +37,7 @@ class ContestUpdate(BaseModel):
     contest_type: ContestType | None = None
     fullscreen_required: bool | None = None
     copy_paste_blocked: bool | None = None
+    is_rated: bool | None = None
 
 
 class ContestProblemEntry(BaseModel):
@@ -63,6 +65,7 @@ class ContestSummary(BaseModel):
     status: Literal["upcoming", "ongoing", "past"]
     fullscreen_required: bool = False
     copy_paste_blocked: bool = False
+    is_rated: bool = False
 
 
 class ContestDetail(ContestSummary):
@@ -110,6 +113,17 @@ class LeaderboardResponse(BaseModel):
     contest_slug: str
     entries: list[LeaderboardEntry]
     generated_at: datetime
+
+
+class ContestRatingHistoryEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    contest_id: uuid.UUID
+    rank: int
+    rating_before: int
+    rating_after: int
+    delta: int
+    created_at: datetime
 
 
 def contest_status(
