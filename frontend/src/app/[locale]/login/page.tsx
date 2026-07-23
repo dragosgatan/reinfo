@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,6 +34,10 @@ export default function LoginPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const rawNext = searchParams.get("next");
+  // reject absolute/protocol-relative URLs to avoid an open redirect
+  const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
 
   const loginSchema = useMemo(() => z.object({
     username: z.string().min(1, t("validationUsernameRequired")),
@@ -48,6 +53,11 @@ export default function LoginPage() {
     try {
       const user = await api.post("/api/auth/login", values, UserSchema);
       queryClient.setQueryData(["auth", "me"], user);
+
+      if (next) {
+        router.push(next as Parameters<typeof router.push>[0]);
+        return;
+      }
 
       const preferredLocale = routing.locales.find((l) => l === user.language);
       if (preferredLocale && preferredLocale !== locale) {

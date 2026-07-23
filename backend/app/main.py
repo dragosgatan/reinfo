@@ -23,6 +23,7 @@ from app.routers import (
     classrooms,
     contests,
     ctf,
+    device_auth,
     duels,
     languages,
     lessons,
@@ -116,6 +117,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(device_auth.router)
 app.include_router(users_router.router)
 app.include_router(admin.router)
 app.include_router(ai.router)

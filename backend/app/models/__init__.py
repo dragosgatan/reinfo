@@ -1,4 +1,5 @@
 from app.models.ai_chat import AiChatCache, AiChatUsage
+from app.models.api_token import ApiToken, DeviceAuthRequest, DeviceAuthStatus
 from app.models.contest import (
     Contest,
     ContestParticipant,
@@ -59,6 +60,9 @@ from app.models.user import Session, User, UserRole
 __all__ = [
     "AiChatUsage",
     "AiChatCache",
+    "ApiToken",
+    "DeviceAuthRequest",
+    "DeviceAuthStatus",
     "User",
     "UserRole",
     "Session",

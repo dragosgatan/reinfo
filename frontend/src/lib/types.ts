@@ -431,6 +431,21 @@ export const DuelReadSchema = z.object({
 });
 export type DuelRead = z.infer<typeof DuelReadSchema>;
 
+export const ApiTokenReadSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string(),
+  created_at: z.string(),
+  last_used_at: z.string().nullable(),
+  revoked_at: z.string().nullable(),
+});
+export type ApiTokenRead = z.infer<typeof ApiTokenReadSchema>;
+
+export const DeviceInfoResponseSchema = z.object({
+  valid: z.boolean(),
+  expires_at: z.string().nullable(),
+});
+export type DeviceInfoResponse = z.infer<typeof DeviceInfoResponseSchema>;
+
 export const DuelRequestReadSchema = z.object({
   id: z.string().uuid(),
   from_id: z.string().uuid(),

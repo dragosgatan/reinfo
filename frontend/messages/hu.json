@@ -816,7 +816,38 @@
       "link2": "Hivatkozás 2",
       "link3": "Hivatkozás 3",
       "linkPlaceholder": "https://..."
+    },
+    "tokens": {
+      "title": "CLI tokenek",
+      "subtitle": "Kezeld a reinfo CLI hozzáférését a fiókodhoz.",
+      "howToTitle": "Bejelentkezés a CLI-ből",
+      "howToStep1": "Telepítsd a CLI-t: pip install reinfo-cli",
+      "howToStep2Prefix": "Futtasd",
+      "howToStep3": "Erősítsd meg az itt megjelenő kódot a böngészőben.",
+      "loading": "Betöltés...",
+      "noTokens": "Nincs aktív token. Jelentkezz be a CLI-ből egy létrehozásához.",
+      "created": "Létrehozva",
+      "lastUsed": "Utoljára használva",
+      "neverUsed": "Még nem használt",
+      "revoke": "Visszavonás",
+      "revokeSuccess": "A token visszavonva.",
+      "errorGeneric": "Hiba történt. Próbáld újra.",
+      "backToProfile": "← Vissza a profilhoz"
     }
+  },
+  "cliAuth": {
+    "title": "CLI engedélyezés",
+    "subtitle": "Egy reinfo CLI megpróbál csatlakozni a fiókodhoz. Erősítsd meg, hogy ez a kód megegyezik a terminálban megjelenővel.",
+    "codeLabel": "Kód",
+    "invalidCode": "Érvénytelen vagy lejárt kód.",
+    "approveAction": "Engedélyezés",
+    "denyAction": "Elutasítás",
+    "approvedTitle": "Sikeresen engedélyezve",
+    "approvedBody": "Visszatérhetsz a terminálhoz - a CLI most már csatlakozva van.",
+    "deniedTitle": "A kérés elutasítva",
+    "notYouPrefix": "Nem te kezdeményezted ezt a kérést?",
+    "manageTokensLink": "Tokenek kezelése",
+    "errorGeneric": "Hiba történt. Próbáld újra."
   },
   "login": {
     "title": "Bejelentkezés",

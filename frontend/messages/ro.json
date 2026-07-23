@@ -816,7 +816,38 @@
       "link2": "Link 2",
       "link3": "Link 3",
       "linkPlaceholder": "https://..."
+    },
+    "tokens": {
+      "title": "Token-uri CLI",
+      "subtitle": "Gestionează accesul CLI-ului reinfo la contul tău.",
+      "howToTitle": "Cum te conectezi din CLI",
+      "howToStep1": "Instalează CLI-ul: pip install reinfo-cli",
+      "howToStep2Prefix": "Rulează",
+      "howToStep3": "Confirmă codul afișat aici, în browser.",
+      "loading": "Se încarcă...",
+      "noTokens": "Niciun token activ. Autentifică-te din CLI pentru a genera unul.",
+      "created": "Creat",
+      "lastUsed": "Ultima folosire",
+      "neverUsed": "Nefolosit încă",
+      "revoke": "Revocă",
+      "revokeSuccess": "Tokenul a fost revocat.",
+      "errorGeneric": "A apărut o eroare. Încearcă din nou.",
+      "backToProfile": "← Înapoi la profil"
     }
+  },
+  "cliAuth": {
+    "title": "Autorizare CLI",
+    "subtitle": "Un CLI reinfo încearcă să se conecteze la contul tău. Confirmă că acest cod se potrivește cu cel afișat în terminal.",
+    "codeLabel": "Cod",
+    "invalidCode": "Cod invalid sau expirat.",
+    "approveAction": "Autorizează",
+    "denyAction": "Refuză",
+    "approvedTitle": "Autorizat cu succes",
+    "approvedBody": "Te poți întoarce la terminal - CLI-ul este acum conectat.",
+    "deniedTitle": "Cererea a fost refuzată",
+    "notYouPrefix": "Nu ai inițiat tu această cerere?",
+    "manageTokensLink": "Gestionează token-urile",
+    "errorGeneric": "A apărut o eroare. Încearcă din nou."
   },
   "login": {
     "title": "Autentificare",

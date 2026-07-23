@@ -814,7 +814,38 @@
       "link2": "Link 2",
       "link3": "Link 3",
       "linkPlaceholder": "https://..."
+    },
+    "tokens": {
+      "title": "CLI Tokens",
+      "subtitle": "Manage the reinfo CLI's access to your account.",
+      "howToTitle": "How to log in from the CLI",
+      "howToStep1": "Install the CLI: pip install reinfo-cli",
+      "howToStep2Prefix": "Run",
+      "howToStep3": "Confirm the code shown here, in your browser.",
+      "loading": "Loading...",
+      "noTokens": "No active tokens. Log in from the CLI to generate one.",
+      "created": "Created",
+      "lastUsed": "Last used",
+      "neverUsed": "Never used",
+      "revoke": "Revoke",
+      "revokeSuccess": "Token revoked.",
+      "errorGeneric": "An error occurred. Try again.",
+      "backToProfile": "← Back to profile"
     }
+  },
+  "cliAuth": {
+    "title": "CLI Authorization",
+    "subtitle": "A reinfo CLI is trying to connect to your account. Confirm this code matches the one shown in your terminal.",
+    "codeLabel": "Code",
+    "invalidCode": "Invalid or expired code.",
+    "approveAction": "Authorize",
+    "denyAction": "Deny",
+    "approvedTitle": "Authorized successfully",
+    "approvedBody": "You can return to your terminal - the CLI is now connected.",
+    "deniedTitle": "Request denied",
+    "notYouPrefix": "Didn't start this request?",
+    "manageTokensLink": "Manage tokens",
+    "errorGeneric": "An error occurred. Try again."
   },
   "login": {
     "title": "Sign In",

@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
@@ -9,8 +10,10 @@ from app.db import get_session
 from app.dependencies import SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS, get_current_user
 from app.email import send_password_reset_email
 from app.limiter import limiter
+from app.models.api_token import ApiToken
 from app.models.user import PasswordResetToken, User
 from app.models.user import Session as DbSession
+from app.schemas.device_auth import ApiTokenRead
 from app.schemas.user import (
     ForgotPasswordRequest,
     LoginRequest,
@@ -190,6 +193,37 @@ async def reset_password(
 async def me(user: User = Depends(get_current_user)) -> UserRead:
     """Returnează datele utilizatorului autentificat curent."""
     return UserRead.model_validate(user)
+
+
+@router.get("/tokens", response_model=list[ApiTokenRead])
+async def list_api_tokens(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> list[ApiTokenRead]:
+    """CLI personal access tokens belonging to the current user, newest first."""
+    rows = await session.scalars(
+        select(ApiToken)
+        .where(ApiToken.user_id == current_user.id)
+        .order_by(ApiToken.created_at.desc())
+    )
+    return [ApiTokenRead.model_validate(t) for t in rows]
+
+
+@router.delete("/tokens/{token_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_api_token(
+    token_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """Revoke one of the current user's own tokens. Idempotent."""
+    token = await session.scalar(
+        select(ApiToken).where(ApiToken.id == token_id, ApiToken.user_id == current_user.id)
+    )
+    if token is None:
+        raise HTTPException(status_code=404, detail="Tokenul nu a fost găsit")
+    if token.revoked_at is None:
+        token.revoked_at = datetime.now(UTC)
+        await session.commit()
 
 
 @router.get("/users/{username}", response_model=UserProfileRead)

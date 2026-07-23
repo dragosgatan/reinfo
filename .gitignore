@@ -3,6 +3,9 @@ docs/
 INFO.md
 DOCUMENTATIE.md
 README.md
+# ...except the CLI package's README - it's the PyPI project description, not
+# project-internal documentation like the root README.md this rule targets.
+!cli/README.md
 
 
 
