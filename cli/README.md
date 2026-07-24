@@ -1,12 +1,16 @@
 # reinfo
 
-Command-line client for [reinfo.ro](https://reinfo.ro) - submit solutions, check
-status, and scaffold problems from your terminal.
+Command-line client and Python helper for [reinfo.ro](https://reinfo.ro) -
+submit solutions, check status, scaffold problems, and work with AI/dataset
+problems from your terminal or notebook.
 
 ## Install
 
 ```
 pip install reinfo
+
+# for the dataset helper (get_dataset / submit_predictions), which needs pandas:
+pip install reinfo[dataset]
 ```
 
 ## Usage
@@ -35,6 +39,26 @@ No password ever touches the CLI.
 For CI or scripting, skip `login` entirely and set `REINFO_TOKEN` - generate a
 token via the browser flow once, then export it as a secret. `REINFO_API_URL`
 overrides the API base URL (useful for pointing at a local dev backend).
+
+### Dataset helper
+
+```python
+import reinfo
+
+data = reinfo.get_dataset("titanic-survival")  # cached ~/.reinfo/cache/, 6h TTL
+data.train, data.test, data.sample_submission  # pandas DataFrames
+
+predictions = data.sample_submission.copy()
+predictions["target"] = 0
+
+result = reinfo.submit_predictions("titanic-survival", predictions)
+print(result["verdict"], result["score"])
+```
+
+`submit_predictions` validates the DataFrame's columns and row count against
+the problem's requirements before uploading, and polls until the submission
+is judged (raises `reinfo.DatasetError` on timeout or `reinfo.ValidationError`
+on bad input). Uses the same `reinfo login` credentials as the CLI.
 
 ## Development
 

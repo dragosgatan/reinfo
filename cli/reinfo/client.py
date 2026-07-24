@@ -51,6 +51,15 @@ class ReinfoClient:
         self._raise_for_status(resp)
         return resp.json()
 
+    def get_bytes(self, path: str) -> bytes:
+        url = f"{self.base_url}{path}"
+        try:
+            resp = httpx.get(url, headers=self._headers(), timeout=30.0)
+        except httpx.HTTPError as exc:
+            raise NetworkError(url, str(exc)) from exc
+        self._raise_for_status(resp)
+        return resp.content
+
     def post_json(self, path: str, json_body: dict[str, Any] | None = None) -> Any:
         url = f"{self.base_url}{path}"
         try:

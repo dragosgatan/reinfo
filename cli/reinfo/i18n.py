@@ -79,6 +79,22 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "ro": "Nu s-a putut contacta {url}: {error}",
         "en": "Could not reach {url}: {error}",
     },
+    "dataset_not_found": {
+        "ro": "Problema {slug} nu are un set de date public.",
+        "en": "Problem {slug} has no public dataset.",
+    },
+    "dataset_missing_columns": {
+        "ro": "Coloane lipsă în DataFrame: {columns}",
+        "en": "Missing columns in DataFrame: {columns}",
+    },
+    "dataset_wrong_row_count": {
+        "ro": "Număr greșit de rânduri: aștept {expected}, primit {actual}.",
+        "en": "Wrong row count: expected {expected}, got {actual}.",
+    },
+    "dataset_submit_timeout": {
+        "ro": "Nu s-a primit un verdict în {timeout}s.",
+        "en": "No verdict received within {timeout}s.",
+    },
 }
 
 

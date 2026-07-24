@@ -6,34 +6,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 import httpx
-import pytest
-from click.testing import CliRunner
 
 from reinfo import config
 from reinfo.main import cli
-
-
-@pytest.fixture(autouse=True)
-def _isolated_credentials(tmp_path, monkeypatch):
-    """Never touch the real ~/.reinfo/credentials.json while testing."""
-    fake_path = tmp_path / "credentials.json"
-    monkeypatch.setattr(config, "_CREDENTIALS_PATH", fake_path)
-    monkeypatch.delenv("REINFO_TOKEN", raising=False)
-    monkeypatch.delenv("REINFO_API_URL", raising=False)
-    yield fake_path
-
-
-@pytest.fixture
-def runner():
-    return CliRunner()
-
-
-def _json_response(payload, status_code=200):
-    return httpx.Response(
-        status_code=status_code,
-        json=payload,
-        request=httpx.Request("GET", "https://api.reinfo.ro/"),
-    )
 
 
 def test_whoami_not_logged_in(runner):
@@ -42,13 +17,13 @@ def test_whoami_not_logged_in(runner):
     assert "reinfo login" in result.output
 
 
-def test_whoami_logged_in(runner, _isolated_credentials):
+def test_whoami_logged_in(runner, json_response):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )
     with patch(
         "httpx.get",
-        return_value=_json_response(
+        return_value=json_response(
             {"username": "alice", "role": "student", "display_name": "Alice"}
         ),
     ):
@@ -57,13 +32,13 @@ def test_whoami_logged_in(runner, _isolated_credentials):
     assert "alice" in result.output
 
 
-def test_whoami_json_mode(runner, _isolated_credentials):
+def test_whoami_json_mode(runner, json_response):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )
     with patch(
         "httpx.get",
-        return_value=_json_response(
+        return_value=json_response(
             {"username": "alice", "role": "student", "display_name": "Alice"}
         ),
     ):
@@ -72,8 +47,8 @@ def test_whoami_json_mode(runner, _isolated_credentials):
     assert json.loads(result.output)["username"] == "alice"
 
 
-def test_login_device_flow_success(runner, _isolated_credentials):
-    start_resp = _json_response(
+def test_login_device_flow_success(runner, json_response):
+    start_resp = json_response(
         {
             "device_code": "dc-1",
             "user_code": "ABCD-EFGH",
@@ -83,7 +58,7 @@ def test_login_device_flow_success(runner, _isolated_credentials):
             "interval": 5,
         }
     )
-    poll_resp = _json_response({"status": "approved", "token": "reinfo_abc", "username": "bob"})
+    poll_resp = json_response({"status": "approved", "token": "reinfo_abc", "username": "bob"})
 
     with (
         patch("httpx.post", side_effect=[start_resp, poll_resp]),
@@ -100,8 +75,8 @@ def test_login_device_flow_success(runner, _isolated_credentials):
     assert saved.username == "bob"
 
 
-def test_login_polls_through_pending_states(runner, _isolated_credentials):
-    start_resp = _json_response(
+def test_login_polls_through_pending_states(runner, json_response):
+    start_resp = json_response(
         {
             "device_code": "dc-1",
             "user_code": "ABCD-EFGH",
@@ -111,8 +86,8 @@ def test_login_polls_through_pending_states(runner, _isolated_credentials):
             "interval": 5,
         }
     )
-    pending_resp = _json_response({"status": "pending"})
-    approved_resp = _json_response({"status": "approved", "token": "reinfo_abc", "username": "bob"})
+    pending_resp = json_response({"status": "pending"})
+    approved_resp = json_response({"status": "approved", "token": "reinfo_abc", "username": "bob"})
 
     with (
         patch("httpx.post", side_effect=[start_resp, pending_resp, pending_resp, approved_resp]),
@@ -125,8 +100,8 @@ def test_login_polls_through_pending_states(runner, _isolated_credentials):
     assert config.load_credentials().token == "reinfo_abc"
 
 
-def test_login_denied(runner, _isolated_credentials):
-    start_resp = _json_response(
+def test_login_denied(runner, json_response):
+    start_resp = json_response(
         {
             "device_code": "dc-1",
             "user_code": "ABCD-EFGH",
@@ -136,7 +111,7 @@ def test_login_denied(runner, _isolated_credentials):
             "interval": 5,
         }
     )
-    denied_resp = _json_response({"status": "denied"})
+    denied_resp = json_response({"status": "denied"})
 
     with (
         patch("httpx.post", side_effect=[start_resp, denied_resp]),
@@ -149,15 +124,15 @@ def test_login_denied(runner, _isolated_credentials):
     assert config.load_credentials() is None
 
 
-def test_submit_to_completion_ac(runner, _isolated_credentials, tmp_path):
+def test_submit_to_completion_ac(runner, json_response, tmp_path):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )
     solution = tmp_path / "sol.py"
     solution.write_text("print(42)\n")
 
-    submit_resp = _json_response({"id": "sub-1"})
-    final_resp = _json_response({"id": "sub-1", "verdict": "AC", "score": 100})
+    submit_resp = json_response({"id": "sub-1"})
+    final_resp = json_response({"id": "sub-1", "verdict": "AC", "score": 100})
 
     fake_sse_lines = [
         'data: {"submission_id": "sub-1", "verdict": "pending", "score": 0, "job_status": "queued"}',
@@ -187,15 +162,15 @@ def test_submit_to_completion_ac(runner, _isolated_credentials, tmp_path):
     assert "AC" in result.output
 
 
-def test_submit_wa_exits_nonzero(runner, _isolated_credentials, tmp_path):
+def test_submit_wa_exits_nonzero(runner, json_response, tmp_path):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )
     solution = tmp_path / "sol.py"
     solution.write_text("print(1)\n")
 
-    submit_resp = _json_response({"id": "sub-2"})
-    final_resp = _json_response({"id": "sub-2", "verdict": "WA", "score": 0})
+    submit_resp = json_response({"id": "sub-2"})
+    final_resp = json_response({"id": "sub-2", "verdict": "WA", "score": 0})
 
     class _FakeStreamResp:
         status_code = 200
@@ -228,12 +203,12 @@ def test_submit_requires_login(runner, tmp_path):
     assert "reinfo login" in result.output
 
 
-def test_status_defaults_to_most_recent(runner, _isolated_credentials):
+def test_status_defaults_to_most_recent(runner, json_response):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )
-    listing_resp = _json_response({"items": [{"id": "sub-9"}], "total": 1})
-    detail_resp = _json_response({"id": "sub-9", "verdict": "AC", "score": 100})
+    listing_resp = json_response({"items": [{"id": "sub-9"}], "total": 1})
+    detail_resp = json_response({"id": "sub-9", "verdict": "AC", "score": 100})
 
     with patch("httpx.get", side_effect=[listing_resp, detail_resp]):
         result = runner.invoke(cli, ["status"])
@@ -243,11 +218,11 @@ def test_status_defaults_to_most_recent(runner, _isolated_credentials):
     assert "AC" in result.output
 
 
-def test_status_with_no_submissions(runner, _isolated_credentials):
+def test_status_with_no_submissions(runner, json_response):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )
-    listing_resp = _json_response({"items": [], "total": 0})
+    listing_resp = json_response({"items": [], "total": 0})
 
     with patch("httpx.get", return_value=listing_resp):
         result = runner.invoke(cli, ["status"])
@@ -255,8 +230,8 @@ def test_status_with_no_submissions(runner, _isolated_credentials):
     assert result.exit_code == 1
 
 
-def test_init_scaffolds_statement_and_starter_file(runner):
-    problem_resp = _json_response(
+def test_init_scaffolds_statement_and_starter_file(runner, json_response):
+    problem_resp = json_response(
         {
             "slug": "two-sum",
             "title": "Two Sum",
@@ -265,7 +240,7 @@ def test_init_scaffolds_statement_and_starter_file(runner):
             "output_format": "indices",
         }
     )
-    languages_resp = _json_response(
+    languages_resp = json_response(
         [
             {
                 "slug": "python",
@@ -290,8 +265,8 @@ def test_init_scaffolds_statement_and_starter_file(runner):
         assert "Two Sum" in Path("two-sum/statement.md").read_text()
 
 
-def test_init_unsupported_language(runner):
-    problem_resp = _json_response(
+def test_init_unsupported_language(runner, json_response):
+    problem_resp = json_response(
         {
             "slug": "two-sum",
             "title": "Two Sum",
@@ -300,7 +275,7 @@ def test_init_unsupported_language(runner):
             "output_format": "x",
         }
     )
-    languages_resp = _json_response([])
+    languages_resp = json_response([])
 
     with runner.isolated_filesystem():
         with patch("httpx.get", side_effect=[problem_resp, languages_resp]):
@@ -309,7 +284,7 @@ def test_init_unsupported_language(runner):
         assert result.exit_code == 1
 
 
-def test_logout_clears_credentials(runner, _isolated_credentials):
+def test_logout_clears_credentials(runner):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )
@@ -318,7 +293,7 @@ def test_logout_clears_credentials(runner, _isolated_credentials):
     assert config.load_credentials() is None
 
 
-def test_api_error_surfaces_detail(runner, _isolated_credentials):
+def test_api_error_surfaces_detail(runner):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )
@@ -333,7 +308,7 @@ def test_api_error_surfaces_detail(runner, _isolated_credentials):
     assert "404" in result.output
 
 
-def test_network_error_message(runner, _isolated_credentials):
+def test_network_error_message(runner):
     config.save_credentials(
         config.Credentials(token="reinfo_x", username="alice", api_url="https://api.reinfo.ro")
     )

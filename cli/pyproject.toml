@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "reinfo"
 version = "0.1.0"
-description = "Command-line client for ReInfo (reinfo.ro) - submit solutions, check status, and scaffold problems from your terminal."
+description = "Command-line client and Python helper for ReInfo (reinfo.ro) - submit solutions, check status, scaffold problems, and work with AI/dataset problems from your terminal or notebook."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
@@ -22,9 +22,13 @@ Repository = "https://github.com/dragosgatan/reinfo"
 reinfo = "reinfo.main:cli"
 
 [project.optional-dependencies]
+dataset = [
+    "pandas>=2.0",
+]
 dev = [
     "pytest>=8.2.0",
     "ruff>=0.4.0",
+    "pandas>=2.0",
 ]
 
 [tool.ruff]
