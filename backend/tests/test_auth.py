@@ -1,4 +1,4 @@
-"""Tests for /api/auth/* endpoints."""
+"""tests for /api/auth/* endpoints"""
 
 import uuid
 from datetime import UTC, datetime, timedelta

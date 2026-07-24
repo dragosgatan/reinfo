@@ -1,7 +1,4 @@
-"""Heuristic code flagging for suspicious submissions.
-
-Flags are informational only - they never affect verdict or score.
-"""
+"""heuristic code flagging for suspicious submissions, informational only"""
 
 import re
 from datetime import datetime
@@ -35,10 +32,7 @@ _IMPOSSIBLY_FAST_SECONDS = 10
 
 
 def detect_flag(code: str, contest_start: datetime | None, submitted_at: datetime) -> str | None:
-    """Return a flag reason string if the submission is suspicious, else None.
-
-    Multiple heuristics are checked in priority order; only the first match is returned.
-    """
+    """return flag reason string when suspicious; heuristics checked in order, returns only first match"""
     if contest_start is not None:
         delta = (submitted_at - contest_start).total_seconds()
         if 0 <= delta < _IMPOSSIBLY_FAST_SECONDS:

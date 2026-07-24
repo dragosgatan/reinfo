@@ -1,4 +1,4 @@
-"""Track endpoints: multi-olympiad preparation checklists."""
+"""track endpoints: multi-olympiad preparation checklists"""
 
 import uuid
 from datetime import UTC, datetime
@@ -69,7 +69,7 @@ async def _ref_exists(session: AsyncSession, item_type: TrackItemType, ref_id: u
 async def _resolve_ref_info(
     session: AsyncSession, items: list[TrackItem]
 ) -> dict[uuid.UUID, tuple[str, str]]:
-    """Batch-resolve (title, slug) for each item's referenced content, one query per type."""
+    """batch-resolve (title, slug) for each item's referenced content, one query per type"""
     result: dict[uuid.UUID, tuple[str, str]] = {}
     by_type: dict[TrackItemType, list[uuid.UUID]] = {}
     for item in items:
@@ -96,7 +96,7 @@ async def _resolve_ref_info(
 async def _has_cycle(
     session: AsyncSession, track_id: uuid.UUID, item_id: uuid.UUID, new_prereq_id: uuid.UUID
 ) -> bool:
-    """Walk the prerequisite chain up from new_prereq_id; True if it reaches item_id."""
+    """walk the prerequisite chain up from new_prereq_id, true if it reaches item_id"""
     current: uuid.UUID | None = new_prereq_id
     seen: set[uuid.UUID] = set()
     while current is not None:
@@ -131,7 +131,7 @@ async def list_tracks(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> TrackListResponse:
-    """Lista traseelor de pregătire, cu procentul de completare al utilizatorului curent."""
+    """list preparation tracks, with the current user's completion percentage"""
     stmt = select(Track).options(selectinload(Track.items))
     if current_user is None or not _can_author(current_user):
         stmt = stmt.where(Track.published.is_(True))
@@ -184,7 +184,7 @@ async def get_track(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> TrackDetail:
-    """Structura completă a traseului, cu progresul utilizatorului curent și starea de blocare."""
+    """full track structure, with the current user's progress and lock state"""
     track = await _get_track_or_404(slug, session, load_items=True)
 
     if not track.published and (current_user is None or not _can_author(current_user)):
@@ -250,7 +250,7 @@ async def create_track(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> TrackDetail:
-    """Creează un traseu nou. Necesită rolul de profesor sau administrator."""
+    """create a new track, requires the teacher or admin role"""
     if not _can_author(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -286,7 +286,7 @@ async def update_track(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> TrackDetail:
-    """Editează metadatele traseului. Autorul, profesorul sau administratorul."""
+    """edit the track's metadata, author, teacher, or admin"""
     track = await _get_track_or_404(slug, session, load_items=True)
     if not _can_edit(track, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -305,7 +305,7 @@ async def delete_track(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Șterge permanent un traseu. Autorul, profesorul sau administratorul."""
+    """permanently delete a track, author, teacher, or admin"""
     track = await _get_track_or_404(slug, session)
     if not _can_edit(track, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -322,7 +322,7 @@ async def create_item(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> TrackItemRead:
-    """Adaugă un element (lecție/problemă/provocare CTF) în traseu."""
+    """add an item (lesson/problem/ctf challenge) to the track"""
     track = await _get_track_or_404(slug, session)
     if not _can_edit(track, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -369,7 +369,7 @@ async def update_item(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> TrackItemRead:
-    """Editează ordinea sau prerechizitul unui element din traseu."""
+    """edit an item's order or prerequisite in the track"""
     track = await _get_track_or_404(slug, session)
     if not _can_edit(track, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -428,7 +428,7 @@ async def delete_item(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Elimină un element din traseu."""
+    """remove an item from the track"""
     track = await _get_track_or_404(slug, session)
     if not _can_edit(track, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -452,7 +452,7 @@ async def set_progress(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> TrackItemRead:
-    """Setează statusul unui element pentru utilizatorul curent. Blocat de prerechizite."""
+    """set an item's status for the current user, blocked by prerequisites"""
     track = await _get_track_or_404(slug, session)
     if not track.published and not _can_author(current_user):
         raise HTTPException(status_code=404, detail="Traseul nu a fost găsit")

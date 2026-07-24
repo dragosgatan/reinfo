@@ -1,4 +1,4 @@
-"""Lesson schemas."""
+"""lesson schemas"""
 
 import uuid
 from datetime import datetime
@@ -49,7 +49,7 @@ class LessonUpdate(BaseModel):
 
 
 class LessonListItem(BaseModel):
-    """Compact lesson info for the /invatare index."""
+    """compact lesson info for the /invatare index"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -64,7 +64,7 @@ class LessonListItem(BaseModel):
 
 
 class LessonRead(BaseModel):
-    """Full lesson detail."""
+    """full lesson detail"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -91,7 +91,7 @@ class LessonListResponse(BaseModel):
 
 
 class LessonProgressRead(BaseModel):
-    """Completion record."""
+    """completion record"""
 
     model_config = ConfigDict(from_attributes=True)
 

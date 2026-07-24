@@ -1,10 +1,4 @@
-"""Track, TrackItem, and TrackProgress models for multi-olympiad preparation tracks.
-
-Unlike the freeform Roadmap graph, a Track is a simple linear checklist: items
-are ordered and each item may name at most one prerequisite item within the
-same track. Items curate existing content (lessons/problems/CTF challenges)
-by id - they never duplicate it.
-"""
+"""track, trackitem, and trackprogress models for multi-olympiad preparation tracks; a simple linear checklist, unlike the freeform roadmap graph"""
 
 import uuid
 from datetime import datetime

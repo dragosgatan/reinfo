@@ -1,5 +1,4 @@
-"""Tests for the S5 contest rating formula (app.contest_rating) and the worker's
-idempotent settlement job (app.worker.process_contest_rating_settlement)."""
+"""tests for the contest rating formula (app.contest_rating) and the worker's idempotent settlement job"""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -54,12 +53,7 @@ class TestComputeRatingDeltas:
         assert deltas["b"] == 0
 
     def test_deterministic_three_player_fixture_exact_values(self) -> None:
-        """Hand-derived fixture (K=32, 400-point logistic scale):
-
-        A=1600 rank1, B=1500 rank2, C=1400 rank3 (a "expected" ranking by rating).
-        A beats expectation slightly less than B beats C symmetrically, netting
-        A +10, B +0, C -10 - see module docstring for the pairwise math.
-        """
+        """hand-derived fixture (k=32, 400-point logistic scale): a=1600/rank1, b=1500/rank2, c=1400/rank3 nets +10/0/-10"""
         entrants = [
             RatingEntrant(user_id="A", rating=1600, rank=1),
             RatingEntrant(user_id="B", rating=1500, rank=2),
@@ -69,8 +63,7 @@ class TestComputeRatingDeltas:
         assert deltas == {"A": 10, "B": 0, "C": -10}
 
     def test_upset_gives_underdog_a_larger_gain_than_a_symmetric_win(self) -> None:
-        """A big underdog (rank 1 despite a much lower rating) should gain more
-        than they would have in an equal-rated matchup."""
+        """a big underdog (rank 1 despite a much lower rating) should gain more than in an equal-rated matchup"""
         equal = compute_rating_deltas(
             [
                 RatingEntrant(user_id="a", rating=1500, rank=1),

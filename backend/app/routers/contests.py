@@ -1,4 +1,4 @@
-"""Contest management and participation endpoints."""
+"""contest management and participation endpoints"""
 
 import re
 import time
@@ -70,7 +70,7 @@ _LB_TTL = 5.0
 
 
 def _slugify(text: str) -> str:
-    """Convert title to a URL-safe slug."""
+    """convert title to a url-safe slug"""
     slug = unicodedata.normalize("NFKD", text)
     slug = slug.encode("ascii", "ignore").decode("ascii")
     slug = slug.lower().strip()
@@ -167,7 +167,7 @@ async def list_contests(
     status: str | None = Query(default=None, description="upcoming | ongoing | past"),
     session: AsyncSession = Depends(get_session),
 ) -> ContestListResponse:
-    """Lista concursurilor cu paginare și filtrare după status."""
+    """list contests with pagination and status filtering"""
     now = datetime.now(UTC)
 
     stmt = (
@@ -206,7 +206,7 @@ async def get_contest(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ContestDetail:
-    """Detalii concurs. Problemele sunt ascunse înainte de start pentru participanți obișnuiți."""
+    """contest details; problems are hidden before start for regular participants"""
     contest = await _get_contest_or_404(slug, session)
     await _assert_class_test_access(contest, current_user, session)
     now = datetime.now(UTC)
@@ -222,7 +222,7 @@ async def create_contest(
     session: AsyncSession = Depends(get_session),
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> ContestDetail:
-    """Creează un concurs nou. Necesită rolul de profesor sau administrator."""
+    """create a new contest, requires the teacher or admin role"""
     if data.contest_type == ContestType.class_test:
         raise HTTPException(
             status_code=400,
@@ -262,7 +262,7 @@ async def update_contest(
     session: AsyncSession = Depends(get_session),
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> ContestDetail:
-    """Editează un concurs. Doar creatorul sau administratorul."""
+    """edit a contest, creator or admin only"""
     contest = await _get_contest_or_404(slug, session)
 
     if (
@@ -287,7 +287,7 @@ async def delete_contest(
     session: AsyncSession = Depends(get_session),
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> dict[str, str]:
-    """Șterge un concurs. Doar creatorul sau administratorul."""
+    """delete a contest, creator or admin only"""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
@@ -309,7 +309,7 @@ async def register_for_contest(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Înregistrează utilizatorul curent la concurs."""
+    """register the current user for the contest"""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
@@ -342,7 +342,7 @@ async def add_problem_to_contest(
     session: AsyncSession = Depends(get_session),
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> dict[str, str]:
-    """Adaugă o problemă la concurs și o marchează ca privată (visibility=contest)."""
+    """add a problem to the contest and mark it private (visibility=contest)"""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
@@ -385,7 +385,7 @@ async def remove_problem_from_contest(
     session: AsyncSession = Depends(get_session),
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> dict[str, str]:
-    """Elimină o problemă din concurs și o readuce la draft."""
+    """remove a problem from the contest and revert it to draft"""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
@@ -426,7 +426,7 @@ async def contest_submit(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SubmissionRead:
-    """Trimite codul sursă pentru o problemă de concurs."""
+    """submit source code for a contest problem"""
     if language not in SUPPORTED_LANGUAGES:
         raise HTTPException(
             status_code=422,
@@ -509,7 +509,7 @@ async def contest_submit_dataset(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SubmissionRead:
-    """Trimite un CSV de predicții pentru o problemă de tip dataset/AI din concurs."""
+    """submit a predictions csv for a dataset/ai contest problem"""
     csv_bytes = await csv_file.read()
     if len(csv_bytes) > _MAX_CSV_BYTES:
         raise HTTPException(status_code=413, detail="Fișierul CSV este prea mare (max 10 MB)")
@@ -598,7 +598,7 @@ async def log_violation(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Înregistrează o încălcare de securitate detectată în browser."""
+    """log a security violation detected in the browser"""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
@@ -626,10 +626,7 @@ async def check_fingerprint(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Verifică fingerprint-ul browserului față de sesiunea anterioară înregistrată.
-
-    La prima intrare stochează fingerprint-ul; la reintrări, detectează schimbarea.
-    """
+    """check the browser fingerprint against the previously logged one; stores it on first entry, flags a change on re-entry"""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
@@ -669,7 +666,7 @@ async def list_violations(
     session: AsyncSession = Depends(get_session),
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> list[ContestViolation]:
-    """Listează toate încălcările de securitate pentru un concurs. Doar profesori/admini."""
+    """list all security violations for a contest, teachers/admins only"""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
@@ -696,7 +693,7 @@ async def list_flagged_submissions(
     session: AsyncSession = Depends(get_session),
     current_user: User = require_role(UserRole.teacher, UserRole.admin, UserRole.superuser),
 ) -> list:
-    """Listează submisiile marcate automat ca suspecte. Doar profesori/admini."""
+    """list submissions auto-flagged as suspicious, teachers/admins only"""
     from app.schemas.submission import SubmissionSummary
 
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
@@ -754,7 +751,7 @@ def _is_staff(user: User | None) -> bool:
 async def _assert_class_test_access(
     contest: Contest, user: User | None, session: AsyncSession
 ) -> None:
-    """Raise 403 if contest is a class test and user is not a member of the owning class."""
+    """raise 403 if contest is a class test and user is not a member of the owning class"""
     if contest.contest_type != ContestType.class_test:
         return
     if user is None:
@@ -776,7 +773,7 @@ async def _assert_class_test_access(
 
 
 def _is_frozen(contest: Contest, now: datetime, viewer: User | None) -> bool:
-    """Test-mode contests hide the leaderboard from non-staff until the end."""
+    """test-mode contests hide the leaderboard from non-staff until the end"""
     if contest.scoring_mode != ScoringMode.test:
         return False
     if now >= contest.end_time:
@@ -790,9 +787,7 @@ async def get_leaderboard(
     session: AsyncSession = Depends(get_session),
     viewer: User | None = Depends(get_optional_user),
 ) -> LeaderboardResponse:
-    """Clasamentul concursului. Pentru concursurile de tip `test`,
-    ascuns participanților obișnuiți până la finalul concursului.
-    Răspuns cache-uit 5 secunde pentru a evita încărcarea bazei."""
+    """contest leaderboard; hidden from regular participants until the end for `test`-type contests, cached for 5s"""
     contest = await session.scalar(select(Contest).where(Contest.slug == slug))
     if contest is None:
         raise HTTPException(status_code=404, detail="Concursul nu a fost găsit")
@@ -818,7 +813,7 @@ async def get_user_contest_rating_history(
     username: str,
     session: AsyncSession = Depends(get_session),
 ) -> list[ContestRatingHistoryEntry]:
-    """Last 20 rated-contest rating changes for a user (public endpoint)."""
+    """last 20 rated-contest rating changes for a user (public endpoint)"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -837,12 +832,7 @@ async def leaderboard_ws(
     websocket: WebSocket,
     slug: str,
 ) -> None:
-    """Push live leaderboard snapshots over WebSocket.
-
-    Sends one full snapshot on connect, then a new snapshot every time the
-    judging pipeline publishes a NOTIFY for this contest. Test-mode contests
-    are gated the same way as the REST endpoint.
-    """
+    """push live leaderboard snapshots over websocket, gated the same way as the rest endpoint"""
     await websocket.accept()
 
     viewer: User | None = None
@@ -892,7 +882,7 @@ async def leaderboard_ws(
 
 
 async def dispatch_leaderboard_update(slug: str) -> None:
-    """Called by the NOTIFY listener: rebuild and broadcast a fresh snapshot."""
+    """called by the notify listener, rebuilds and broadcasts a fresh snapshot"""
     # Invalidate the REST cache so the next HTTP fetch matches what WS clients see.
     _lb_cache.pop(slug, None)
     try:

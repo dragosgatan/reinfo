@@ -1,4 +1,4 @@
-"""Tests for contest API endpoints."""
+"""tests for contest api endpoints"""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -341,7 +341,7 @@ async def test_submit_not_participant(client: AsyncClient, db_session: AsyncSess
 
 @pytest.mark.asyncio
 async def test_submission_isolation(client: AsyncClient, db_session: AsyncSession) -> None:
-    """Contest submissions are hidden from public profile until contest ends."""
+    """contest submissions are hidden from public profile until contest ends"""
     teacher = await _make_user(db_session, "teacher9", UserRole.teacher)
     await _make_user(db_session, "student7")
 
@@ -385,7 +385,7 @@ async def test_submission_isolation(client: AsyncClient, db_session: AsyncSessio
 async def test_contest_problem_public_after_end(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    """Contest problems appear in /api/problems after contest ends."""
+    """contest problems appear in /api/problems after contest ends"""
     teacher = await _make_user(db_session, "teacher10", UserRole.teacher)
 
     now = datetime.now(UTC)
@@ -416,7 +416,7 @@ async def test_contest_problem_public_after_end(
 
 @pytest.mark.asyncio
 async def test_leaderboard_ranking(client: AsyncClient, db_session: AsyncSession) -> None:
-    """Leaderboard ranks by total_score desc; tiebreaker is last submission time asc."""
+    """leaderboard ranks by total_score desc; tiebreaker is last submission time asc"""
     teacher = await _make_user(db_session, "teacher11", UserRole.teacher)
     await _make_user(db_session, "ranker1")
     await _make_user(db_session, "ranker2")
@@ -477,7 +477,7 @@ async def test_leaderboard_ranking(client: AsyncClient, db_session: AsyncSession
 async def test_test_mode_leaderboard_hidden_from_students(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    """For test-type contests, the leaderboard is 403 for non-staff during the contest."""
+    """for test-type contests, the leaderboard is 403 for non-staff during the contest"""
     teacher = await _make_user(db_session, "teacher_test1", UserRole.teacher)
     await _make_user(db_session, "student_test1")
     await _make_contest(db_session, teacher.id, slug="frozen-c", scoring_mode=ScoringMode.test)
@@ -491,7 +491,7 @@ async def test_test_mode_leaderboard_hidden_from_students(
 async def test_test_mode_leaderboard_visible_to_staff(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    """Staff can always see the leaderboard, even during a test-type contest."""
+    """staff can always see the leaderboard, even during a test-type contest"""
     teacher = await _make_user(db_session, "teacher_test2", UserRole.teacher)
     await _make_contest(db_session, teacher.id, slug="staff-c", scoring_mode=ScoringMode.test)
 
@@ -504,7 +504,7 @@ async def test_test_mode_leaderboard_visible_to_staff(
 async def test_test_mode_leaderboard_visible_after_end(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    """Once the contest has ended, the freeze lifts for everyone."""
+    """once the contest has ended, the freeze lifts for everyone"""
     teacher = await _make_user(db_session, "teacher_test3", UserRole.teacher)
     await _make_user(db_session, "student_test3")
     await _make_contest(
@@ -523,7 +523,7 @@ async def test_test_mode_leaderboard_visible_after_end(
 
 @pytest.mark.asyncio
 async def test_hub_broadcasts_to_subscribed_sockets_only() -> None:
-    """The hub fans payloads to all sockets subscribed to a slug, and only those."""
+    """the hub fans payloads to all sockets subscribed to a slug, and only those"""
     received_a: list[dict] = []
     received_b: list[dict] = []
     received_other: list[dict] = []
@@ -556,7 +556,7 @@ async def test_hub_broadcasts_to_subscribed_sockets_only() -> None:
 
 @pytest.mark.asyncio
 async def test_hub_evicts_failed_sockets() -> None:
-    """Sockets that raise on send are dropped so the next broadcast skips them."""
+    """sockets that raise on send are dropped so the next broadcast skips them"""
     delivered: list[int] = []
 
     class FlakySocket:

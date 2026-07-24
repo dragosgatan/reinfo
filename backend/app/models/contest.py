@@ -1,4 +1,4 @@
-"""Contest, ContestProblem, ContestParticipant, and ContestViolation models."""
+"""contest, contestproblem, contestparticipant, and contestviolation models"""
 
 import uuid
 from datetime import datetime
@@ -134,7 +134,7 @@ class ContestParticipant(Base):
 
 
 class ContestRatingHistory(Base, TimestampMixin):
-    """One row per participant per settled rated contest - see app.contest_rating."""
+    """one row per participant per settled rated contest, see app.contest_rating"""
 
     __tablename__ = "contest_rating_history"
 
@@ -155,7 +155,7 @@ class ContestRatingHistory(Base, TimestampMixin):
 
 
 class ContestViolation(Base):
-    """Logged when a suspicious browser event is detected during a contest."""
+    """logged when a suspicious browser event is detected during a contest"""
 
     __tablename__ = "contest_violations"
 

@@ -1,4 +1,4 @@
-"""Unit + integration tests for the judging engine."""
+"""unit + integration tests for the judging engine"""
 
 import uuid
 from datetime import UTC, datetime
@@ -264,7 +264,7 @@ async def test_judge_exact_wa(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_judge_partial_scoring(db_session: AsyncSession) -> None:
-    """PARTIAL verdict when some test cases pass and others fail."""
+    """partial verdict when some test cases pass and others fail"""
     user = await _make_user(db_session)
     problem = await _make_problem(db_session, user.id, slug="judge-partial")
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
@@ -373,7 +373,7 @@ async def test_judge_float_epsilon_wa(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_judge_compile_error(db_session: AsyncSession) -> None:
-    """CE verdict when Piston reports a compile error; all test cases marked CE."""
+    """ce verdict when piston reports a compile error; all test cases marked ce"""
     user = await _make_user(db_session)
     problem = await _make_problem(db_session, user.id, slug="judge-ce")
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)
@@ -482,7 +482,7 @@ async def test_judge_tle(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_judge_missing_expected_output_file(db_session: AsyncSession) -> None:
-    """WA per test case when the expected .out file is missing from disk."""
+    """wa per test case when the expected .out file is missing from disk"""
     user = await _make_user(db_session)
     problem = await _make_problem(db_session, user.id, slug="judge-missing-out")
     in_path, _ = await save_test_case(problem.id, 1, b"input\n", b"42\n")
@@ -512,7 +512,7 @@ async def test_judge_missing_expected_output_file(db_session: AsyncSession) -> N
 
 @pytest.mark.asyncio
 async def test_judge_skips_sample_test_cases(db_session: AsyncSession) -> None:
-    """Sample test cases must not affect the verdict."""
+    """sample test cases must not affect the verdict"""
     user = await _make_user(db_session)
     problem = await _make_problem(db_session, user.id, slug="judge-sample")
     await _make_test_case(db_session, problem.id, 0, b"wrong\n", score=10, is_sample=True)
@@ -544,7 +544,7 @@ async def test_judge_no_test_cases(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_judge_result_stores_timing(db_session: AsyncSession) -> None:
-    """execution_time_ms and memory_kb are stored in SubmissionResult."""
+    """execution_time_ms and memory_kb are stored in submissionresult"""
     user = await _make_user(db_session)
     problem = await _make_problem(db_session, user.id, slug="judge-timing")
     await _make_test_case(db_session, problem.id, 1, b"42\n", score=10)

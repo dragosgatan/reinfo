@@ -1,4 +1,4 @@
-"""Tests for submission API endpoints."""
+"""tests for submission api endpoints"""
 
 import uuid
 from unittest.mock import AsyncMock, patch
@@ -111,7 +111,7 @@ def _mock_piston(stdout: str = "42\n", exit_code: int = 0, compile_error: bool =
 async def _judge(
     client: AsyncClient, db: AsyncSession, sub_id: str, piston_stdout: str = "42\n"
 ) -> dict:
-    """Run the worker for the pending job and return the refreshed submission."""
+    """run the worker for the pending job and return the refreshed submission"""
     with _mock_piston(stdout=piston_stdout):
         await process_one_job(db)
     r = await client.get(f"/api/submissions/{sub_id}")

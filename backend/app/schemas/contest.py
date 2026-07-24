@@ -1,4 +1,4 @@
-"""Pydantic schemas for contests."""
+"""pydantic schemas for contests"""
 
 import math
 import uuid
@@ -129,7 +129,7 @@ class ContestRatingHistoryEntry(BaseModel):
 def contest_status(
     now: datetime, start: datetime, end: datetime
 ) -> Literal["upcoming", "ongoing", "past"]:
-    """Compute contest status string relative to now."""
+    """compute contest status string relative to now"""
     if now < start:
         return "upcoming"
     if now <= end:

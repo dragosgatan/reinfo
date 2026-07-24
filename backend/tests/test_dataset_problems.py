@@ -1,4 +1,4 @@
-"""Tests for dataset/AI problem judging: metric math, format validation, contest gating."""
+"""tests for dataset/ai problem judging: metric math, format validation, contest gating"""
 
 import uuid
 from datetime import UTC, datetime, timedelta

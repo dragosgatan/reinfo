@@ -23,7 +23,7 @@ _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
 
 @pytest.fixture(scope="session", autouse=True)
 async def create_schema() -> AsyncGenerator[None, None]:
-    """Drop and recreate schema once for the entire test session."""
+    """drop and recreate schema once for the entire test session"""
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
@@ -35,7 +35,7 @@ async def create_schema() -> AsyncGenerator[None, None]:
 
 @pytest.fixture(scope="session", autouse=True)
 async def override_get_session(create_schema: None) -> AsyncGenerator[None, None]:
-    """Redirect the app's DB dependency to the test database."""
+    """redirect the app's db dependency to the test database"""
 
     async def _test_session() -> AsyncGenerator[AsyncSession, None]:
         async with _session_factory() as session:
@@ -48,7 +48,7 @@ async def override_get_session(create_schema: None) -> AsyncGenerator[None, None
 
 @pytest.fixture(autouse=True)
 async def clean_tables() -> AsyncGenerator[None, None]:
-    """Delete all rows between tests to keep state isolated."""
+    """delete all rows between tests to keep state isolated"""
     yield
     async with _engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
@@ -57,12 +57,7 @@ async def clean_tables() -> AsyncGenerator[None, None]:
 
 @pytest.fixture(autouse=True)
 def bypass_rate_limiting() -> None:
-    """Disable rate limiting for all tests.
-
-    Patching limiter.enabled=False skips both _check_request_limit and the
-    view_rate_limit header injection that would otherwise crash when the check
-    is mocked away.
-    """
+    """disable rate limiting for all tests"""
     from unittest.mock import patch
 
     from app.limiter import limiter
@@ -85,7 +80,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 @pytest.fixture(autouse=True)
 def tmp_storage(tmp_path: Path) -> AsyncGenerator[None, None]:
-    """Redirect file storage to a per-test temporary directory."""
+    """redirect file storage to a per-test temporary directory"""
     from app.config import settings
 
     with patch.object(settings, "data_dir", str(tmp_path)):

@@ -1,4 +1,4 @@
-"""Submission creation and query endpoints."""
+"""submission creation and query endpoints"""
 
 import asyncio
 import json
@@ -53,7 +53,7 @@ async def submit(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SubmissionRead:
-    """Trimite codul sursă pentru o problemă. Judecarea este asincronă (job queue)."""
+    """submit source code for a problem, judging is asynchronous (job queue)"""
     if language not in SUPPORTED_LANGUAGES:
         raise HTTPException(
             status_code=422,
@@ -113,7 +113,7 @@ async def submit_dataset(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SubmissionRead:
-    """Trimite un CSV de predicții pentru o problemă de tip dataset/AI (fără concurs)."""
+    """submit a predictions csv for a dataset/ai problem (outside any contest)"""
     problem = await session.scalar(select(Problem).where(Problem.slug == slug))
     if problem is None:
         raise HTTPException(status_code=404, detail="Problema nu a fost găsită")
@@ -179,11 +179,7 @@ async def stream_submission_events(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> StreamingResponse:
-    """SSE stream of judging progress for a submission.
-
-    Emits a JSON event every ~500 ms until the job reaches a terminal state.
-    Each event: data: {"submission_id", "verdict", "score", "job_status"}
-    """
+    """sse stream of judging progress for a submission, emits a json event every ~500ms until terminal"""
     sub = await session.scalar(
         select(Submission)
         .where(Submission.id == submission_id)
@@ -234,7 +230,7 @@ async def get_submission(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> SubmissionRead:
-    """Detalii complete ale unei submisii. Vizibil pentru proprietar, autorul problemei și admin."""
+    """full submission details, visible to the owner, the problem author, and admins"""
     sub = await session.scalar(
         select(Submission)
         .where(Submission.id == submission_id)
@@ -266,7 +262,7 @@ async def list_submissions(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> SubmissionListResponse:
-    """Lista paginată a submisiilor. Utilizatorii văd doar ale proprii; adminii pot filtra după orice user_id."""
+    """paginated submission list; users see only their own, admins can filter by any user_id"""
     filters = []
 
     if current_user.role not in (UserRole.admin, UserRole.superuser):
@@ -341,7 +337,7 @@ async def get_user_submissions(
     per_page: int = Query(20, ge=1, le=50),
     session: AsyncSession = Depends(get_session),
 ) -> SubmissionListResponse:
-    """Istoricul public al submisiilor unui utilizator."""
+    """public submission history for a user"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")

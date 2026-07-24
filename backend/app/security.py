@@ -17,17 +17,17 @@ def generate_token(nbytes: int = 32) -> str:
 
 
 def generate_api_token() -> str:
-    """A recognizable, high-entropy CLI token, e.g. reinfo_<43 url-safe chars>."""
+    """a recognizable, high-entropy cli token, e.g. reinfo_<43 url-safe chars>"""
     return f"reinfo_{secrets.token_urlsafe(32)}"
 
 
 def hash_token(token: str) -> str:
-    """SHA-256 hash for CLI API tokens and device codes."""
+    """sha-256 hash for cli api tokens and device codes"""
     return hashlib.sha256(token.encode()).hexdigest()
 
 
 def generate_user_code() -> str:
-    """Short human-typeable device-auth code, e.g. WDJB-MJHT."""
+    """short human-typeable device-auth code, e.g. wdjb-mjht"""
     alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 
     def part() -> str:
@@ -41,7 +41,7 @@ def _normalize_flag(flag: str, case_sensitive: bool) -> str:
 
 
 def hash_flag(flag: str, case_sensitive: bool) -> str:
-    """Hash a CTF flag for storage. The plaintext is never persisted."""
+    """hash a ctf flag for storage, the plaintext is never persisted"""
     normalized = _normalize_flag(flag, case_sensitive)
     return bcrypt.hashpw(normalized.encode(), bcrypt.gensalt()).decode()
 

@@ -1,4 +1,4 @@
-"""Tests for the background worker and SSE streaming endpoint."""
+"""tests for the background worker and sse streaming endpoint"""
 
 import asyncio
 import json
@@ -101,7 +101,7 @@ async def _enqueue_submission(
     code: str = "print(42)",
     language: str = "python",
 ) -> tuple[uuid.UUID, uuid.UUID]:
-    """Insert a submission + judging_job directly, bypassing the HTTP layer."""
+    """insert a submission + judging_job directly, bypassing the http layer"""
     sub_id = uuid.uuid4()
 
     sub = Submission(
@@ -174,7 +174,7 @@ async def test_process_one_job_returns_false_when_empty(db_session: AsyncSession
 
 @pytest.mark.asyncio
 async def test_no_double_processing(db_session: AsyncSession) -> None:
-    """Two concurrent workers must not process the same job twice."""
+    """two concurrent workers must not process the same job twice"""
     user = await _make_user(db_session, "worker-concurrent")
     problem = await _make_problem_with_tc(db_session, user.id, "worker-concurrent-prob")
     sub_id, _ = await _enqueue_submission(db_session, user.id, problem.id)
@@ -201,7 +201,7 @@ async def test_no_double_processing(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_sse_delivers_updates(client: AsyncClient, db_session: AsyncSession) -> None:
-    """SSE stream emits a done event and closes when the job is complete."""
+    """sse stream emits a done event and closes when the job is complete"""
     user = await _make_user(db_session, "sse-user")
     problem = await _make_problem_with_tc(db_session, user.id, "sse-prob")
     await _login(client, "sse-user")
@@ -231,7 +231,7 @@ async def test_sse_delivers_updates(client: AsyncClient, db_session: AsyncSessio
 
 @pytest.mark.asyncio
 async def test_sse_queued_then_done(client: AsyncClient, db_session: AsyncSession) -> None:
-    """SSE emits a queued event on the first poll and a done event after judging."""
+    """sse emits a queued event on the first poll and a done event after judging"""
     user = await _make_user(db_session, "sse-seq")
     problem = await _make_problem_with_tc(db_session, user.id, "sse-seq-prob")
     await _login(client, "sse-seq")

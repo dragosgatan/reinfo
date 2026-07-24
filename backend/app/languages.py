@@ -1,9 +1,4 @@
-"""Canonical language catalogue - the single source of truth for the judge.
-
-Consumed directly by app.piston for execution/validation, and served via
-GET /api/languages for the frontend's language selector, Monaco config, and
-starter code. Do not duplicate this list anywhere else.
-"""
+"""canonical language catalogue, the single source of truth for the judge; consumed by app.piston and served via get /api/languages"""
 
 from dataclasses import dataclass
 

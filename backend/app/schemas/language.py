@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class LanguageRead(BaseModel):
-    """Public-facing language metadata for the frontend selector, Monaco, and starter code."""
+    """public-facing language metadata for the frontend selector, monaco, and starter code"""
 
     model_config = ConfigDict(from_attributes=True)
 

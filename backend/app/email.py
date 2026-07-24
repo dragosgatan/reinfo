@@ -35,11 +35,7 @@ _RESET_PASSWORD_CONTENT = {
 
 
 async def send_password_reset_email(to_email: str, token: str, language: str) -> None:
-    """Trimite emailul de resetare a parolei prin Resend, doar în limba contului.
-
-    Nu ridică excepții - un eșec la trimiterea emailului nu trebuie să
-    dezvăluie apelantului dacă adresa există în baza de date.
-    """
+    """send password reset email via resend, in the account's language; never raises, to avoid leaking whether the address exists"""
     if not settings.resend_api_key:
         log.warning("RESEND_API_KEY nu este configurată, emailul nu a fost trimis")
         return

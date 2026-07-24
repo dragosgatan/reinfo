@@ -1,5 +1,4 @@
-"""Tests for the S6 lesson AI chat: DB-backed rate limiting, response caching,
-and usage logging. The upstream OpenRouter call is mocked at httpx.AsyncClient.stream."""
+"""tests for the lesson ai chat: db-backed rate limiting, response caching, usage logging; the openrouter call is mocked"""
 
 import json
 from unittest.mock import patch
@@ -46,7 +45,7 @@ def _chat_body(message: str, lesson_slug: str = "vectori") -> dict:
 
 
 class _FakeAsyncCM:
-    """Minimal async context manager wrapping a pre-built fake response."""
+    """minimal async context manager wrapping a pre-built fake response"""
 
     def __init__(self, response: "_FakeResponse") -> None:
         self._response = response
@@ -69,7 +68,7 @@ class _FakeResponse:
 
 
 def _mock_openrouter_stream(lines: list[str], status_code: int = 200):
-    """Patch httpx.AsyncClient.stream to return a fake SSE response with `lines`."""
+    """patch httpx.asyncclient.stream to return a fake sse response with `lines`"""
 
     def fake_stream(self, method, url, **kwargs):
         return _FakeAsyncCM(_FakeResponse(status_code, lines))

@@ -1,4 +1,4 @@
-"""CTF challenge endpoints: browsing, flag submission, hints, attachments."""
+"""ctf challenge endpoints: browsing, flag submission, hints, attachments"""
 
 import math
 import uuid
@@ -49,7 +49,7 @@ _MAX_COOLDOWN_SECONDS = 3600
 
 
 def _required_cooldown_seconds(prior_wrong_count: int) -> int:
-    """Escalating cooldown after repeated wrong guesses; 0 while under the free-attempt budget."""
+    """escalating cooldown after repeated wrong guesses, 0 while under the free-attempt budget"""
     if prior_wrong_count <= _FREE_WRONG_ATTEMPTS:
         return 0
     exponent = prior_wrong_count - _FREE_WRONG_ATTEMPTS
@@ -86,7 +86,7 @@ def _solve_count_subquery():
 
 
 def _first_blood_subquery():
-    """One row per challenge: the username of whoever solved it first."""
+    """one row per challenge: the username of whoever solved it first"""
     ranked = (
         select(
             CtfSolve.challenge_id,
@@ -112,7 +112,7 @@ async def list_challenges(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> CtfChallengeListResponse:
-    """Lista provocărilor CTF publicate (plus cele proprii, pentru autor/admin)."""
+    """list published ctf challenges (plus your own, for author/admin)"""
     if solved is not None and current_user is None:
         raise HTTPException(
             status_code=401, detail="Autentificare necesară pentru filtrarea după status"
@@ -193,10 +193,7 @@ async def list_challenges(
 
 @router.get("/scoreboard", response_model=CtfScoreboardResponse)
 async def get_scoreboard(session: AsyncSession = Depends(get_session)) -> CtfScoreboardResponse:
-    """Clasament CTF: puncte totale, departajat după cea mai recentă rezolvare.
-
-    Registered before /{slug} so "scoreboard" is never matched as a challenge slug.
-    """
+    """ctf scoreboard: total points, tiebroken by most recent solve; registered before /{slug} to avoid slug collision"""
     rows = (
         await session.execute(
             select(
@@ -252,7 +249,7 @@ async def create_challenge(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> CtfChallengeDetail:
-    """Creează o provocare CTF nouă. Necesită rolul de profesor sau administrator."""
+    """create a new ctf challenge, requires the teacher or admin role"""
     if current_user.role not in (UserRole.teacher, UserRole.admin, UserRole.superuser):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -285,7 +282,7 @@ async def get_challenge(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> CtfChallengeDetail:
-    """Detaliile unei provocări CTF, inclusiv indiciile și atașamentele."""
+    """details of a ctf challenge, including hints and attachments"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     return await _to_detail(challenge, session, current_user)
 
@@ -297,7 +294,7 @@ async def update_challenge(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> CtfChallengeDetail:
-    """Editează o provocare CTF. Doar autorul sau administratorul."""
+    """edit a ctf challenge, author or admin only"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     if not _can_edit(challenge, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -325,7 +322,7 @@ async def delete_challenge(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Ascunde provocarea (soft-delete: published -> false). Autorul sau administratorul."""
+    """hide the challenge (soft-delete: published -> false), author or admin only"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     if not _can_edit(challenge, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -422,7 +419,7 @@ async def submit_flag(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> CtfFlagSubmitResult:
-    """Trimite un flag pentru o provocare CTF. Rată limitată, idempotent la rezolvare."""
+    """submit a flag for a ctf challenge; rate-limited, idempotent once solved"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
 
     existing_solve = await session.scalar(
@@ -534,7 +531,7 @@ async def create_hint(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> CtfHintRead:
-    """Adaugă un indiciu unei provocări. Autorul sau administratorul."""
+    """add a hint to a challenge, author or admin only"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     if not _can_edit(challenge, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -557,7 +554,7 @@ async def delete_hint(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Șterge un indiciu. Autorul sau administratorul."""
+    """delete a hint, author or admin only"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     if not _can_edit(challenge, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -578,7 +575,7 @@ async def reveal_hint(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> CtfHintRead:
-    """Dezvăluie conținutul unui indiciu; costul se scade din punctaj la rezolvare."""
+    """reveal a hint's content; its cost is deducted from the score on solve"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     hint = await session.scalar(
         select(CtfHint).where(CtfHint.id == hint_id, CtfHint.challenge_id == challenge.id)
@@ -607,7 +604,7 @@ async def upload_attachment(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> CtfAttachmentRead:
-    """Încarcă un fișier atașat unei provocări. Autorul sau administratorul."""
+    """upload a file attached to a challenge, author or admin only"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     if not _can_edit(challenge, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -633,7 +630,7 @@ async def delete_attachment(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Șterge un fișier atașat. Autorul sau administratorul."""
+    """delete an attached file, author or admin only"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     if not _can_edit(challenge, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -657,7 +654,7 @@ async def download_attachment(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> Response:
-    """Descarcă un fișier atașat unei provocări publicate (sau vizibile autorului/adminului)."""
+    """download a file attached to a published challenge (or one visible to the author/admin)"""
     challenge = await _get_challenge_or_404(slug, session, current_user)
     attachment = await session.scalar(
         select(CtfAttachment).where(

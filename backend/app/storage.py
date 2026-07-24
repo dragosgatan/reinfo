@@ -1,8 +1,4 @@
-"""File storage helpers for test case .in/.out files.
-
-All paths are resolved and validated against the configured data directory
-before any I/O to prevent path traversal attacks.
-"""
+"""file storage helpers; all paths are resolved and validated against the data directory before i/o, to prevent path traversal"""
 
 import time
 import uuid
@@ -36,11 +32,7 @@ async def save_test_case(
     input_bytes: bytes,
     output_bytes: bytes,
 ) -> tuple[str, str]:
-    """Write .in and .out files for a test case.
-
-    Returns (input_path, output_path) as absolute path strings.
-    Raises ValueError for invalid ordinal, PermissionError on traversal attempt.
-    """
+    """write .in and .out files for a test case, returns (input_path, output_path) as absolute strings"""
     in_path = _test_case_path(problem_id, ordinal, ".in")
     out_path = _test_case_path(problem_id, ordinal, ".out")
 
@@ -58,11 +50,7 @@ async def save_test_case(
 
 
 async def read_test_case(path: str) -> bytes:
-    """Read a test case file by its stored absolute path string.
-
-    Raises FileNotFoundError if the file is missing,
-    PermissionError if the path escapes the data directory.
-    """
+    """read a test case file by its stored absolute path string"""
     resolved = Path(path).resolve()
     _assert_inside_data_root(resolved)
 
@@ -71,7 +59,7 @@ async def read_test_case(path: str) -> bytes:
 
 
 async def delete_test_case(input_path: str, output_path: str) -> None:
-    """Delete .in and .out files; silently skips files that do not exist."""
+    """delete .in and .out files, silently skips files that do not exist"""
     for raw in (input_path, output_path):
         resolved = Path(raw).resolve()
         _assert_inside_data_root(resolved)
@@ -88,10 +76,7 @@ async def save_submission_output(
     submission_id: uuid.UUID,
     file_bytes: bytes,
 ) -> str:
-    """Write the uploaded output file for a submission.
-
-    Returns the absolute path string.
-    """
+    """write the uploaded output file for a submission, returns the absolute path string"""
     path = _submission_path(user_id, submission_id, "output.out")
     _assert_inside_data_root(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -110,10 +95,7 @@ def _avatar_path(user_id: uuid.UUID, ext: str) -> Path:
 
 
 async def save_avatar(user_id: uuid.UUID, content_type: str, data: bytes) -> str:
-    """Save an uploaded avatar image and return the URL path.
-
-    Validates content type and size. Returns the URL path like /avatars/{user_id}.jpg.
-    """
+    """save an uploaded avatar image and return the url path, e.g. /avatars/{user_id}.jpg"""
     if content_type not in _ALLOWED_AVATAR_TYPES:
         raise ValueError(f"Unsupported image type: {content_type}")
     if len(data) > _MAX_AVATAR_BYTES:
@@ -138,7 +120,7 @@ async def save_avatar(user_id: uuid.UUID, content_type: str, data: bytes) -> str
 
 
 def avatars_directory() -> Path:
-    """Return the avatars directory, creating it if needed."""
+    """return the avatars directory, creating it if needed"""
     d = _data_root() / "avatars"
     d.mkdir(parents=True, exist_ok=True)
     return d
@@ -155,7 +137,7 @@ def _dataset_path(slug: str, filename: str) -> Path:
 
 
 async def save_dataset_file(slug: str, filename: str, data: bytes) -> str:
-    """Write one of a dataset problem's fixed CSV files (train/test/sample_submission/answer)."""
+    """write one of a dataset problem's fixed csv files (train/test/sample_submission/answer)"""
     path = _dataset_path(slug, filename)
     _assert_inside_data_root(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -165,10 +147,7 @@ async def save_dataset_file(slug: str, filename: str, data: bytes) -> str:
 
 
 async def read_dataset_file(slug: str, filename: str) -> bytes:
-    """Read one of a dataset problem's CSV files by slug + filename.
-
-    Raises FileNotFoundError if missing, ValueError for a disallowed filename.
-    """
+    """read one of a dataset problem's csv files by slug + filename"""
     path = _dataset_path(slug, filename)
     _assert_inside_data_root(path)
     async with aiofiles.open(path, "rb") as fh:
@@ -184,7 +163,7 @@ async def save_submission_csv(
     submission_id: uuid.UUID,
     file_bytes: bytes,
 ) -> str:
-    """Write the submitted predictions CSV for a dataset-problem submission."""
+    """write the submitted predictions csv for a dataset-problem submission"""
     path = _submission_path(user_id, submission_id, "predictions.csv")
     _assert_inside_data_root(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -227,10 +206,7 @@ async def save_submission_code(
     language: str,
     file_bytes: bytes,
 ) -> str:
-    """Write the optional source code file for a submission.
-
-    Returns the absolute path string.
-    """
+    """write the optional source code file for a submission, returns the absolute path string"""
     safe_lang = "".join(c for c in language if c.isalnum() or c in "_+#")[:16] or "txt"
     path = _submission_path(user_id, submission_id, f"source.{safe_lang}")
     _assert_inside_data_root(path)

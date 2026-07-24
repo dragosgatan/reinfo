@@ -1,6 +1,4 @@
-"""Lesson AI chat: streams a tutoring response from OpenRouter, grounded in the
-lesson's markdown content. Caches identical (lesson, question) pairs and
-enforces a hard, DB-backed per-user rate limit before spending on a real call."""
+"""lesson ai chat: streams a tutoring response from openrouter, grounded in the lesson content, cached and rate-limited per user"""
 
 import json
 from collections.abc import AsyncGenerator
@@ -130,7 +128,7 @@ async def lesson_chat(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
-    """Stream a tutoring response for the last user message, grounded in the lesson."""
+    """stream a tutoring response for the last user message, grounded in the lesson"""
     last_message = next((m.content for m in reversed(data.messages) if m.role == "user"), None)
     if not data.messages or not last_message or not data.lesson_title or not data.lesson_content:
         raise HTTPException(status_code=400, detail="Missing fields")

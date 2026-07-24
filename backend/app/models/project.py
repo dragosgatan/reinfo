@@ -1,8 +1,4 @@
-"""Project, ProjectSubmission, ProjectGrade, and GithubRepoCache models.
-
-Teachers assign open-ended projects (markdown brief); students submit a
-GitHub repo link, optionally with notes, and can resubmit until the deadline.
-"""
+"""project, projectsubmission, projectgrade, and githubrepocache models; students submit a github repo link and can resubmit until the deadline"""
 
 import uuid
 from datetime import datetime
@@ -94,10 +90,7 @@ class ProjectGrade(Base):
 
 
 class GithubRepoCache(Base):
-    """Cached public repo metadata for the optional ENABLE_GITHUB_INTEGRATION feature.
-
-    Read-only, unauthenticated GitHub REST API calls only - no tokens stored.
-    """
+    """cached public repo metadata for the optional enable_github_integration feature, no tokens stored"""
 
     __tablename__ = "github_repo_cache"
 

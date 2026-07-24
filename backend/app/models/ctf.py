@@ -1,4 +1,4 @@
-"""CTF challenge models: challenges, attachments, solves, flag attempts, hints."""
+"""ctf challenge models: challenges, attachments, solves, flag attempts, hints"""
 
 import uuid
 from datetime import datetime
@@ -151,7 +151,7 @@ class CtfHint(Base):
 
 
 class CtfHintReveal(Base):
-    """Tracks which user revealed which hint - needed to charge the cost once per user."""
+    """tracks which user revealed which hint, needed to charge the cost once per user"""
 
     __tablename__ = "ctf_hint_reveals"
     __table_args__ = (UniqueConstraint("hint_id", "user_id", name="uq_ctf_hint_reveals_hint_user"),)

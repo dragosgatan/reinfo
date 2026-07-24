@@ -1,4 +1,4 @@
-"""Roadmap endpoints."""
+"""roadmap endpoints"""
 
 import uuid
 from datetime import UTC, datetime
@@ -49,7 +49,7 @@ async def _get_roadmap_or_404(
     *,
     load_relations: bool = False,
 ) -> Roadmap:
-    """Load a roadmap by slug, optionally eager-loading nodes+links and edges."""
+    """load a roadmap by slug, optionally eager-loading nodes+links and edges"""
     stmt = select(Roadmap).where(Roadmap.slug == slug)
     if load_relations:
         stmt = stmt.options(
@@ -101,7 +101,7 @@ async def list_roadmaps(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> RoadmapListResponse:
-    """Lista hărților de parcurs cu procentul de completare al utilizatorului curent."""
+    """list roadmaps with the current user's completion percentage"""
     stmt = select(Roadmap).options(selectinload(Roadmap.nodes))
     if current_user is None or not _is_admin(current_user):
         stmt = stmt.where(Roadmap.is_published.is_(True))
@@ -151,7 +151,7 @@ async def get_roadmap(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> RoadmapDetail:
-    """Structura completă a hărții de parcurs, îmbinată cu progresul utilizatorului."""
+    """full roadmap structure, merged with the user's progress"""
     roadmap = await _get_roadmap_or_404(slug, session, load_relations=True)
 
     if not roadmap.is_published and (current_user is None or not _is_admin(current_user)):
@@ -197,7 +197,7 @@ async def create_roadmap(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> RoadmapDetail:
-    """Crează o hartă de parcurs nouă. Necesită rolul de administrator."""
+    """create a new roadmap, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -229,7 +229,7 @@ async def update_roadmap(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> RoadmapDetail:
-    """Actualizează metadatele hărții de parcurs. Necesită rolul de administrator."""
+    """update the roadmap's metadata, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -261,7 +261,7 @@ async def delete_roadmap(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Șterge permanent o hartă de parcurs. Necesită rolul de administrator."""
+    """permanently delete a roadmap, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -278,7 +278,7 @@ async def create_node(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> RoadmapNodeRead:
-    """Adaugă un nod nou în hartă. Necesită rolul de administrator."""
+    """add a new node to the roadmap, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -315,7 +315,7 @@ async def update_node(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> RoadmapNodeRead:
-    """Editează un nod. Necesită rolul de administrator."""
+    """edit a node, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -349,7 +349,7 @@ async def delete_node(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Șterge un nod din hartă. Necesită rolul de administrator."""
+    """delete a node from the roadmap, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -368,7 +368,7 @@ async def add_node_link(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> NodeLinkRead:
-    """Adaugă o resursă la un nod. Necesită rolul de administrator."""
+    """add a resource to a node, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -390,7 +390,7 @@ async def remove_node_link(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Elimină o resursă de la un nod. Necesită rolul de administrator."""
+    """remove a resource from a node, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -418,7 +418,7 @@ async def create_edge(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> RoadmapEdgeRead:
-    """Adaugă o conexiune (muchie) între două noduri. Necesită rolul de administrator."""
+    """add a connection (edge) between two nodes, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -464,7 +464,7 @@ async def delete_edge(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Elimină o conexiune. Necesită rolul de administrator."""
+    """remove a connection, requires the admin role"""
     if not _is_admin(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -492,7 +492,7 @@ async def set_progress(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> ProgressRead:
-    """Setează statusul unui nod pentru utilizatorul curent. Necesită autentificare."""
+    """set a node's status for the current user, requires authentication"""
     roadmap = await _get_roadmap_or_404(slug, session)
 
     if not roadmap.is_published and not _is_admin(current_user):

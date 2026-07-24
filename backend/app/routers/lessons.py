@@ -1,4 +1,4 @@
-"""Lesson management endpoints."""
+"""lesson management endpoints"""
 
 import uuid
 from datetime import UTC, datetime
@@ -76,7 +76,7 @@ async def list_lessons(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> LessonListResponse:
-    """Lista lecțiilor publicate cu filtrare opțională."""
+    """list published lessons with optional filtering"""
     stmt = select(Lesson)
 
     is_manager = current_user is not None and _can_manage(current_user)
@@ -116,7 +116,7 @@ async def get_lesson(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> LessonRead:
-    """Detalii complete ale lecției."""
+    """full lesson details"""
     lesson = await _get_lesson_or_404(slug, session)
 
     is_manager = current_user is not None and _can_manage(current_user)
@@ -134,7 +134,7 @@ async def create_lesson(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> LessonRead:
-    """Crează o lecție nouă. Necesită rolul de profesor sau administrator."""
+    """create a new lesson, requires the teacher or admin role"""
     if not _can_manage(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -160,7 +160,7 @@ async def update_lesson(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> LessonRead:
-    """Editează o lecție. Necesită rolul de profesor sau administrator."""
+    """edit a lesson, requires the teacher or admin role"""
     if not _can_manage(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -183,7 +183,7 @@ async def delete_lesson(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Șterge permanent o lecție. Necesită rolul de administrator."""
+    """permanently delete a lesson, requires the admin role"""
     if current_user.role not in (UserRole.admin, UserRole.superuser):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -199,7 +199,7 @@ async def mark_complete(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> LessonProgressRead:
-    """Marchează lecția ca finalizată pentru utilizatorul curent."""
+    """mark the lesson as completed for the current user"""
     lesson = await _get_lesson_or_404(slug, session)
     if not lesson.published and not _can_manage(current_user):
         raise HTTPException(status_code=404, detail="Lecția nu a fost găsită")
@@ -230,7 +230,7 @@ async def unmark_complete(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Elimină marcajul de finalizare."""
+    """remove the completion mark"""
     lesson = await _get_lesson_or_404(slug, session)
 
     progress = await session.scalar(

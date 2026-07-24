@@ -37,7 +37,7 @@ async def register(
     data: UserCreate,
     session: AsyncSession = Depends(get_session),
 ) -> UserRead:
-    """Înregistrează un cont nou. Nu creează sesiune - utilizatorul trebuie să facă login separat."""
+    """register a new account, does not create a session; the user must log in separately"""
     existing = await session.scalar(
         select(User).where((User.username == data.username) | (User.email == data.email))
     )
@@ -69,7 +69,7 @@ async def login(
     data: LoginRequest,
     session: AsyncSession = Depends(get_session),
 ) -> UserRead:
-    """Autentifică utilizatorul și setează cookie-ul HTTP-only de sesiune."""
+    """authenticate the user and set the http-only session cookie"""
     user = await session.scalar(select(User).where(User.username == data.username))
     if user is None or not verify_password(data.password, user.password_hash):
         # same message for both cases to avoid user enumeration
@@ -108,7 +108,7 @@ async def logout(
     reinfo_session: str | None = Cookie(default=None),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
-    """Șterge sesiunea curentă. Idempotent - nu eșuează dacă nu există sesiune."""
+    """delete the current session, idempotent"""
     if reinfo_session:
         db_session = await session.scalar(
             select(DbSession).where(DbSession.token == reinfo_session)
@@ -133,11 +133,7 @@ async def forgot_password(
     data: ForgotPasswordRequest,
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
-    """Trimite un email cu link de resetare a parolei, dacă adresa există.
-
-    Răspunsul este identic indiferent dacă emailul există sau nu, pentru a
-    evita enumerarea conturilor.
-    """
+    """send a password reset link if the address exists; response is identical either way, to avoid account enumeration"""
     user = await session.scalar(select(User).where(User.email == data.email))
     if user is not None:
         token = generate_token()
@@ -161,7 +157,7 @@ async def reset_password(
     data: ResetPasswordRequest,
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
-    """Resetează parola pe baza unui token valid, neexpirat și nefolosit."""
+    """reset the password using a valid, unexpired, unused token"""
     reset_token = await session.scalar(
         select(PasswordResetToken).where(
             PasswordResetToken.token == data.token,
@@ -191,7 +187,7 @@ async def reset_password(
 
 @router.get("/me")
 async def me(user: User = Depends(get_current_user)) -> UserRead:
-    """Returnează datele utilizatorului autentificat curent."""
+    """return the currently authenticated user's data"""
     return UserRead.model_validate(user)
 
 
@@ -200,7 +196,7 @@ async def list_api_tokens(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[ApiTokenRead]:
-    """CLI personal access tokens belonging to the current user, newest first."""
+    """cli personal access tokens belonging to the current user, newest first"""
     rows = await session.scalars(
         select(ApiToken)
         .where(ApiToken.user_id == current_user.id)
@@ -215,7 +211,7 @@ async def revoke_api_token(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Revoke one of the current user's own tokens. Idempotent."""
+    """revoke one of the current user's own tokens, idempotent"""
     token = await session.scalar(
         select(ApiToken).where(ApiToken.id == token_id, ApiToken.user_id == current_user.id)
     )
@@ -231,7 +227,7 @@ async def get_user_profile(
     username: str,
     session: AsyncSession = Depends(get_session),
 ) -> UserProfileRead:
-    """Profilul public al unui utilizator, inclusiv statisticile de duel."""
+    """public profile of a user, including duel stats"""
     user = await session.scalar(select(User).where(User.username == username))
     if user is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")

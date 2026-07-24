@@ -1,4 +1,4 @@
-"""Problem management endpoints."""
+"""problem management endpoints"""
 
 import math
 import uuid
@@ -79,7 +79,7 @@ _MAX_CODE_BYTES = 512 * 1024  # 512 KB
 
 
 def _solve_subquery():
-    """Subquery: problem_id → distinct AC-submission user count."""
+    """subquery: problem_id → distinct ac-submission user count"""
     return (
         select(
             Submission.problem_id,
@@ -92,7 +92,7 @@ def _solve_subquery():
 
 
 def _user_status_subquery(user_id: uuid.UUID):
-    """Subquery: problem_id → 'solved'|'attempted'|'unsolved' for a given user."""
+    """subquery: problem_id → 'solved'|'attempted'|'unsolved' for a given user"""
     return (
         select(
             Submission.problem_id,
@@ -122,7 +122,7 @@ def _assert_can_view(
     contest_ended: bool = False,
     is_contest_participant: bool = False,
 ) -> None:
-    """Raise 403 if user cannot see a non-public problem."""
+    """raise 403 if user cannot see a non-public problem"""
     if problem.visibility == Visibility.public:
         return
     if problem.visibility == Visibility.contest and (contest_ended or is_contest_participant):
@@ -135,7 +135,7 @@ def _assert_can_view(
 
 
 def _assert_can_edit(problem: Problem, user: User) -> None:
-    """Raise 403 if user is neither the author nor an admin."""
+    """raise 403 if user is neither the author nor an admin"""
     if user.role in (UserRole.admin, UserRole.superuser) or problem.author_id == user.id:
         return
     raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -156,7 +156,7 @@ async def list_problems(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ProblemListResponse:
-    """Lista problemelor cu paginare, filtrare și sortare."""
+    """list problems with pagination, filtering, and sorting"""
     if status is not None and current_user is None:
         raise HTTPException(
             status_code=401, detail="Autentificare necesară pentru filtrarea după status"
@@ -266,7 +266,7 @@ async def get_problem(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ProblemDetail:
-    """Detalii complete ale problemei, inclusiv cazurile de test eșantion."""
+    """full problem details, including sample test cases"""
     problem = await session.scalar(
         select(Problem)
         .where(Problem.slug == slug)
@@ -354,7 +354,7 @@ async def create_problem(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> ProblemRead:
-    """Crează o problemă nouă. Necesită rolul de profesor sau administrator."""
+    """create a new problem, requires the teacher or admin role"""
     if current_user.role not in (UserRole.teacher, UserRole.admin, UserRole.superuser):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -380,7 +380,7 @@ async def update_problem(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> ProblemRead:
-    """Editează o problemă. Doar autorul sau administratorul."""
+    """edit a problem, author or admin only"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_edit(problem, current_user)
 
@@ -399,7 +399,7 @@ async def delete_problem(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Ascunde problema (soft-delete: visibility → private). Doar administratorul."""
+    """hide the problem (soft-delete: visibility → private), admin only"""
     if current_user.role not in (UserRole.admin, UserRole.superuser):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -417,7 +417,7 @@ async def list_test_cases(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[TestCaseRead]:
-    """Lista cazurilor de test ale problemei. Autorul sau administratorul."""
+    """list the problem's test cases, author or admin only"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_edit(problem, current_user)
     tcs = (
@@ -435,7 +435,7 @@ async def delete_test_case_endpoint(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Șterge un caz de test (fișiere + rândul din DB). Autorul sau administratorul."""
+    """delete a test case (files + db row), author or admin only"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_edit(problem, current_user)
     tc = await session.scalar(
@@ -454,7 +454,7 @@ async def delete_test_case_endpoint(
 
 
 async def _sync_score_total(problem: Problem, session: AsyncSession) -> None:
-    """Update problem.score_total to match the sum of its test case scores."""
+    """update problem.score_total to match the sum of its test case scores"""
     result = await session.scalar(
         select(func.coalesce(func.sum(TestCase.score), 0)).where(TestCase.problem_id == problem.id)
     )
@@ -473,7 +473,7 @@ async def upload_test_case(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> TestCaseRead:
-    """Încarcă un caz de test (.in + .out). Autorul sau administratorul."""
+    """upload a test case (.in + .out), author or admin only"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_edit(problem, current_user)
 
@@ -524,7 +524,7 @@ async def download_input(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> Response:
-    """Descarcă fișierul .in. Cazurile non-eșantion sunt restricționate la autor/admin."""
+    """download the .in file; non-sample cases are restricted to author/admin"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_view(problem, current_user)
 
@@ -567,7 +567,7 @@ async def run_code(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> RunResponse:
-    """Rulează codul contra cazurilor eșantion (sau a unui stdin custom), fără a crea o submisie."""
+    """run code against sample cases (or a custom stdin), without creating a submission"""
     if data.language not in SUPPORTED_LANGUAGES:
         raise HTTPException(
             status_code=422,
@@ -672,7 +672,7 @@ async def get_dataset_files_status(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> DatasetFilesStatus:
-    """Ce fișiere CSV au fost încărcate pentru o problemă de tip dataset. Autorul sau administratorul."""
+    """which csv files have been uploaded for a dataset problem, author or admin only"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_edit(problem, current_user)
     if problem.problem_type != ProblemType.dataset:
@@ -696,10 +696,7 @@ async def upload_dataset_files(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> DatasetFilesStatus:
-    """Încarcă (sau înlocuiește) fișierele CSV ale unei probleme dataset. Autorul sau administratorul.
-
-    answer.csv nu este niciodată expus prin descărcare - doar folosit la corectare.
-    """
+    """upload (or replace) a dataset problem's csv files, author or admin only; answer.csv is never exposed for download"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_edit(problem, current_user)
     if problem.problem_type != ProblemType.dataset:
@@ -736,7 +733,7 @@ async def download_dataset_file(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> Response:
-    """Descarcă unul dintre fișierele publice ale problemei dataset (nu answer.csv)."""
+    """download one of the dataset problem's public files (not answer.csv)"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_view(problem, current_user)
     if problem.problem_type != ProblemType.dataset:
@@ -763,7 +760,7 @@ async def set_quiz_options(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[QuizOptionRead]:
-    """Înlocuiește toate opțiunile quiz ale problemei. Autorul sau administratorul."""
+    """replace all of the problem's quiz options, author or admin only"""
     problem = await _get_problem_or_404(slug, session)
     _assert_can_edit(problem, current_user)
 
@@ -804,7 +801,7 @@ async def quiz_attempt(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> QuizAttemptResult:
-    """Verifică răspunsul la un quiz. Returnează corectitudinea și explicațiile."""
+    """check a quiz answer, returns correctness and explanations"""
     problem = await session.scalar(
         select(Problem).where(Problem.slug == slug).options(selectinload(Problem.quiz_options))
     )

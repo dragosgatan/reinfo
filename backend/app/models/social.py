@@ -1,4 +1,4 @@
-"""Social models: friend requests, friendships, notifications."""
+"""social models: friend requests, friendships, notifications"""
 
 import uuid
 from enum import StrEnum
@@ -48,7 +48,7 @@ class FriendRequest(Base, TimestampMixin):
 
 
 class Friendship(Base, TimestampMixin):
-    """Two rows per friendship (A→B and B→A) for easy querying."""
+    """two rows per friendship (a→b and b→a) for easy querying"""
 
     __tablename__ = "friendships"
     __table_args__ = (UniqueConstraint("user_id", "friend_id", name="uq_friendship_pair"),)

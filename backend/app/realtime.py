@@ -1,10 +1,4 @@
-"""Realtime fan-out for the contest leaderboard.
-
-A single FastAPI worker keeps WebSocket connections in an in-process hub.
-Cross-process broadcasts (worker → web) ride on Postgres LISTEN/NOTIFY so
-no extra infra is required. The web process subscribes to one channel and
-re-publishes each notification to all sockets registered for that contest.
-"""
+"""realtime fan-out over websockets, with cross-process broadcast via postgres listen/notify"""
 
 import asyncio
 import logging
@@ -30,7 +24,7 @@ CLASS_CHAT_CHANNEL = "reinfo_class_chat"
 
 
 class LeaderboardHub:
-    """Tracks active WebSocket subscribers, grouped by contest slug."""
+    """tracks active websocket subscribers, grouped by contest slug"""
 
     def __init__(self) -> None:
         self._sockets: dict[str, set[WebSocket]] = defaultdict(set)
@@ -70,7 +64,7 @@ hub = LeaderboardHub()
 
 
 class DuelHub:
-    """Tracks active WebSocket subscribers for duel rooms, keyed by duel_id string."""
+    """tracks active websocket subscribers for duel rooms, keyed by duel_id string"""
 
     def __init__(self) -> None:
         self._sockets: dict[str, set[WebSocket]] = defaultdict(set)
@@ -110,7 +104,7 @@ duel_hub = DuelHub()
 
 
 class NotificationHub:
-    """Tracks active WebSocket subscribers for per-user notification delivery."""
+    """tracks active websocket subscribers for per-user notification delivery"""
 
     def __init__(self) -> None:
         self._sockets: dict[str, set[WebSocket]] = defaultdict(set)
@@ -150,7 +144,7 @@ notification_hub = NotificationHub()
 
 
 class ClassChatHub:
-    """Tracks WebSocket subscribers for class group chat, keyed by class_id string."""
+    """tracks websocket subscribers for class group chat, keyed by class_id string"""
 
     def __init__(self) -> None:
         self._sockets: dict[str, set[WebSocket]] = defaultdict(set)
@@ -190,14 +184,14 @@ class_chat_hub = ClassChatHub()
 
 
 def _to_asyncpg_dsn(sqlalchemy_url: str) -> str:
-    """Turn `postgresql+asyncpg://...` into the plain DSN asyncpg expects."""
+    """turn `postgresql+asyncpg://...` into the plain dsn asyncpg expects"""
     parsed = urlparse(sqlalchemy_url)
     scheme = parsed.scheme.split("+", 1)[0] or "postgresql"
     return urlunparse(parsed._replace(scheme=scheme))
 
 
 async def publish_contest_update(session: AsyncSession, contest_slug: str) -> None:
-    """Emit a NOTIFY for the given contest slug on the leaderboard channel."""
+    """emit a notify for the given contest slug on the leaderboard channel"""
     await session.execute(
         text("SELECT pg_notify(:channel, :payload)").bindparams(
             channel=LEADERBOARD_CHANNEL, payload=contest_slug
@@ -206,7 +200,7 @@ async def publish_contest_update(session: AsyncSession, contest_slug: str) -> No
 
 
 async def publish_duel_update(session: AsyncSession, duel_id: str) -> None:
-    """Emit a NOTIFY for the given duel_id on the duel channel."""
+    """emit a notify for the given duel_id on the duel channel"""
     await session.execute(
         text("SELECT pg_notify(:channel, :payload)").bindparams(
             channel=DUEL_CHANNEL, payload=duel_id
@@ -215,7 +209,7 @@ async def publish_duel_update(session: AsyncSession, duel_id: str) -> None:
 
 
 async def publish_notification(session: AsyncSession, user_id: str, payload: str) -> None:
-    """Emit a NOTIFY for a user notification. Payload is `<user_id>:<json>`."""
+    """emit a notify for a user notification; payload is `<user_id>:<json>`"""
     await session.execute(
         text("SELECT pg_notify(:channel, :payload)").bindparams(
             channel=NOTIFICATION_CHANNEL, payload=f"{user_id}:{payload}"
@@ -224,7 +218,7 @@ async def publish_notification(session: AsyncSession, user_id: str, payload: str
 
 
 async def publish_class_message(session: AsyncSession, class_id: str, payload: str) -> None:
-    """Emit a NOTIFY for a class chat message. Payload is `<class_id>:<json>`."""
+    """emit a notify for a class chat message; payload is `<class_id>:<json>`"""
     await session.execute(
         text("SELECT pg_notify(:channel, :payload)").bindparams(
             channel=CLASS_CHAT_CHANNEL, payload=f"{class_id}:{payload}"
@@ -242,10 +236,7 @@ async def run_listener(
     on_notification: OnUpdate | None = None,
     on_class_chat: OnUpdate | None = None,
 ) -> None:
-    """Subscribe to Postgres NOTIFY events and dispatch them locally.
-
-    Re-connects on failure. Returns when `stop_event` is set.
-    """
+    """subscribe to postgres notify events and dispatch them locally; reconnects on failure, returns when `stop_event` is set"""
     dsn = _to_asyncpg_dsn(settings.database_url)
     while not stop_event.is_set():
         conn: asyncpg.Connection | None = None

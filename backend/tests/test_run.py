@@ -1,4 +1,4 @@
-"""Tests for the ephemeral /api/problems/{slug}/run endpoint (S1)."""
+"""tests for the ephemeral /api/problems/{slug}/run endpoint"""
 
 import uuid
 from unittest.mock import AsyncMock, patch

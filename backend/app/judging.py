@@ -1,9 +1,4 @@
-"""Judging engine: executes submitted code via Piston and compares output.
-
-Runs each non-sample test case through the sandbox, maps execution results to
-per-test verdicts (CE/TLE/MLE/RE/AC/WA), then sets the submission's overall
-verdict and score.
-"""
+"""judging engine: runs each non-sample test case via piston, maps results to per-test verdicts, sets overall verdict and score"""
 
 import io
 import uuid
@@ -73,11 +68,7 @@ def _compare_float_epsilon(
 
 
 async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> None:
-    """Execute and judge a submission against all non-sample test cases.
-
-    Updates verdict, score, judged_at on the Submission and inserts
-    one SubmissionResult row per test case.
-    """
+    """execute and judge a submission against all non-sample test cases; updates the submission and inserts a result row per test case"""
     submission = await session.scalar(
         select(Submission)
         .where(Submission.id == submission_id)
@@ -249,12 +240,7 @@ async def judge_submission(submission_id: uuid.UUID, session: AsyncSession) -> N
 async def judge_dataset_submission(
     submission: Submission, problem: Problem, session: AsyncSession
 ) -> None:
-    """Judge a CSV submission for a dataset/AI problem against answer.csv.
-
-    Never runs Piston - pure pandas comparison. Any malformed input (missing
-    file, unparseable CSV, wrong columns/rows/ids) results in verdict
-    INVALID_FORMAT with a clear message instead of raising.
-    """
+    """judge a csv submission for a dataset/ai problem against answer.csv; pure pandas comparison, malformed input yields invalid_format"""
     now = datetime.now(UTC)
 
     async def _fail(message: str) -> None:
@@ -344,12 +330,7 @@ async def _run_dataset_repro(
     metric: DatasetMetric,
     graded_score: int,
 ) -> None:
-    """Re-run the submitted .py against test.csv and flag manual review on a material mismatch.
-
-    Contract: the script receives test.csv on stdin and must print a predictions
-    CSV (same id/target columns) to stdout. Never changes verdict/score - only
-    sets manual_review, mirroring flag_reason's "informational only" contract.
-    """
+    """re-run the submitted .py against test.csv and flag manual review on a material mismatch; never changes verdict/score"""
     try:
         test_csv = await storage.read_dataset_file(problem.slug, "test.csv")
     except FileNotFoundError:
@@ -387,7 +368,7 @@ async def _run_dataset_repro(
 
 
 async def _notify_contest_if_any(session: AsyncSession, submission: Submission) -> None:
-    """Emit a NOTIFY for the contest leaderboard channel if this submission belongs to a contest."""
+    """emit a notify for the contest leaderboard channel if this submission belongs to a contest"""
     if submission.contest_id is None:
         return
     slug = await session.scalar(select(Contest.slug).where(Contest.id == submission.contest_id))
@@ -399,13 +380,13 @@ _ELO_K = 32
 
 
 def _elo_change(rating_a: int, rating_b: int, score_a: float) -> int:
-    """Return the rating change for player A. score_a is 1 (win), 0.5 (draw), 0 (loss)."""
+    """return the rating change for player a; score_a is 1 (win), 0.5 (draw), 0 (loss)"""
     expected = 1.0 / (1.0 + 10 ** ((rating_b - rating_a) / 400.0))
     return round(_ELO_K * (score_a - expected))
 
 
 async def _update_duel_if_any(session: AsyncSession, submission: Submission) -> None:
-    """Update duel state after a submission is judged. Finishes the duel on AC."""
+    """update duel state after a submission is judged, finishes the duel on ac"""
     if submission.duel_id is None:
         return
 

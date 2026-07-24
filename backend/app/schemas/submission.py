@@ -28,7 +28,7 @@ class SubmissionResultRead(BaseModel):
 
 
 class SubmissionRead(BaseModel):
-    """Full submission detail including per-test results and source code."""
+    """full submission detail including per-test results and source code"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -50,7 +50,7 @@ class SubmissionRead(BaseModel):
 
 
 class SubmissionSummary(BaseModel):
-    """Submission without per-test results, used in list views."""
+    """submission without per-test results, used in list views"""
 
     id: uuid.UUID
     user_id: uuid.UUID

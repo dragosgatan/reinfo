@@ -1,10 +1,4 @@
-"""Caching, rate limiting, and usage logging for the lesson AI chat (S6).
-
-The actual OpenRouter call lives in app.routers.ai (it needs to stream chunks
-straight through to the response) - this module holds everything around that
-call: whether to skip it (cache), whether to allow it (rate limit), and what
-to record afterward (usage log).
-"""
+"""caching, rate limiting, and usage logging for the lesson ai chat; the actual openrouter call lives in app.routers.ai"""
 
 import hashlib
 from datetime import UTC, datetime, timedelta
@@ -81,9 +75,7 @@ async def _oldest_usage_since(
 
 
 async def check_rate_limit(session: AsyncSession, user: User) -> None:
-    """Raise 429 if the user is over the burst or daily cap. Cache hits never
-    count toward either - only real model calls consume the quota. Admins and
-    superusers are exempt entirely."""
+    """raise 429 if user is over the burst or daily cap; cache hits don't count, admins/superusers are exempt"""
     if user.role in (UserRole.admin, UserRole.superuser):
         return
 

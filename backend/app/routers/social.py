@@ -1,4 +1,4 @@
-"""Social features: friend requests, friendships, notifications, activity feed."""
+"""social features: friend requests, friendships, notifications, activity feed"""
 
 import json
 import uuid
@@ -88,7 +88,7 @@ async def get_friend_status(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> FriendStatusResponse:
-    """Returnează statusul de prietenie cu un alt utilizator."""
+    """return friendship status with another user"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -141,7 +141,7 @@ async def send_friend_request(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> FriendRequestRead:
-    """Trimite o cerere de prietenie."""
+    """send a friend request"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -193,7 +193,7 @@ async def accept_friend_request(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> FriendRequestRead:
-    """Acceptă o cerere de prietenie primită."""
+    """accept an incoming friend request"""
     req = await session.scalar(
         select(FriendRequest).where(
             FriendRequest.id == request_id,
@@ -234,7 +234,7 @@ async def reject_friend_request(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> FriendRequestRead:
-    """Refuză o cerere de prietenie primită."""
+    """decline an incoming friend request"""
     req = await session.scalar(
         select(FriendRequest).where(
             FriendRequest.id == request_id,
@@ -257,7 +257,7 @@ async def remove_friend(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Elimină un prieten din lista de prieteni."""
+    """remove a friend from the friends list"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -276,7 +276,7 @@ async def list_friends(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[FriendshipRead]:
-    """Lista prietenilor cu statusul online."""
+    """list friends with their online status"""
     rows = await session.execute(select(Friendship).where(Friendship.user_id == user.id))
     friendships = rows.scalars().all()
 
@@ -314,7 +314,7 @@ async def list_friend_requests(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[FriendRequestRead]:
-    """Lista cererilor de prietenie primite (pending)."""
+    """list incoming pending friend requests"""
     rows = await session.execute(
         select(FriendRequest).where(
             FriendRequest.receiver_id == user.id,
@@ -335,7 +335,7 @@ async def get_activity_feed(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[ActivityFeedItem]:
-    """Activitatea recentă a prietenilor (ultimele 50 de submisii AC)."""
+    """recent friend activity (last 50 ac submissions)"""
     rows = await session.execute(select(Friendship.friend_id).where(Friendship.user_id == user.id))
     friend_ids = [r for (r,) in rows]
     if not friend_ids:
@@ -378,7 +378,7 @@ async def list_notifications(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[NotificationRead]:
-    """Lista notificărilor utilizatorului (cele mai recente 50)."""
+    """list the user's notifications (most recent 50)"""
     rows = await session.execute(
         select(Notification)
         .where(Notification.user_id == user.id)
@@ -394,7 +394,7 @@ async def mark_notification_read(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> NotificationRead:
-    """Marchează o notificare ca citită."""
+    """mark a notification as read"""
     notif = await session.scalar(
         select(Notification).where(
             Notification.id == notification_id, Notification.user_id == user.id
@@ -412,7 +412,7 @@ async def mark_all_notifications_read(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Marchează toate notificările ca citite."""
+    """mark all notifications as read"""
     rows = await session.execute(
         select(Notification).where(Notification.user_id == user.id, Notification.read.is_(False))
     )
@@ -426,7 +426,7 @@ async def notifications_ws(
     websocket: WebSocket,
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """WebSocket pentru livrarea notificărilor în timp real."""
+    """websocket for real-time notification delivery"""
     from datetime import UTC
 
     from app.dependencies import SESSION_COOKIE_NAME

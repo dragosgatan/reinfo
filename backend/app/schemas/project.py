@@ -1,4 +1,4 @@
-"""Project Pydantic schemas."""
+"""project pydantic schemas"""
 
 import uuid
 from datetime import datetime

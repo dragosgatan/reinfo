@@ -1,4 +1,4 @@
-"""Tests for /api/problems/* endpoints."""
+"""tests for /api/problems/* endpoints"""
 
 import uuid
 from io import BytesIO
@@ -78,7 +78,7 @@ async def _make_test_case(
     input_bytes: bytes = b"1 2\n",
     output_bytes: bytes = b"3\n",
 ) -> TestCase:
-    """Create a test case row with real files on disk."""
+    """create a test case row with real files on disk"""
     from app.storage import save_test_case
 
     in_path, out_path = await save_test_case(problem_id, ordinal, input_bytes, output_bytes)

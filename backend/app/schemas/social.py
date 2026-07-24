@@ -1,4 +1,4 @@
-"""Schemas for social features: friends, notifications, activity feed."""
+"""schemas for social features: friends, notifications, activity feed"""
 
 import uuid
 from datetime import datetime
@@ -70,7 +70,7 @@ class ActivityFeedItem(BaseModel):
 
 
 class FriendStatusResponse(BaseModel):
-    """Friendship status between current user and a target user."""
+    """friendship status between current user and a target user"""
 
     is_friend: bool
     pending_sent: bool

@@ -1,4 +1,4 @@
-"""Roadmap Pydantic schemas."""
+"""roadmap pydantic schemas"""
 
 import uuid
 from datetime import datetime
@@ -9,7 +9,7 @@ from app.models.roadmap import NodeLinkType, NodeStatus
 
 
 class NodeLinkRead(BaseModel):
-    """A single resource link attached to a roadmap node."""
+    """a single resource link attached to a roadmap node"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -28,14 +28,14 @@ class NodeLinkCreate(BaseModel):
 
 
 class ProgressRead(BaseModel):
-    """User's progress record for a single node."""
+    """user's progress record for a single node"""
 
     status: NodeStatus
     updated_at: datetime
 
 
 class RoadmapNodeRead(BaseModel):
-    """Full node with resource links and merged user progress."""
+    """full node with resource links and merged user progress"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -70,7 +70,7 @@ class RoadmapNodeUpdate(BaseModel):
 
 
 class RoadmapEdgeRead(BaseModel):
-    """A directed prerequisite edge between two nodes."""
+    """a directed prerequisite edge between two nodes"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -85,7 +85,7 @@ class RoadmapEdgeCreate(BaseModel):
 
 
 class RoadmapSummary(BaseModel):
-    """Compact roadmap info for the /api/roadmaps list."""
+    """compact roadmap info for the /api/roadmaps list"""
 
     id: uuid.UUID
     title: str
@@ -99,7 +99,7 @@ class RoadmapSummary(BaseModel):
 
 
 class RoadmapDetail(BaseModel):
-    """Full roadmap with all nodes and edges."""
+    """full roadmap with all nodes and edges"""
 
     id: uuid.UUID
     title: str

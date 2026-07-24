@@ -1,12 +1,4 @@
-"""Metric computation and shape validation for dataset/AI problem judging.
-
-Score mapping: accuracy/f1 are already 0-1, so with no threshold they scale
-directly to 0-100; with a threshold, reaching it scores 100 and below it
-scales proportionally. rmse/mae are unbounded error metrics (lower is
-better) and therefore require a threshold to map onto 0-100 - without one
-they score 0. Reaching the threshold scores 100, and score falls off
-linearly to 0 at 2x the threshold.
-"""
+"""metric computation and shape validation for dataset/ai problem judging; see score_from_metric for the 0-100 score mapping"""
 
 import pandas as pd
 
@@ -16,7 +8,7 @@ _HIGHER_IS_BETTER = {DatasetMetric.accuracy, DatasetMetric.f1}
 
 
 class FormatError(Exception):
-    """Raised when a submitted CSV does not match the expected shape."""
+    """raised when a submitted csv does not match the expected shape"""
 
 
 def validate_submission_shape(
@@ -26,7 +18,7 @@ def validate_submission_shape(
     target_column: str,
     expected_rows: int | None,
 ) -> None:
-    """Raise FormatError with a clear Romanian message if the shape is wrong."""
+    """raise formaterror with a clear romanian message if the shape is wrong"""
     if id_column not in submission_df.columns:
         raise FormatError(f"Lipsește coloana '{id_column}'")
     if target_column not in submission_df.columns:
@@ -53,10 +45,7 @@ def compute_metric(
     id_column: str,
     target_column: str,
 ) -> float:
-    """Compute the configured metric between the submission and the answer key.
-
-    Rows are aligned by id_column before comparison.
-    """
+    """compute the configured metric between the submission and the answer key, rows aligned by id_column"""
     merged = submission_df[[id_column, target_column]].merge(
         answer_df[[id_column, target_column]], on=id_column, suffixes=("_pred", "_true")
     )
@@ -77,7 +66,7 @@ def compute_metric(
 
 
 def _f1_score(y_true: pd.Series, y_pred: pd.Series) -> float:
-    """Macro-averaged F1 (reduces to binary F1 when there are exactly two labels)."""
+    """macro-averaged f1, reduces to binary f1 when there are exactly two labels"""
     labels = set(y_true) | set(y_pred)
     if not labels:
         return 0.0
@@ -95,7 +84,7 @@ def _f1_score(y_true: pd.Series, y_pred: pd.Series) -> float:
 
 
 def score_from_metric(metric: DatasetMetric, value: float, threshold: float | None) -> int:
-    """Map a raw metric value to an integer 0-100 score. See module docstring."""
+    """map a raw metric value to an integer 0-100 score"""
     if metric in _HIGHER_IS_BETTER:
         base = max(0.0, min(1.0, value))
         if threshold is None or threshold <= 0:

@@ -15,7 +15,7 @@ SESSION_EXPIRY_DAYS = 30
 
 
 async def _user_from_bearer_token(session: AsyncSession, authorization: str) -> User | None:
-    """CLI auth path: `Authorization: Bearer reinfo_...`. See app.models.api_token."""
+    """cli auth path: `authorization: bearer reinfo_...`, see app.models.api_token"""
     token = authorization[len("Bearer ") :].strip()
     if not token:
         return None
@@ -81,7 +81,7 @@ async def get_optional_user(
     authorization: str | None = Header(default=None),
     session: AsyncSession = Depends(get_session),
 ) -> User | None:
-    """Like get_current_user but returns None for unauthenticated requests."""
+    """like get_current_user but returns none for unauthenticated requests"""
     if authorization and authorization.startswith("Bearer "):
         return await _user_from_bearer_token(session, authorization)
 
@@ -99,7 +99,7 @@ async def get_optional_user(
 
 
 def require_role(*roles: UserRole) -> User:
-    """FastAPI dependency factory; returns a Depends that enforces role membership."""
+    """fastapi dependency factory; returns a depends that enforces role membership"""
 
     async def _check(user: User = Depends(get_current_user)) -> User:
         if user.role not in roles:

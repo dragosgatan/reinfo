@@ -1,4 +1,4 @@
-"""Device-authorization-flow login for the reinfo CLI (RFC 8628, simplified)."""
+"""device-authorization-flow login for the reinfo cli (rfc 8628, simplified)"""
 
 from datetime import UTC, datetime, timedelta
 

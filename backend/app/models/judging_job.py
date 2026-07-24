@@ -1,4 +1,4 @@
-"""Job queue for background judging."""
+"""job queue for background judging"""
 
 import uuid
 from datetime import datetime

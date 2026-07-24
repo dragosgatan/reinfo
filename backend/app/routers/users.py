@@ -1,4 +1,4 @@
-"""User profile management: profile update, avatar upload, stats, external results."""
+"""user profile management: profile update, avatar upload, stats, external results"""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -36,7 +36,7 @@ async def search_users(
     limit: int = Query(10, ge=1, le=20),
     session: AsyncSession = Depends(get_session),
 ) -> list[UserPublic]:
-    """Caută utilizatori după username sau display name."""
+    """search users by username or display name"""
     pattern = f"%{q}%"
     rows = await session.execute(
         select(User)
@@ -159,7 +159,7 @@ async def update_profile(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> UserRead:
-    """Actualizează profilul utilizatorului autentificat."""
+    """update the authenticated user's profile"""
     if data.display_name is not None:
         user.display_name = data.display_name
     if data.bio is not None:
@@ -192,7 +192,7 @@ async def upload_avatar(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> UserRead:
-    """Încarcă un avatar nou pentru utilizatorul autentificat (JPEG, PNG sau WebP, max 2 MB)."""
+    """upload a new avatar for the authenticated user (jpeg, png, or webp, max 2 mb)"""
     content_type = file.content_type or ""
     data = await file.read()
     try:
@@ -213,7 +213,7 @@ async def get_activity(
     username: str,
     session: AsyncSession = Depends(get_session),
 ) -> list[ActivityDay]:
-    """Heatmap de activitate: submisii per zi din ultimele 365 de zile."""
+    """activity heatmap: submissions per day over the last 365 days"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -239,7 +239,7 @@ async def get_stats(
     username: str,
     session: AsyncSession = Depends(get_session),
 ) -> UserStatsRead:
-    """Statistici profil: total rezolvate, submisii, distribuție dificultate, realizări."""
+    """profile stats: total solved, submissions, difficulty distribution, achievements"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -366,7 +366,7 @@ async def list_external_results(
     username: str,
     session: AsyncSession = Depends(get_session),
 ) -> list[ExternalResultRead]:
-    """Lista rezultatelor externe ale unui utilizator."""
+    """list a user's external results"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -385,7 +385,7 @@ async def add_external_result(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ExternalResultRead:
-    """Adaugă un rezultat extern auto-declarat."""
+    """add a self-declared external result"""
     result = ExternalResult(
         user_id=user.id,
         contest_name=data.contest_name,
@@ -405,7 +405,7 @@ async def delete_external_result(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Șterge un rezultat extern propriu."""
+    """delete one of your own external results"""
     result = await session.scalar(
         select(ExternalResult).where(
             ExternalResult.id == result_id, ExternalResult.user_id == user.id
@@ -427,7 +427,7 @@ async def verify_external_result(
     admin: User = require_role(UserRole.admin, UserRole.superuser),
     session: AsyncSession = Depends(get_session),
 ) -> ExternalResultRead:
-    """Verifică sau anulează verificarea unui rezultat extern (doar admin)."""
+    """verify or unverify an external result (admin only)"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -449,7 +449,7 @@ async def verify_external_result(
 
 @router.get("/achievements/list", response_model=list[AchievementInfo])
 async def list_achievements() -> list[AchievementInfo]:
-    """Returnează lista completă de realizări posibile."""
+    """return the full list of possible achievements"""
     return _ACHIEVEMENTS
 
 
@@ -458,7 +458,7 @@ async def _problems_leaderboard_query(
     limit: int,
     since: datetime | None = None,
 ) -> list[ProblemsLeaderboardEntry]:
-    """Shared logic for all-time and weekly problems leaderboards."""
+    """shared logic for all-time and weekly problems leaderboards"""
     diff_label = case(
         (Problem.difficulty <= 3, "easy"),
         (Problem.difficulty <= 6, "medium"),
@@ -529,7 +529,7 @@ async def problems_leaderboard(
     limit: int = Query(100, ge=1, le=200),
     session: AsyncSession = Depends(get_session),
 ) -> list[ProblemsLeaderboardEntry]:
-    """Clasament global (all-time) după scorul ponderat al problemelor rezolvate."""
+    """global (all-time) leaderboard by weighted solved-problem score"""
     return await _problems_leaderboard_query(session, limit)
 
 
@@ -538,7 +538,7 @@ async def problems_leaderboard_weekly(
     limit: int = Query(100, ge=1, le=200),
     session: AsyncSession = Depends(get_session),
 ) -> list[ProblemsLeaderboardEntry]:
-    """Clasament săptămânal după scorul ponderat al problemelor rezolvate în ultimele 7 zile."""
+    """weekly leaderboard by weighted solved-problem score over the last 7 days"""
     since = datetime.now(UTC) - timedelta(days=7)
     return await _problems_leaderboard_query(session, limit, since=since)
 
@@ -548,7 +548,7 @@ async def duels_leaderboard(
     limit: int = Query(100, ge=1, le=200),
     session: AsyncSession = Depends(get_session),
 ) -> list[DuelLeaderboardEntry]:
-    """Clasament global după rating-ul de duel (all-time)."""
+    """global leaderboard by duel rating (all-time)"""
     total_duels = User.duel_wins + User.duel_losses + User.duel_draws
 
     rows = await session.execute(

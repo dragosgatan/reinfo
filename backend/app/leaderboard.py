@@ -1,5 +1,4 @@
-"""Contest leaderboard computation, shared by the API router and the worker's
-rated-contest settlement job (app.worker) so both use the exact same ranking."""
+"""contest leaderboard computation, shared by the api router and the worker's rated-contest settlement job"""
 
 import uuid
 from datetime import UTC, datetime
@@ -14,7 +13,7 @@ from app.schemas.contest import LeaderboardEntry, LeaderboardResponse
 
 
 async def build_leaderboard(slug: str, session: AsyncSession) -> LeaderboardResponse | None:
-    """Compute the full leaderboard for `slug`. Returns None if the contest is missing."""
+    """compute the full leaderboard for `slug`, returns none if the contest is missing"""
     contest = await session.scalar(
         select(Contest)
         .where(Contest.slug == slug)

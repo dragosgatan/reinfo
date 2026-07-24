@@ -1,4 +1,4 @@
-"""Schemas for the classroom feature."""
+"""schemas for the classroom feature"""
 
 import uuid
 from datetime import datetime

@@ -1,4 +1,4 @@
-"""Lesson and lesson-progress models."""
+"""lesson and lesson-progress models"""
 
 import uuid
 from datetime import datetime

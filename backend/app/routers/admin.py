@@ -1,4 +1,4 @@
-"""Admin-only endpoints for user management and platform stats."""
+"""admin-only endpoints for user management and platform stats"""
 
 import uuid
 
@@ -30,7 +30,7 @@ async def get_stats(
     admin: User = require_role(*_PRIVILEGED_ROLES),
     session: AsyncSession = Depends(get_session),
 ) -> AdminStats:
-    """Returnează statistici globale ale platformei."""
+    """return global platform stats"""
     total_users = await session.scalar(select(func.count(User.id))) or 0
     total_problems = await session.scalar(select(func.count(Problem.id))) or 0
     total_submissions = await session.scalar(select(func.count(Submission.id))) or 0
@@ -57,7 +57,7 @@ async def list_users(
     admin: User = require_role(*_PRIVILEGED_ROLES),
     session: AsyncSession = Depends(get_session),
 ) -> AdminUserList:
-    """Listează toți utilizatorii cu filtrare și paginare."""
+    """list all users with filtering and pagination"""
     q = select(User)
     if search:
         pattern = f"%{search}%"
@@ -84,7 +84,7 @@ async def update_user_role(
     admin: User = require_role(*_PRIVILEGED_ROLES),
     session: AsyncSession = Depends(get_session),
 ) -> AdminUserRead:
-    """Schimbă rolul unui utilizator. Rolul superuser nu poate fi atribuit prin API."""
+    """change a user's role; the superuser role cannot be assigned via the api"""
     if body.role == UserRole.superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -125,7 +125,7 @@ async def update_user_ban(
     admin: User = require_role(*_PRIVILEGED_ROLES),
     session: AsyncSession = Depends(get_session),
 ) -> AdminUserRead:
-    """Suspendă sau reactivează un cont."""
+    """suspend or reactivate an account"""
     user = await session.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilizator inexistent")

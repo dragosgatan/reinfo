@@ -1,4 +1,4 @@
-"""Project endpoints: teacher-assigned open-ended projects with GitHub submissions."""
+"""project endpoints: teacher-assigned open-ended projects with github submissions"""
 
 import uuid
 from datetime import UTC, datetime
@@ -125,7 +125,7 @@ async def list_projects(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ProjectListResponse:
-    """Lista proiectelor vizibile utilizatorului curent."""
+    """list projects visible to the current user"""
     stmt = select(Project).options(selectinload(Project.submissions))
     projects = (await session.scalars(stmt.order_by(Project.created_at.desc()))).all()
 
@@ -183,7 +183,7 @@ async def get_project(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> ProjectDetail:
-    """Detaliile unui proiect, incluzând tema și submisia proprie (dacă există)."""
+    """project details, including the brief and your own submission (if any)"""
     project = await session.scalar(
         select(Project)
         .where(Project.slug == slug)
@@ -226,7 +226,7 @@ async def create_project(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> ProjectDetail:
-    """Creează un proiect nou. Necesită rolul de profesor sau administrator."""
+    """create a new project, requires the teacher or admin role"""
     if not _can_author(current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
 
@@ -267,7 +267,7 @@ async def update_project(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> ProjectDetail:
-    """Editează un proiect. Profesorul care l-a creat sau administratorul."""
+    """edit a project, the teacher who created it or an admin"""
     project = await _get_project_or_404(slug, session)
     if not _can_edit(project, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -285,7 +285,7 @@ async def delete_project(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Șterge permanent un proiect. Profesorul care l-a creat sau administratorul."""
+    """permanently delete a project, the teacher who created it or an admin"""
     project = await _get_project_or_404(slug, session)
     if not _can_edit(project, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -302,7 +302,7 @@ async def submit_or_resubmit(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> ProjectSubmissionRead:
-    """Trimite sau actualizează submisia proprie pentru un proiect. Blocat după termenul limită."""
+    """submit or update your own submission for a project, blocked after the deadline"""
     project = await _get_project_or_404(slug, session)
     if not await _can_view_project(project, current_user, session):
         raise HTTPException(status_code=404, detail="Proiectul nu a fost găsit")
@@ -353,7 +353,7 @@ async def list_submissions(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> ProjectSubmissionListResponse:
-    """Lista submisiilor unui proiect. Profesorul care l-a creat sau administratorul."""
+    """list a project's submissions, the teacher who created it or an admin"""
     project = await _get_project_or_404(slug, session)
     if not _can_edit(project, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -379,7 +379,7 @@ async def grade_submission(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> ProjectSubmissionRead:
-    """Notează o submisie cu scor și feedback în markdown. Profesorul sau administratorul."""
+    """grade a submission with a score and markdown feedback, teacher or admin only"""
     project = await _get_project_or_404(slug, session)
     if not _can_edit(project, current_user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")

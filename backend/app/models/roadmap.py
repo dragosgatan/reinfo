@@ -1,4 +1,4 @@
-"""Roadmap, RoadmapNode, RoadmapEdge, and UserRoadmapProgress models."""
+"""roadmap, roadmapnode, roadmapedge, and userroadmapprogress models"""
 
 import uuid
 from datetime import datetime

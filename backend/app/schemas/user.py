@@ -39,7 +39,7 @@ class UserUpdate(BaseModel):
 
 
 class UserProfileUpdate(BaseModel):
-    """Editable profile fields for the authenticated user."""
+    """editable profile fields for the authenticated user"""
 
     display_name: str | None = Field(default=None, min_length=1, max_length=128)
     bio: str | None = Field(default=None, max_length=2000)
@@ -76,7 +76,7 @@ class UserRead(BaseModel):
 
 
 class UserPublic(BaseModel):
-    """Minimal profile visible to other users."""
+    """minimal profile visible to other users"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -89,7 +89,7 @@ class UserPublic(BaseModel):
 
 
 class UserProfileRead(BaseModel):
-    """Full public profile including duel stats."""
+    """full public profile including duel stats"""
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -1,4 +1,4 @@
-"""Duel (1v1 chess-style) endpoints and WebSocket."""
+"""duel (1v1 chess-style) endpoints and websocket"""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -63,7 +63,7 @@ def _build_player_state(user: User, score: int, best_verdict: Verdict | None) ->
 async def _best_verdict_in_duel(
     session: AsyncSession, duel_id: uuid.UUID, user_id: uuid.UUID
 ) -> Verdict | None:
-    """Return the best verdict this user has achieved in this duel so far."""
+    """return the best verdict this user has achieved in this duel so far"""
     rows = await session.scalars(
         select(Submission.verdict).where(
             and_(Submission.duel_id == duel_id, Submission.user_id == user_id)
@@ -116,7 +116,7 @@ async def _load_duel_read(session: AsyncSession, duel: Duel) -> DuelRead:
 
 
 async def _finish_duel_draw(session: AsyncSession, duel: Duel) -> None:
-    """Finalize a draw: update ratings, stats, mark finished."""
+    """finalize a draw: update ratings, stats, mark finished"""
     now = datetime.now(UTC)
     duel.status = DuelStatus.drawn
     duel.finished_at = now
@@ -152,7 +152,7 @@ async def _finish_duel_draw(session: AsyncSession, duel: Duel) -> None:
 
 
 async def _finish_duel_resign(session: AsyncSession, duel: Duel, resigner_id: uuid.UUID) -> None:
-    """Finalize a resignation: the other player wins."""
+    """finalize a resignation: the other player wins"""
     now = datetime.now(UTC)
     duel.status = DuelStatus.resigned
     duel.finished_at = now
@@ -198,7 +198,7 @@ async def send_duel_request(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> DuelRequestRead:
-    """Challenge another user to a duel."""
+    """challenge another user to a duel"""
     if body.difficulty_min > body.difficulty_max:
         raise HTTPException(
             status_code=422, detail="difficulty_min trebuie să fie ≤ difficulty_max"
@@ -258,7 +258,7 @@ async def list_pending_requests(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[DuelRequestRead]:
-    """List incoming pending duel requests (with expiry check)."""
+    """list incoming pending duel requests (with expiry check)"""
     now = datetime.now(UTC)
     rows = await session.scalars(
         select(DuelRequest)
@@ -301,7 +301,7 @@ async def accept_duel_request(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> DuelRead:
-    """Accept a duel request. Picks a random matching problem and starts the duel."""
+    """accept a duel request, picks a random matching problem and starts the duel"""
     now = datetime.now(UTC)
     req = await session.scalar(select(DuelRequest).where(DuelRequest.id == request_id))
     if req is None:
@@ -355,7 +355,7 @@ async def decline_duel_request(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    """Decline a duel request."""
+    """decline a duel request"""
     req = await session.scalar(select(DuelRequest).where(DuelRequest.id == request_id))
     if req is None:
         raise HTTPException(status_code=404, detail="Cererea nu a fost găsită")
@@ -372,7 +372,7 @@ async def get_lobby(
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(lambda: None),
 ) -> LobbyResponse:
-    """Public lobby: queue counts, active duels, recent finished duels."""
+    """public lobby: queue counts, active duels, recent finished duels"""
     return await _build_lobby(session, None)
 
 
@@ -381,7 +381,7 @@ async def get_lobby_me(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> LobbyResponse:
-    """Lobby including the current user's queue entry."""
+    """lobby including the current user's queue entry"""
     return await _build_lobby(session, current_user)
 
 
@@ -391,7 +391,7 @@ async def get_duel(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> DuelRead:
-    """Get duel state. Only participants can view."""
+    """get duel state, only participants can view"""
     duel = await session.scalar(select(Duel).where(Duel.id == duel_id))
     if duel is None:
         raise HTTPException(status_code=404, detail="Duelul nu a fost găsit")
@@ -407,7 +407,7 @@ async def duel_submit(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    """Submit code for a duel. Returns the submission_id for SSE tracking."""
+    """submit code for a duel, returns the submission_id for sse tracking"""
     source_code = body.get("source_code", "")
     language = body.get("language", "")
 
@@ -455,7 +455,7 @@ async def resign_duel(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    """Resign from an active duel. Opponent wins immediately."""
+    """resign from an active duel, opponent wins immediately"""
     duel = await session.scalar(select(Duel).where(Duel.id == duel_id))
     if duel is None:
         raise HTTPException(status_code=404, detail="Duelul nu a fost găsit")
@@ -475,7 +475,7 @@ async def offer_draw(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    """Offer a draw to the opponent."""
+    """offer a draw to the opponent"""
     duel = await session.scalar(select(Duel).where(Duel.id == duel_id))
     if duel is None:
         raise HTTPException(status_code=404, detail="Duelul nu a fost găsit")
@@ -502,7 +502,7 @@ async def respond_draw(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    """Accept or decline a draw offer. body: {"accept": true/false}"""
+    """accept or decline a draw offer; body: {"accept": true/false}"""
     accept = bool(body.get("accept", False))
     duel = await session.scalar(select(Duel).where(Duel.id == duel_id))
     if duel is None:
@@ -543,7 +543,7 @@ async def get_rating_history(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[DuelRatingHistoryEntry]:
-    """Last 20 duel rating changes for a user."""
+    """last 20 duel rating changes for a user"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -670,7 +670,7 @@ async def join_queue(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> QueueEntryRead:
-    """Join the matchmaking queue for a given time control."""
+    """join the matchmaking queue for a given time control"""
     if body.time_limit_minutes not in _TIME_CONTROLS:
         raise HTTPException(
             status_code=422,
@@ -729,7 +729,7 @@ async def leave_queue(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    """Leave the matchmaking queue."""
+    """leave the matchmaking queue"""
     entry = await session.scalar(
         select(DuelQueue).where(
             DuelQueue.user_id == current_user.id,
@@ -746,7 +746,7 @@ async def get_queue_status(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> QueueEntryRead | None:
-    """Get current queue or matched entry for the authenticated user."""
+    """get current queue or matched entry for the authenticated user"""
     now = datetime.now(UTC)
     entry = await session.scalar(
         select(DuelQueue).where(
@@ -773,7 +773,7 @@ async def get_user_rating_history(
     username: str,
     session: AsyncSession = Depends(get_session),
 ) -> list[DuelRatingHistoryEntry]:
-    """Last 20 duel rating changes for a user (public endpoint)."""
+    """last 20 duel rating changes for a user (public endpoint)"""
     target = await session.scalar(select(User).where(User.username == username))
     if target is None:
         raise HTTPException(status_code=404, detail="Utilizatorul nu a fost găsit")
@@ -793,7 +793,7 @@ async def duel_ws(
     websocket: WebSocket,
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """WebSocket for real-time duel state (verdict updates, draw offers, timer)."""
+    """websocket for real-time duel state (verdict updates, draw offers, timer)"""
     duel = await session.scalar(select(Duel).where(Duel.id == duel_id))
     if duel is None:
         await websocket.close(code=4404)
@@ -846,7 +846,7 @@ async def duel_ws(
 
 
 async def dispatch_duel_update(duel_id_str: str) -> None:
-    """Called by the Postgres NOTIFY listener. Rebuilds and broadcasts duel state."""
+    """called by the postgres notify listener, rebuilds and broadcasts duel state"""
     from app.db import async_session_factory
 
     try:

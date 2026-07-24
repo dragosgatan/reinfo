@@ -50,7 +50,7 @@ log = logging.getLogger(__name__)
 
 
 async def _dispatch_notification(payload: str) -> None:
-    """Route a raw NOTIFY payload to the right user's WebSocket(s)."""
+    """route a raw notify payload to the right user's websocket(s)"""
     try:
         import json
 
@@ -62,7 +62,7 @@ async def _dispatch_notification(payload: str) -> None:
 
 
 async def _dispatch_class_chat(payload: str) -> None:
-    """Route a raw class-chat NOTIFY payload to the right class room."""
+    """route a raw class-chat notify payload to the right class room"""
     try:
         import json
 
@@ -139,13 +139,13 @@ app.mount("/avatars", StaticFiles(directory=str(avatars_directory())), name="ava
 
 @app.get("/api/health", tags=["system"])
 async def health() -> dict[str, str]:
-    """Verifică starea serverului."""
+    """check server health"""
     return {"status": "ok"}
 
 
 @app.get("/api/health/detailed", tags=["system"])
 async def health_detailed() -> dict[str, object]:
-    """Verifică conectivitatea la baza de date și Piston."""
+    """check database and piston connectivity"""
     checks: dict[str, str] = {}
 
     try:

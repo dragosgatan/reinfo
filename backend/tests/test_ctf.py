@@ -1,4 +1,4 @@
-"""Tests for CTF challenge endpoints: flag judging, scoring, hints, visibility."""
+"""tests for ctf challenge endpoints: flag judging, scoring, hints, visibility"""
 
 import uuid
 

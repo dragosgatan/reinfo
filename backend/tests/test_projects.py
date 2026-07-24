@@ -1,4 +1,4 @@
-"""Tests for /api/projects/* endpoints: submissions, deadlines, class visibility, grading."""
+"""tests for /api/projects/* endpoints: submissions, deadlines, class visibility, grading"""
 
 import secrets
 import uuid

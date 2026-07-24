@@ -1,4 +1,4 @@
-"""Track Pydantic schemas."""
+"""track pydantic schemas"""
 
 import uuid
 from typing import Literal
@@ -9,7 +9,7 @@ from app.models.track import TrackAudience, TrackItemStatus, TrackItemType, Trac
 
 
 class TrackItemRead(BaseModel):
-    """A single track item with its resolved content title/slug and this user's status."""
+    """a single track item with its resolved content title/slug and this user's status"""
 
     id: uuid.UUID
     item_type: TrackItemType
@@ -36,7 +36,7 @@ class TrackItemUpdate(BaseModel):
 
 
 class TrackSummary(BaseModel):
-    """Compact track info for the /api/tracks list."""
+    """compact track info for the /api/tracks list"""
 
     id: uuid.UUID
     slug: str

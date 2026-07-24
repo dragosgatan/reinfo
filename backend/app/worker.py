@@ -1,8 +1,4 @@
-"""Background worker that polls for queued judging jobs and processes them.
-
-Run with: python -m app.worker
-Multiple instances are safe - FOR UPDATE SKIP LOCKED prevents double-processing.
-"""
+"""background worker that polls for queued judging jobs and processes them; run with `python -m app.worker`"""
 
 import asyncio
 import logging
@@ -30,11 +26,7 @@ _POLL_INTERVAL = 0.5
 
 
 async def process_one_job(session: AsyncSession) -> bool:
-    """Claim and process one queued job.
-
-    Uses FOR UPDATE SKIP LOCKED so concurrent workers never double-process the
-    same submission. Returns True if a job was claimed and processed.
-    """
+    """claim and process one queued job, returns true if a job was claimed and processed"""
     job = await session.scalar(
         select(JudgingJob)
         .where(JudgingJob.status == JobStatus.queued)
@@ -76,7 +68,7 @@ _DRAW_OFFER_TTL_SECONDS = 60
 
 
 async def process_expired_duels(session: AsyncSession) -> None:
-    """Finish any active duels whose timer has run out. Runs inside the worker loop."""
+    """finish any active duels whose timer has run out"""
     now = datetime.now(UTC)
     active_duels = (
         await session.scalars(
@@ -172,16 +164,13 @@ _QUEUE_TTL_SECONDS = 300  # 5-minute queue expiry
 
 
 def _difficulty_for_elo(avg_elo: int) -> tuple[int, int]:
-    """Map average player Elo to a 2-wide problem difficulty range.
-
-    800 → (1,2), each 80 Elo raises the floor by 1, capped at (9,10).
-    """
+    """map average player elo to a 2-wide problem difficulty range"""
     center = max(1, min(9, round((avg_elo - 800) / 80) + 1))
     return (center, min(10, center + 1))
 
 
 async def process_duel_queue(session: AsyncSession) -> None:
-    """Expire stale queue entries, then match waiting players by Elo proximity."""
+    """expire stale queue entries, then match waiting players by elo proximity"""
     now = datetime.now(UTC)
 
     # Expire entries that timed out
@@ -289,13 +278,7 @@ async def process_duel_queue(session: AsyncSession) -> None:
 
 
 async def process_contest_rating_settlement(session: AsyncSession) -> None:
-    """Finalize contest_rating for any rated contest whose end_time has passed.
-
-    Idempotent via Contest.rating_finalized_at: only rated, ended, not-yet-finalized
-    contests are selected, and finalizing always sets that timestamp (even for a
-    contest with fewer than 2 ranked participants, where there's nothing to rate) so
-    it is never reprocessed on a later tick.
-    """
+    """finalize contest_rating for any rated contest whose end_time has passed; idempotent via rating_finalized_at"""
     now = datetime.now(UTC)
     contests = (
         await session.scalars(
@@ -356,7 +339,7 @@ async def _settle_contest_rating(contest: Contest, session: AsyncSession) -> Non
 
 
 async def run_worker() -> None:
-    """Poll for queued jobs forever, processing one per iteration."""
+    """poll for queued jobs forever, processing one per iteration"""
     engine = create_async_engine(
         settings.database_url,
         pool_pre_ping=True,

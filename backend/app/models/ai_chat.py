@@ -1,7 +1,4 @@
-"""AiChatUsage (per-request usage/cost log) and AiChatCache (S6).
-
-See app.ai_chat for the caching/rate-limit logic that reads and writes these.
-"""
+"""aichatusage (per-request usage/cost log) and aichatcache; see app.ai_chat for the logic that reads and writes these"""
 
 import uuid
 from datetime import datetime
@@ -13,7 +10,7 @@ from app.models.base import Base, new_uuid
 
 
 class AiChatUsage(Base):
-    """One row per lesson-chat request - real model calls and cache hits alike."""
+    """one row per lesson-chat request, real model calls and cache hits alike"""
 
     __tablename__ = "ai_chat_usage"
 
@@ -33,13 +30,7 @@ class AiChatUsage(Base):
 
 
 class AiChatCache(Base):
-    """Cached final response text keyed by (lesson_slug, normalized latest message).
-
-    Deliberately ignores earlier conversation turns when matching - this is a
-    lesson-grounded Q&A assistant, so two students asking the same question about
-    the same lesson should get the same cached answer regardless of what either of
-    them asked before. See app.ai_chat.cache_key for the exact hashing.
-    """
+    """cached final response text keyed by (lesson_slug, normalized latest message), ignores earlier conversation turns"""
 
     __tablename__ = "ai_chat_cache"
 

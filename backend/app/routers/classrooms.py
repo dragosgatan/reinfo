@@ -1,4 +1,4 @@
-"""Classroom endpoints: classes, announcements, assignments, group chat, DMs."""
+"""classroom endpoints: classes, announcements, assignments, group chat, dms"""
 
 import json
 import re
@@ -149,7 +149,7 @@ async def create_class(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ClassRead:
-    """Creează o clasă nouă (profesori și admini)."""
+    """create a new class (teachers and admins)"""
     from app.models.user import UserRole
 
     if user.role not in (UserRole.teacher, UserRole.admin, UserRole.superuser):
@@ -177,7 +177,7 @@ async def list_classes(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[ClassRead]:
-    """Lista claselor la care participi (ca profesor sau student)."""
+    """list classes you're part of (as teacher or student)"""
     taught = await session.execute(
         select(Class).where(Class.teacher_id == user.id).order_by(Class.created_at.desc())
     )
@@ -212,7 +212,7 @@ async def join_class(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ClassRead:
-    """Intră într-o clasă folosind codul de invitație."""
+    """join a class using its invite code"""
     cls = await session.scalar(select(Class).where(Class.join_code == join_code.upper().strip()))
     if cls is None:
         raise HTTPException(status_code=404, detail="Codul de invitație nu este valid")
@@ -239,7 +239,7 @@ async def get_class(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ClassDetail:
-    """Detaliile complete ale unei clase."""
+    """full details of a class"""
     cls = await _get_class_or_404(class_id, session)
     await _assert_member(cls, user, session)
     await session.refresh(cls, ["teacher", "members"])
@@ -270,7 +270,7 @@ async def update_class(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ClassRead:
-    """Actualizează numele/descrierea/arhivarea clasei (doar profesor)."""
+    """update the class name/description/archived flag (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -294,7 +294,7 @@ async def regenerate_code(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ClassRead:
-    """Regenerează codul de invitație (doar profesor)."""
+    """regenerate the invite code (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -322,7 +322,7 @@ async def leave_class(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Ieși dintr-o clasă (student)."""
+    """leave a class (student)"""
     cls = await _get_class_or_404(class_id, session)
     if _is_teacher(cls, user):
         raise HTTPException(status_code=400, detail="Profesorul nu poate părăsi propria clasă")
@@ -340,7 +340,7 @@ async def kick_member(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Elimină un student din clasă (doar profesor)."""
+    """remove a student from the class (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -357,7 +357,7 @@ async def delete_class(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Șterge clasa (doar profesor)."""
+    """delete the class (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -372,7 +372,7 @@ async def list_announcements(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[AnnouncementRead]:
-    """Lista anunțurilor clasei."""
+    """list the class's announcements"""
     cls = await _get_class_or_404(class_id, session)
     await _assert_member(cls, user, session)
 
@@ -396,7 +396,7 @@ async def create_announcement(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> AnnouncementRead:
-    """Publică un anunț (doar profesor)."""
+    """publish an announcement (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -418,7 +418,7 @@ async def update_announcement(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> AnnouncementRead:
-    """Editează sau fixează un anunț (doar profesor)."""
+    """edit or pin an announcement (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -450,7 +450,7 @@ async def delete_announcement(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Șterge un anunț (doar profesor)."""
+    """delete an announcement (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -468,7 +468,7 @@ async def delete_announcement(
 
 
 async def _build_assignment_read(a: ClassAssignment, solved_ids: set[uuid.UUID]) -> AssignmentRead:
-    """Build AssignmentRead from a loaded ClassAssignment (problem must be refreshed)."""
+    """build assignmentread from a loaded classassignment (problem must be refreshed)"""
     return AssignmentRead(
         id=a.id,
         class_id=a.class_id,
@@ -507,7 +507,7 @@ async def list_assignments(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[AssignmentRead]:
-    """Lista problemelor atribuite (include homework_id pentru grupare pe client)."""
+    """list assigned problems (includes homework_id for client-side grouping)"""
     cls = await _get_class_or_404(class_id, session)
     await _assert_member(cls, user, session)
 
@@ -531,7 +531,7 @@ async def create_assignment(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> AssignmentRead:
-    """Atribuie o problemă individuală clasei (doar profesor)."""
+    """assign a single problem to the class (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -568,7 +568,7 @@ async def delete_assignment(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Șterge o problemă atribuită (doar profesor)."""
+    """delete an assigned problem (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -592,7 +592,7 @@ async def create_homework(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> HomeworkRead:
-    """Creează o grupă de teme cu problemele specificate (doar profesor)."""
+    """create a homework group with the given problems (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -671,7 +671,7 @@ async def list_homework(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[HomeworkRead]:
-    """Lista grupelor de teme cu problemele lor și statusul de rezolvare al utilizatorului."""
+    """list homework groups with their problems and the user's solve status"""
     cls = await _get_class_or_404(class_id, session)
     await _assert_member(cls, user, session)
 
@@ -723,7 +723,7 @@ async def update_homework(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> HomeworkRead:
-    """Actualizează titlul / descrierea / termenul unei grupe de teme (doar profesor)."""
+    """update a homework group's title / description / deadline (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -773,7 +773,7 @@ async def delete_homework(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Șterge o grupă de teme și toate problemele din ea (doar profesor)."""
+    """delete a homework group and all its problems (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -802,7 +802,7 @@ async def add_problem_to_homework(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> AssignmentRead:
-    """Adaugă o problemă la o grupă de teme existentă (doar profesor)."""
+    """add a problem to an existing homework group (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -847,7 +847,7 @@ async def homework_progress(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> HomeworkProgress:
-    """Progresul studenților pentru o grupă de teme (doar profesor)."""
+    """student progress for a homework group (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -924,7 +924,7 @@ async def list_messages(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[ClassMessageRead]:
-    """Istoricul chat-ului de grup (paginare prin cursor)."""
+    """group chat history (cursor pagination)"""
     cls = await _get_class_or_404(class_id, session)
     await _assert_member(cls, user, session)
 
@@ -950,7 +950,7 @@ async def send_message(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ClassMessageRead:
-    """Trimite un mesaj în chat-ul clasei."""
+    """send a message in the class chat"""
     cls = await _get_class_or_404(class_id, session)
     await _assert_member(cls, user, session)
 
@@ -982,7 +982,7 @@ async def class_chat_ws(
     websocket: WebSocket,
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """WebSocket pentru chat-ul în timp real al clasei."""
+    """websocket for the class's realtime chat"""
     from app.dependencies import SESSION_COOKIE_NAME
     from app.models.user import Session as DbSession
 
@@ -1043,7 +1043,7 @@ async def get_dm_thread(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[DirectMessageRead]:
-    """Istoricul mesajelor private cu un utilizator din clasă."""
+    """private message history with a user in the class"""
     cls = await _get_class_or_404(class_id, session)
     await _assert_member(cls, user, session)
 
@@ -1085,7 +1085,7 @@ async def send_dm(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> DirectMessageRead:
-    """Trimite un mesaj privat unui utilizator din clasă."""
+    """send a private message to a user in the class"""
     cls = await _get_class_or_404(class_id, session)
     await _assert_member(cls, user, session)
 
@@ -1181,7 +1181,7 @@ async def list_class_tests(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[ClassTestRead]:
-    """Lista testelor create pentru această clasă (vizibil membrilor)."""
+    """list tests created for this class (visible to members)"""
     from sqlalchemy.orm import selectinload
 
     cls = await _get_class_or_404(class_id, session)
@@ -1206,7 +1206,7 @@ async def create_class_test(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ClassTestRead:
-    """Creează un test pentru clasă (doar profesor)."""
+    """create a test for the class (teacher only)"""
     from sqlalchemy.orm import selectinload
 
     cls = await _get_class_or_404(class_id, session)
@@ -1255,7 +1255,7 @@ async def delete_class_test(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Șterge un test al clasei (doar profesor)."""
+    """delete a class test (teacher only)"""
     cls = await _get_class_or_404(class_id, session)
     if not _is_teacher(cls, user):
         raise HTTPException(status_code=403, detail="Permisiuni insuficiente")
@@ -1279,7 +1279,7 @@ async def get_unread_dms(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[DmThreadUnread]:
-    """Numărul de DM-uri necitite per clasă și expeditor."""
+    """count of unread dms per class and sender"""
     rows = await session.execute(
         select(
             DirectMessage.class_id,

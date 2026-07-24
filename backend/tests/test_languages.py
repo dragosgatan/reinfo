@@ -1,5 +1,4 @@
-"""Tests for the language catalogue (S2): config consistency, the /api/languages
-endpoint, per-language judging wiring, and the execute() time-limit multiplier/pin."""
+"""tests for the language catalogue: config consistency, the /api/languages endpoint, per-language judging wiring"""
 
 import uuid
 from unittest.mock import AsyncMock, patch
@@ -189,13 +188,7 @@ async def _make_test_case(db: AsyncSession, problem_id: uuid.UUID) -> TestCase:
 async def test_read_int_print_int_judges_ac_per_language(
     lang: str, client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    """Every stable language slug clears validation and judges to AC end-to-end.
-
-    Piston itself is mocked (as in the rest of the suite) - this is about
-    proving the slug is wired through submit -> validation -> judging, not
-    re-verifying the sandbox, which was checked manually against the real
-    container while building this language list.
-    """
+    """every stable language slug clears validation and judges to ac end-to-end (piston mocked)"""
     user = await _make_user(db_session, f"lang-{lang}")
     problem = await _make_problem(db_session, user.id, slug=f"read-print-{lang}")
     await _make_test_case(db_session, problem.id)

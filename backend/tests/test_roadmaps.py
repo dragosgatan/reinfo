@@ -1,4 +1,4 @@
-"""Tests for /api/roadmaps/* endpoints."""
+"""tests for /api/roadmaps/* endpoints"""
 
 import pytest
 from httpx import AsyncClient

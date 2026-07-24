@@ -1,4 +1,4 @@
-"""ApiToken (CLI personal access tokens) and DeviceAuthRequest (device-auth flow)."""
+"""apitoken (cli personal access tokens) and deviceauthrequest (device-auth flow)"""
 
 import uuid
 from datetime import datetime
@@ -37,7 +37,7 @@ class DeviceAuthStatus(StrEnum):
 
 
 class DeviceAuthRequest(Base):
-    """One row per `reinfo login` attempt."""
+    """one row per `reinfo login` attempt"""
 
     __tablename__ = "device_auth_requests"
 

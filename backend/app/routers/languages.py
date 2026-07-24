@@ -1,4 +1,4 @@
-"""Public language catalogue - single source of truth shared with the frontend selector."""
+"""public language catalogue, single source of truth shared with the frontend selector"""
 
 from fastapi import APIRouter
 
@@ -10,5 +10,5 @@ router = APIRouter(prefix="/api/languages", tags=["languages"])
 
 @router.get("", response_model=list[LanguageRead])
 async def list_languages() -> list[LanguageRead]:
-    """Toate limbajele cunoscute de judge, inclusiv cele experimentale/blocate."""
+    """all languages known to the judge, including experimental/blocked ones"""
     return [LanguageRead.model_validate(lang) for lang in LANGUAGES]

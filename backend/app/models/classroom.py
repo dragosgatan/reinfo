@@ -1,4 +1,4 @@
-"""Classroom models: classes, members, announcements, assignments, chat, DMs."""
+"""classroom models: classes, members, announcements, assignments, chat, dms"""
 
 import uuid
 from datetime import datetime

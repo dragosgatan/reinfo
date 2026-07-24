@@ -1,4 +1,4 @@
-"""Tests for /api/tracks/* endpoints: prerequisite enforcement, progress rollup."""
+"""tests for /api/tracks/* endpoints: prerequisite enforcement, progress rollup"""
 
 import uuid
 

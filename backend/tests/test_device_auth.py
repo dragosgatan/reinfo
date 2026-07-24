@@ -1,4 +1,4 @@
-"""Tests for the CLI device-auth flow, API token management, and bearer-token auth."""
+"""tests for the cli device-auth flow, api token management, and bearer-token auth"""
 
 from datetime import UTC, datetime, timedelta
 
@@ -190,8 +190,7 @@ async def test_cannot_revoke_another_users_token(
 async def test_bearer_token_works_on_unrelated_endpoint(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    """Confirms the dependency-level change covers every existing route, not just
-    a bespoke CLI-only endpoint - list_problems already depends on get_optional_user."""
+    """confirms the dependency-level change covers every existing route, not just a bespoke cli-only endpoint"""
     await _register_and_login(client)
     start = await client.post("/api/auth/device/start")
     user_code = start.json()["user_code"]

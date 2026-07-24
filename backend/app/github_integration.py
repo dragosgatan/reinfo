@@ -1,10 +1,4 @@
-"""Optional read-only GitHub repo metadata for teacher project submissions.
-
-Gated behind ENABLE_GITHUB_INTEGRATION (default off). Never authenticated (no
-tokens stored - unauthenticated GitHub REST API only), always cached in
-github_repo_cache, and always falls back to just the link on any failure -
-this must never block or affect a student's submission.
-"""
+"""optional read-only github repo metadata for teacher project submissions; gated behind enable_github_integration, never blocks a submission on failure"""
 
 import logging
 import re
@@ -28,7 +22,7 @@ _README_MAX_CHARS = 20_000
 
 
 def parse_repo_url(url: str) -> tuple[str, str] | None:
-    """Extract (owner, repo) from a github.com URL, or None if it doesn't match."""
+    """extract (owner, repo) from a github.com url, or none if it doesn't match"""
     match = _REPO_URL_RE.match(url.strip())
     if match is None:
         return None
@@ -36,7 +30,7 @@ def parse_repo_url(url: str) -> tuple[str, str] | None:
 
 
 async def get_repo_info(session: AsyncSession, repo_url: str) -> GithubRepoCache | None:
-    """Return cached (or freshly fetched) repo metadata, or None if the feature is disabled."""
+    """return cached (or freshly fetched) repo metadata, or none if the feature is disabled"""
     if not settings.enable_github_integration:
         return None
     if parse_repo_url(repo_url) is None:

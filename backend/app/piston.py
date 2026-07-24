@@ -1,4 +1,4 @@
-"""Async client for the Piston code execution sandbox API."""
+"""async client for the piston code execution sandbox api"""
 
 from dataclasses import dataclass
 
@@ -36,14 +36,7 @@ async def execute(
     time_limit_ms: int,
     memory_limit_kb: int,
 ) -> ExecutionResult:
-    """Execute code in the Piston sandbox and return structured results.
-
-    time_limit_ms is the problem's own limit; it gets scaled by the language's
-    time_limit_multiplier (e.g. Python/Java run slower than C++) before being sent
-    to Piston, and TLE detection uses that same scaled value.
-
-    Raises RuntimeError on HTTP or network errors.
-    """
+    """execute code in the piston sandbox and return structured results; time_limit_ms is scaled by the language's multiplier"""
     spec = LANGUAGES_BY_SLUG.get(language)
     piston_lang = spec.piston_language if spec else language
     piston_version = spec.version if spec else "*"

@@ -9,7 +9,7 @@ from app.models.problem import ComparisonMode, DatasetMetric, ProblemType, Visib
 
 
 class QuizOptionRead(BaseModel):
-    """Quiz option as shown to users before answering - no answers revealed."""
+    """quiz option as shown to users before answering, no answers revealed"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -20,7 +20,7 @@ class QuizOptionRead(BaseModel):
 
 
 class QuizOptionWithAnswer(BaseModel):
-    """Quiz option returned after an attempt - includes correct flag and explanation."""
+    """quiz option returned after an attempt, includes correct flag and explanation"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -131,7 +131,7 @@ class ProblemRead(BaseModel):
 
 
 class ProblemSummary(BaseModel):
-    """Compact representation for list views."""
+    """compact representation for list views"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -152,7 +152,7 @@ class UserProblemStatus(StrEnum):
 
 
 class TestCaseSummary(BaseModel):
-    """Minimal test case info included in problem detail (sample tests only)."""
+    """minimal test case info included in problem detail (sample tests only)"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -163,7 +163,7 @@ class TestCaseSummary(BaseModel):
 
 
 class TestCaseRead(BaseModel):
-    """Full test case representation returned after upload."""
+    """full test case representation returned after upload"""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -177,7 +177,7 @@ class TestCaseRead(BaseModel):
 
 
 class ProblemListItem(BaseModel):
-    """One row in the paginated problem list."""
+    """one row in the paginated problem list"""
 
     id: uuid.UUID
     slug: str
@@ -204,7 +204,7 @@ class OriginContest(BaseModel):
 
 
 class ProblemDetail(BaseModel):
-    """Full problem detail including sample test cases and solve count."""
+    """full problem detail including sample test cases and solve count"""
 
     id: uuid.UUID
     slug: str
@@ -240,7 +240,7 @@ class ProblemDetail(BaseModel):
 
 
 class DatasetFilesStatus(BaseModel):
-    """Which of a dataset problem's fixed CSV files have been uploaded."""
+    """which of a dataset problem's fixed csv files have been uploaded"""
 
     train_csv: bool
     test_csv: bool
@@ -249,7 +249,7 @@ class DatasetFilesStatus(BaseModel):
 
 
 class RunRequest(BaseModel):
-    """Ephemeral run request. If stdin is set, runs against it instead of the sample tests."""
+    """ephemeral run request; if stdin is set, runs against it instead of the sample tests"""
 
     source_code: str
     language: str
@@ -278,7 +278,7 @@ class RunCustomResult(BaseModel):
 
 
 class RunResponse(BaseModel):
-    """Result of an ephemeral run - nothing is persisted to the database."""
+    """result of an ephemeral run, nothing is persisted to the database"""
 
     mode: Literal["samples", "custom"]
     compile_error: bool
