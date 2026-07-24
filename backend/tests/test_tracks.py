@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.ctf import CtfCategory, CtfChallenge, CtfScoring
 from app.models.lesson import Lesson, LessonCategory, LessonLevel
 from app.models.problem import Problem, Visibility
-from app.models.track import Track, TrackItem, TrackOlympiad
+from app.models.track import Track, TrackAudience, TrackItem, TrackOlympiad
 from app.models.user import User, UserRole
 from app.security import hash_flag, hash_password
 
@@ -40,12 +40,14 @@ async def _make_track(
     author_id: uuid.UUID | None,
     slug: str = "oni-prep",
     olympiad: TrackOlympiad = TrackOlympiad.ONI,
+    audience: TrackAudience = TrackAudience.scoala,
     published: bool = True,
 ) -> Track:
     track = Track(
         slug=slug,
         title="ONI Prep",
         olympiad=olympiad,
+        audience=audience,
         description_md="Prep track",
         published=published,
         created_by=author_id,
@@ -309,3 +311,39 @@ async def test_teacher_can_create_and_author_track(
     )
     assert r.status_code == 201
     assert r.json()["olympiad"] == "CTF"
+    assert r.json()["audience"] == "scoala"
+
+
+@pytest.mark.asyncio
+async def test_create_track_with_explicit_audience(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    await _make_user(db_session, "track-teacher9", UserRole.teacher)
+    await _login(client, "track-teacher9")
+
+    r = await client.post(
+        "/api/tracks",
+        json={
+            "slug": "job-track",
+            "title": "Job Track",
+            "olympiad": "other",
+            "audience": "job",
+        },
+    )
+    assert r.status_code == 201
+    assert r.json()["audience"] == "job"
+
+
+@pytest.mark.asyncio
+async def test_list_tracks_filtered_by_audience(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    teacher = await _make_user(db_session, "track-teacher10", UserRole.teacher)
+    await _make_track(db_session, teacher.id, slug="scoala-track", audience=TrackAudience.scoala)
+    await _make_track(db_session, teacher.id, slug="job-track2", audience=TrackAudience.job)
+
+    r = await client.get("/api/tracks", params={"audience": "job"})
+    assert r.status_code == 200
+    slugs = [i["slug"] for i in r.json()["items"]]
+    assert "job-track2" in slugs
+    assert "scoala-track" not in slugs

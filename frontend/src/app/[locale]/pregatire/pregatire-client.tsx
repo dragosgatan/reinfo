@@ -8,8 +8,8 @@ import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { TRACK_OLYMPIADS, TrackListResponseSchema } from "@/lib/types";
-import type { TrackOlympiad, TrackSummary } from "@/lib/types";
+import { TRACK_AUDIENCES, TRACK_OLYMPIADS, TrackListResponseSchema } from "@/lib/types";
+import type { TrackAudience, TrackOlympiad, TrackSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,11 +38,16 @@ export default function PregatireClient() {
   const { user } = useAuth();
   const canAuthor = user?.role === "teacher" || user?.role === "admin" || user?.role === "superuser";
   const [showCreate, setShowCreate] = useState(false);
+  const [audienceFilter, setAudienceFilter] = useState<TrackAudience | "all">("all");
   const router = useRouter();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["tracks"],
-    queryFn: () => api.get("/api/tracks", TrackListResponseSchema),
+    queryKey: ["tracks", audienceFilter],
+    queryFn: () =>
+      api.get(
+        audienceFilter === "all" ? "/api/tracks" : `/api/tracks?audience=${audienceFilter}`,
+        TrackListResponseSchema,
+      ),
   });
 
   if (isError) {
@@ -76,6 +81,25 @@ export default function PregatireClient() {
             {t("addTrack")}
           </button>
         )}
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-1.5" role="tablist" aria-label={t("audienceLabel")}>
+        {(["all", ...TRACK_AUDIENCES] as const).map((a) => (
+          <button
+            key={a}
+            role="tab"
+            aria-selected={audienceFilter === a}
+            onClick={() => setAudienceFilter(a)}
+            className={cn(
+              "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+              audienceFilter === a
+                ? "border-foreground bg-foreground text-background"
+                : "border-border text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {a === "all" ? t("audienceFilterAll") : t(`audience.${a}`)}
+          </button>
+        ))}
       </div>
 
       {isLoading ? (
@@ -182,6 +206,7 @@ function CreateTrackDialog({
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [olympiad, setOlympiad] = useState<TrackOlympiad>("ONI");
+  const [audience, setAudience] = useState<TrackAudience>("scoala");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleCreate() {
@@ -192,6 +217,7 @@ function CreateTrackDialog({
         title,
         slug,
         olympiad,
+        audience,
         published: false,
       });
       await queryClient.invalidateQueries({ queryKey: ["tracks"] });
@@ -242,6 +268,21 @@ function CreateTrackDialog({
                 {TRACK_OLYMPIADS.map((o) => (
                   <SelectItem key={o} value={o}>
                     {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("audienceLabel")}</Label>
+            <Select value={audience} onValueChange={(v) => setAudience(v as TrackAudience)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TRACK_AUDIENCES.map((a) => (
+                  <SelectItem key={a} value={a}>
+                    {t(`audience.${a}`)}
                   </SelectItem>
                 ))}
               </SelectContent>

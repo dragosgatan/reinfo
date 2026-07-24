@@ -402,6 +402,13 @@
     "titleLabel": "Cím",
     "slugLabel": "Slug",
     "olympiadLabel": "Olimpia",
+    "audienceLabel": "Célközönség",
+    "audienceFilterAll": "Összes",
+    "audience": {
+      "scoala": "Iskola",
+      "job": "Állás",
+      "certificare": "Tanúsítvány"
+    },
     "errorGeneric": "Hiba történt. Próbáld újra.",
     "notFound": "Az útvonal nem található.",
     "backToTracks": "← Felkészülési útvonalak",

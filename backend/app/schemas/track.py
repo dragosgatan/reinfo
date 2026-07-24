@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.models.track import TrackItemStatus, TrackItemType, TrackOlympiad
+from app.models.track import TrackAudience, TrackItemStatus, TrackItemType, TrackOlympiad
 
 
 class TrackItemRead(BaseModel):
@@ -42,6 +42,7 @@ class TrackSummary(BaseModel):
     slug: str
     title: str
     olympiad: TrackOlympiad
+    audience: TrackAudience
     order: int
     published: bool
     item_count: int
@@ -58,6 +59,7 @@ class TrackCreate(BaseModel):
     slug: str = Field(min_length=1, max_length=128, pattern=r"^[a-z0-9-]+$")
     title: str = Field(min_length=1, max_length=256)
     olympiad: TrackOlympiad
+    audience: TrackAudience = TrackAudience.scoala
     description_md: str | None = None
     order: int = Field(default=0, ge=0)
     published: bool = False
@@ -66,6 +68,7 @@ class TrackCreate(BaseModel):
 class TrackUpdate(BaseModel):
     title: str | None = Field(default=None, max_length=256)
     olympiad: TrackOlympiad | None = None
+    audience: TrackAudience | None = None
     description_md: str | None = None
     order: int | None = Field(default=None, ge=0)
     published: bool | None = None

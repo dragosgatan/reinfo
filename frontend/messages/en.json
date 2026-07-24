@@ -402,6 +402,13 @@
     "titleLabel": "Title",
     "slugLabel": "Slug",
     "olympiadLabel": "Olympiad",
+    "audienceLabel": "Audience",
+    "audienceFilterAll": "All",
+    "audience": {
+      "scoala": "School",
+      "job": "Job",
+      "certificare": "Certification"
+    },
     "errorGeneric": "An error occurred. Try again.",
     "notFound": "Track not found.",
     "backToTracks": "← Prep tracks",

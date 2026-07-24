@@ -90,6 +90,7 @@ export function TrackDetailClient({ slug }: Props) {
           <h1 className="text-xl font-bold tracking-tight">{track.title}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="muted">{track.olympiad}</Badge>
+            <Badge variant="muted">{t(`audience.${track.audience}`)}</Badge>
             <span>
               {track.completed_items}/{track.item_count} {t("steps")}
             </span>

@@ -30,6 +30,12 @@ class TrackOlympiad(StrEnum):
     other = "other"
 
 
+class TrackAudience(StrEnum):
+    scoala = "scoala"
+    job = "job"
+    certificare = "certificare"
+
+
 class TrackItemType(StrEnum):
     lesson = "lesson"
     problem = "problem"
@@ -50,6 +56,12 @@ class Track(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     olympiad: Mapped[TrackOlympiad] = mapped_column(
         Enum(TrackOlympiad, name="track_olympiad"), nullable=False
+    )
+    audience: Mapped[TrackAudience] = mapped_column(
+        Enum(TrackAudience, name="track_audience"),
+        nullable=False,
+        server_default=text("'scoala'"),
+        index=True,
     )
     description_md: Mapped[str | None] = mapped_column(Text, nullable=True)
     order: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))

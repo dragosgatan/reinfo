@@ -917,6 +917,10 @@ export const TRACK_OLYMPIADS = ["ONI", "ONIA", "ONSC", "IOAI", "CTF", "Linux", "
 export const TrackOlympiadSchema = z.enum(TRACK_OLYMPIADS);
 export type TrackOlympiad = z.infer<typeof TrackOlympiadSchema>;
 
+export const TRACK_AUDIENCES = ["scoala", "job", "certificare"] as const;
+export const TrackAudienceSchema = z.enum(TRACK_AUDIENCES);
+export type TrackAudience = z.infer<typeof TrackAudienceSchema>;
+
 export const TrackItemTypeSchema = z.enum(["lesson", "problem", "ctf_challenge"]);
 export type TrackItemType = z.infer<typeof TrackItemTypeSchema>;
 
@@ -944,6 +948,7 @@ export const TrackSummarySchema = z.object({
   slug: z.string(),
   title: z.string(),
   olympiad: TrackOlympiadSchema,
+  audience: TrackAudienceSchema,
   order: z.number().int(),
   published: z.boolean(),
   item_count: z.number().int(),

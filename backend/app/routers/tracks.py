@@ -3,7 +3,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -13,7 +13,14 @@ from app.dependencies import get_current_user, get_optional_user
 from app.models.ctf import CtfChallenge
 from app.models.lesson import Lesson
 from app.models.problem import Problem
-from app.models.track import Track, TrackItem, TrackItemStatus, TrackItemType, TrackProgress
+from app.models.track import (
+    Track,
+    TrackAudience,
+    TrackItem,
+    TrackItemStatus,
+    TrackItemType,
+    TrackProgress,
+)
 from app.models.user import User, UserRole
 from app.schemas.track import (
     TrackCreate,
@@ -120,6 +127,7 @@ def _unlock_status(
 
 @router.get("", response_model=TrackListResponse)
 async def list_tracks(
+    audience: TrackAudience | None = Query(default=None),
     session: AsyncSession = Depends(get_session),
     current_user: User | None = Depends(get_optional_user),
 ) -> TrackListResponse:
@@ -127,6 +135,8 @@ async def list_tracks(
     stmt = select(Track).options(selectinload(Track.items))
     if current_user is None or not _can_author(current_user):
         stmt = stmt.where(Track.published.is_(True))
+    if audience is not None:
+        stmt = stmt.where(Track.audience == audience)
     stmt = stmt.order_by(Track.olympiad.asc(), Track.order.asc(), Track.created_at.asc())
 
     tracks = (await session.scalars(stmt)).all()
@@ -156,6 +166,7 @@ async def list_tracks(
                 slug=track.slug,
                 title=track.title,
                 olympiad=track.olympiad,
+                audience=track.audience,
                 order=track.order,
                 published=track.published,
                 item_count=total,
@@ -222,6 +233,7 @@ async def get_track(
         slug=track.slug,
         title=track.title,
         olympiad=track.olympiad,
+        audience=track.audience,
         order=track.order,
         published=track.published,
         item_count=total,
@@ -256,6 +268,7 @@ async def create_track(
         slug=track.slug,
         title=track.title,
         olympiad=track.olympiad,
+        audience=track.audience,
         order=track.order,
         published=track.published,
         item_count=0,

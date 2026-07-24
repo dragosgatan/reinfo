@@ -402,6 +402,13 @@
     "titleLabel": "Titlu",
     "slugLabel": "Slug",
     "olympiadLabel": "Olimpiadă",
+    "audienceLabel": "Public țintă",
+    "audienceFilterAll": "Toate",
+    "audience": {
+      "scoala": "Școală",
+      "job": "Job",
+      "certificare": "Certificare"
+    },
     "errorGeneric": "A apărut o eroare. Încearcă din nou.",
     "notFound": "Traseul nu a fost găsit.",
     "backToTracks": "← Trasee de pregătire",
