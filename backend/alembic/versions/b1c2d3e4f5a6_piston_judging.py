@@ -65,4 +65,4 @@ def downgrade() -> None:
         ),
     )
     op.alter_column("submissions", "submitted_output_path", server_default=None)
-    # Note: 'TLE' and 'MLE' enum values cannot be removed from PostgreSQL enums.
+    # 'TLE' and 'MLE' enum values cannot be removed from postgres enums

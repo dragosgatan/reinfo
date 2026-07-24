@@ -126,7 +126,7 @@ async def test_identical_request_hits_cache_and_skips_model_call(
         r1 = await client.post("/api/ai/lesson-chat", json=_chat_body("ce e un stack?"))
         assert r1.status_code == 200
 
-    # Second, identical (lesson, question) pair - stream must never be called.
+    # second, identical (lesson, question) pair, stream must never be called
     with patch("httpx.AsyncClient.stream") as mocked_second:
         r2 = await client.post("/api/ai/lesson-chat", json=_chat_body("ce e un stack?"))
         assert r2.status_code == 200
@@ -229,14 +229,13 @@ async def test_cache_hit_does_not_count_against_exhausted_limit(
             r1 = await client.post("/api/ai/lesson-chat", json=_chat_body("same question"))
             assert r1.status_code == 200
 
-        # Daily limit is now exhausted, but repeating the exact same question is a
-        # cache hit and must still succeed.
+        # daily limit is exhausted, but the exact same question is a cache hit and must succeed
         with patch("httpx.AsyncClient.stream") as mocked:
             r2 = await client.post("/api/ai/lesson-chat", json=_chat_body("same question"))
             assert r2.status_code == 200
             mocked.assert_not_called()
 
-        # A genuinely new question, however, is correctly blocked.
+        # a genuinely new question is correctly blocked
         r3 = await client.post("/api/ai/lesson-chat", json=_chat_body("a brand new question"))
         assert r3.status_code == 429
 

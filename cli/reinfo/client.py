@@ -1,4 +1,4 @@
-"""Thin httpx wrapper for talking to the reinfo backend."""
+"""thin httpx wrapper for talking to the reinfo backend"""
 
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ class ReinfoClient:
         return resp.json()
 
     def stream_sse(self, path: str) -> Iterator[dict[str, Any]]:
-        """Yield each `data: {...}` JSON payload from an SSE endpoint."""
+        """yield each `data: {...}` json payload from an sse endpoint"""
         url = f"{self.base_url}{path}"
         try:
             with httpx.stream("GET", url, headers=self._headers(), timeout=120.0) as resp:

@@ -71,8 +71,7 @@ class Contest(Base, TimestampMixin):
         Boolean, nullable=False, server_default=text("false")
     )
     is_rated: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
-    # set once by the worker's settlement job - doubles as the idempotency guard,
-    # since it only ever processes rated contests where this is still NULL
+    # set once by the worker's settlement job, doubles as its idempotency guard
     rating_finalized_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

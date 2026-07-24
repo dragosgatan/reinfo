@@ -23,7 +23,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      # curl isn't installed in the python:3.11-slim runtime image - use urllib instead.
+      # curl isn't installed in the python:3.11-slim image, use urllib instead
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\""]
       interval: 30s
       timeout: 10s
@@ -47,8 +47,8 @@ services:
     restart: unless-stopped
     privileged: true
     environment:
-      # Piston's own defaults (run 3s / compile 10s) are too tight once per-language
-      # time-limit multipliers and slow-compiling languages like Zig are in play.
+      # piston's own defaults (run 3s / compile 10s) are too tight once per-language
+      # multipliers and slow-compiling languages like zig are in play
       PISTON_RUN_TIMEOUT: "15000"
       PISTON_COMPILE_TIMEOUT: "30000"
     tmpfs:

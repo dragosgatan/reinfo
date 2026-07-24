@@ -16,7 +16,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # Reset default and existing unplayed users to 800
+    # reset default and existing unplayed users to 800
     op.execute("ALTER TABLE users ALTER COLUMN duel_rating SET DEFAULT 800")
     op.execute(
         "UPDATE users SET duel_rating = 800 "

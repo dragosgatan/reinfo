@@ -54,7 +54,7 @@ export default function LeaderboardClient({ slug }: Props) {
     enabled: isOngoing ? liveEnabled : false,
   });
 
-  // For past contests we don't need live updates; one-shot fetch via react-query.
+  // past contests don't need live updates, one-shot fetch via react-query
   const { data: lbStatic } = useQuery({
     queryKey: ["leaderboard-static", slug],
     queryFn: async () => {

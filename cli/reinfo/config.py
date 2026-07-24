@@ -1,4 +1,4 @@
-"""Credential storage and configuration for the reinfo CLI."""
+"""credential storage and configuration for the reinfo cli"""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def clear_credentials() -> None:
 
 
 def resolve_api_url(cli_option: str | None) -> str:
-    """--api-url > REINFO_API_URL env > saved credentials > default."""
+    """--api-url > REINFO_API_URL env > saved credentials > default"""
     if cli_option:
         return cli_option.rstrip("/")
     env = os.environ.get("REINFO_API_URL")
@@ -64,7 +64,7 @@ def resolve_api_url(cli_option: str | None) -> str:
 
 
 def resolve_token() -> str | None:
-    """REINFO_TOKEN env (handy for CI) takes priority over the saved credential."""
+    """REINFO_TOKEN env (handy for ci) takes priority over the saved credential"""
     env = os.environ.get("REINFO_TOKEN")
     if env:
         return env

@@ -1,5 +1,4 @@
-"""Tests for the reinfo CLI. httpx is mocked directly - the backend itself is
-tested in backend/tests/test_device_auth.py."""
+"""tests for the reinfo cli; httpx is mocked directly, the backend itself is tested in backend/tests/test_device_auth.py"""
 
 import json
 from pathlib import Path

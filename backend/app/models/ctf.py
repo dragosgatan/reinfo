@@ -54,7 +54,7 @@ class CtfChallenge(Base, TimestampMixin):
     scoring: Mapped[CtfScoring] = mapped_column(
         Enum(CtfScoring, name="ctfscoring"), nullable=False, server_default=text("'static'")
     )
-    # bcrypt hash only - the plaintext flag is never persisted anywhere
+    # bcrypt hash only, plaintext flag is never persisted
     flag_hash: Mapped[str] = mapped_column(Text, nullable=False)
     flag_case_sensitive: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true")

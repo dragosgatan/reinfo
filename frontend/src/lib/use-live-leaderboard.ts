@@ -35,11 +35,7 @@ async function fetchSnapshot(slug: string): Promise<LeaderboardResponse | "froze
   return LeaderboardResponseSchema.parse(await r.json());
 }
 
-/**
- * Subscribe to live leaderboard snapshots over WebSocket. Falls back to HTTP
- * polling if the socket fails to open or drops. `enabled=false` turns updates
- * off entirely (manual mode).
- */
+/** subscribe to live leaderboard snapshots over websocket, falls back to http polling; `enabled=false` turns updates off entirely */
 export function useLiveLeaderboard({ slug, enabled, pollIntervalMs = 10_000 }: Options) {
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [status, setStatus] = useState<LiveStatus>("connecting");
@@ -116,7 +112,7 @@ export function useLiveLeaderboard({ slug, enabled, pollIntervalMs = 10_000 }: O
       };
 
       ws.onerror = () => {
-        // onclose will run; let it handle the fallback so we don't poll twice.
+        // onclose will run, let it handle the fallback so we don't poll twice
       };
 
       ws.onclose = (ev) => {

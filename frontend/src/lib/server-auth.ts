@@ -15,10 +15,7 @@ const ROLE_RANK: Record<Role, number> = {
   superuser: 3,
 };
 
-/**
- * Verifies the session cookie against the backend. Returns the user or null.
- * Forward all cookies from the incoming request so the backend session is resolved.
- */
+/** verify the session cookie against the backend, returns the user or null; forwards all cookies from the incoming request */
 export async function getSessionUser(req: NextRequest): Promise<AuthUser | null> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   try {

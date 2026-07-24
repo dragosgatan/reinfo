@@ -70,7 +70,7 @@ def _print(ctx: Ctx, data: object, text: str | None = None) -> None:
 @click.version_option(__version__, prog_name="reinfo")
 @click.pass_context
 def cli(click_ctx: click.Context, json_mode: bool, locale: str, api_url: str | None) -> None:
-    """reinfo - command-line client for reinfo.ro."""
+    """reinfo - command-line client for reinfo.ro"""
     resolved_url = resolve_api_url(api_url)
     token = resolve_token()
     click_ctx.obj = Ctx(
@@ -84,7 +84,7 @@ def cli(click_ctx: click.Context, json_mode: bool, locale: str, api_url: str | N
 @cli.command()
 @click.pass_obj
 def login(ctx: Ctx) -> None:
-    """Log in via the browser (device authorization flow)."""
+    """log in via the browser (device authorization flow)"""
     try:
         start = ctx.client.post_json("/api/auth/device/start")
     except (ApiError, NetworkError) as exc:
@@ -137,7 +137,7 @@ def login(ctx: Ctx) -> None:
 @cli.command()
 @click.pass_obj
 def logout(ctx: Ctx) -> None:
-    """Forget the stored CLI credentials (does not revoke the token server-side)."""
+    """forget the stored cli credentials (does not revoke the token server-side)"""
     clear_credentials()
     _print(ctx, {"status": "ok"}, t("logout_success", ctx.locale))
 
@@ -145,7 +145,7 @@ def logout(ctx: Ctx) -> None:
 @cli.command()
 @click.pass_obj
 def whoami(ctx: Ctx) -> None:
-    """Show the currently logged-in user."""
+    """show the currently logged-in user"""
     if not ctx.client.token:
         _fail(ctx, "not_logged_in")
         return
@@ -165,7 +165,7 @@ def whoami(ctx: Ctx) -> None:
 @click.option("--per-page", default=20, show_default=True)
 @click.pass_obj
 def problems(ctx: Ctx, page: int, per_page: int) -> None:
-    """List problems."""
+    """list problems"""
     try:
         data = ctx.client.get("/api/problems", {"page": page, "per_page": per_page})
     except (ApiError, NetworkError) as exc:
@@ -184,7 +184,7 @@ def problems(ctx: Ctx, page: int, per_page: int) -> None:
 @click.option("--lang", required=True, help="Language slug (see the site's language list).")
 @click.pass_obj
 def submit(ctx: Ctx, slug: str, file: Path, lang: str) -> None:
-    """Submit FILE as a solution to problem SLUG."""
+    """submit FILE as a solution to problem SLUG"""
     if not ctx.client.token:
         _fail(ctx, "not_logged_in")
         return
@@ -232,7 +232,7 @@ def submit(ctx: Ctx, slug: str, file: Path, lang: str) -> None:
 @click.argument("submission_id", required=False)
 @click.pass_obj
 def status(ctx: Ctx, submission_id: str | None) -> None:
-    """Show a submission's status. Defaults to your most recent submission."""
+    """show a submission's status, defaults to your most recent submission"""
     if not ctx.client.token:
         _fail(ctx, "not_logged_in")
         return
@@ -260,7 +260,7 @@ def status(ctx: Ctx, submission_id: str | None) -> None:
 @click.option("--lang", default="python", show_default=True, help="Starter language slug.")
 @click.pass_obj
 def init(ctx: Ctx, slug: str, lang: str) -> None:
-    """Scaffold a local folder for problem SLUG with the statement and a starter file."""
+    """scaffold a local folder for problem SLUG with the statement and a starter file"""
     try:
         problem = ctx.client.get(f"/api/problems/{slug}")
     except ApiError as exc:

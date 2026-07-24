@@ -16,7 +16,7 @@ export function formatDate(dateString: string, locale = "ro-RO"): string {
 export function resolveMediaUrl(path: string | null | undefined): string | undefined {
   if (!path) return undefined;
   if (path.startsWith("http")) return path;
-  // Paths like /avatars/... are proxied by Next.js rewrites, so keep them relative.
+  // paths like /avatars/... are proxied by next.js rewrites, keep them relative
   return path;
 }
 

@@ -19,8 +19,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # ctfcategory/ctfscoring enum types are created automatically by create_table
-    # below from the inline sa.Enum(...) column definitions - no separate CREATE TYPE.
+    # enum types are auto-created by create_table from the inline sa.Enum(...) columns, no separate CREATE TYPE
     op.create_table(
         "ctf_challenges",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -146,7 +145,6 @@ def downgrade() -> None:
     op.drop_table("ctf_solves")
     op.drop_table("ctf_attachments")
     op.drop_table("ctf_challenges")
-    # unlike create_table (which auto-creates enum types from inline sa.Enum(...)
-    # columns), drop_table does NOT auto-drop them - remove explicitly.
+    # drop_table doesn't auto-drop the enum types create_table auto-created, remove explicitly
     op.execute("DROP TYPE ctfscoring")
     op.execute("DROP TYPE ctfcategory")

@@ -115,7 +115,7 @@ async def save_avatar(user_id: uuid.UUID, content_type: str, data: bytes) -> str
     async with aiofiles.open(path, "wb") as fh:
         await fh.write(data)
 
-    # Include a version timestamp so browsers always load the new image after re-upload
+    # cache-bust with a timestamp so browsers load the new image after re-upload
     return f"/avatars/{user_id}{ext}?v={int(time.time())}"
 
 

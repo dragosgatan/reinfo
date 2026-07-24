@@ -263,7 +263,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
   const submitCallbackRef = useRef<(() => void)>(() => {});
   const seededRef = useRef(false);
 
-  // Fetch problem statement once we know the slug
+  // fetch problem statement once we know the slug
   useEffect(() => {
     if (!duel?.problem_slug) return;
     api.get(`/api/problems/${duel.problem_slug}`)
@@ -281,7 +281,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
     }
   }, [bySlug, language]);
 
-  // When language changes, reset code to template if still on a default
+  // when language changes, reset code to template if still on a default
   const handleLanguageChange = useCallback(
     (lang: string) => {
       const currentDefault = bySlug[language]?.starter_template ?? "";
@@ -312,7 +312,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
     }
   }, [duel?.draw_offered_by, t, user]);
 
-  // Countdown for the draw offer timer
+  // countdown for the draw offer timer
   useEffect(() => {
     if (!duel?.draw_offered_at) {
       setDrawSecondsLeft(null);
@@ -495,7 +495,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
       </Dialog>
 
       <div className="flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden">
-        {/* Top bar */}
+        {/* top bar */}
         <div className="flex shrink-0 items-center gap-3 border-b border-border bg-background px-4 py-2">
           <div className="flex-1 min-w-0">
             <span className="font-mono text-sm font-semibold truncate">
@@ -592,17 +592,17 @@ export function DuelClient({ duelId }: DuelClientProps) {
           )}
         </div>
 
-        {/* Main split */}
+        {/* main split */}
         <div className="flex min-h-0 flex-1">
-          {/* Left: Problem statement + players */}
+          {/* left: problem statement + players */}
           <div className="flex w-[42%] shrink-0 flex-col border-r border-border">
-            {/* Players */}
+            {/* players */}
             <div className="shrink-0 p-4 space-y-2 border-b border-border">
               <PlayerPanel player={me} label={t("youLabel")} isMe />
               <PlayerPanel player={them} label={t("opponentLabel")} isMe={false} />
             </div>
 
-            {/* Timer warning */}
+            {/* timer warning */}
             {timerCritical && secondsRemaining !== null && (
               <div className="shrink-0 mx-4 mt-3 flex items-center gap-2 rounded border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
@@ -612,7 +612,7 @@ export function DuelClient({ duelId }: DuelClientProps) {
               </div>
             )}
 
-            {/* Problem statement */}
+            {/* problem statement */}
             <div className="flex-1 overflow-y-auto px-4 py-3">
               {problem ? (
                 <>
@@ -633,9 +633,9 @@ export function DuelClient({ duelId }: DuelClientProps) {
             </div>
           </div>
 
-          {/* Right: Editor */}
+          {/* right: editor */}
           <div className="flex min-w-0 flex-1 flex-col">
-            {/* Editor toolbar */}
+            {/* editor toolbar */}
             <div className="flex shrink-0 items-center gap-1.5 border-b border-border px-3 py-1.5">
               <Select value={language} onValueChange={handleLanguageChange} disabled={!isActive}>
                 <SelectTrigger className="h-7 w-32 text-xs">

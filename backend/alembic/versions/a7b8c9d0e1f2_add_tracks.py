@@ -19,11 +19,8 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # track_olympiad/track_item_type/track_item_status enum types are created
-    # automatically by create_table below from the inline sa.Enum(...) column
-    # definitions - do not also issue a separate CREATE TYPE (see the CTF
-    # migration incident 2026-07-21: create_table always attempts to create
-    # the type, so a prior explicit CREATE TYPE causes a duplicate-type error).
+    # create_table auto-creates the enum types from the inline sa.Enum(...) columns,
+    # a separate CREATE TYPE here would collide with it
     op.create_table(
         "tracks",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -95,8 +92,7 @@ def downgrade() -> None:
     op.drop_table("track_progress")
     op.drop_table("track_items")
     op.drop_table("tracks")
-    # drop_table does NOT auto-drop the enum types it implicitly created on
-    # upgrade (unlike create_table's auto-create) - remove them explicitly.
+    # drop_table doesn't auto-drop the enum types it implicitly created, remove them explicitly
     op.execute("DROP TYPE track_item_status")
     op.execute("DROP TYPE track_item_type")
     op.execute("DROP TYPE track_olympiad")

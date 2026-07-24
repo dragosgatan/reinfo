@@ -2,7 +2,7 @@
 cd "$(dirname "$0")"
 docker compose up -d db piston
 
-# Install Piston language runtimes if not already present
+# install piston language runtimes if not already present
 echo "Waiting for Piston to be ready..."
 for i in $(seq 1 30); do
     if curl -sf http://localhost:2000/api/v2/runtimes > /dev/null 2>&1; then
@@ -20,7 +20,7 @@ else
 fi
 
 cd backend
-# Kill any leftover process on port 8000
+# kill any leftover process on port 8000
 fuser -k 8000/tcp 2>/dev/null || true
 
 source .venv/bin/activate

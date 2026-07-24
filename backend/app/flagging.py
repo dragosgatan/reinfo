@@ -5,7 +5,7 @@ from datetime import datetime
 
 _DIACRITIC_PATTERN = re.compile(r"[ăîșțâĂÎȘȚÂ]")
 
-# Unicode emoji ranges (covers the vast majority of emoji)
+# unicode emoji ranges, not exhaustive
 _EMOJI_PATTERN = re.compile(
     "["
     "\U0001f600-\U0001f64f"

@@ -1,4 +1,4 @@
-"""Dataset helper for AI/dataset problems: get_dataset() and submit_predictions()."""
+"""dataset helper for ai/dataset problems: get_dataset() and submit_predictions()"""
 
 from __future__ import annotations
 
@@ -69,10 +69,7 @@ def _fetch_csv(
 
 
 def get_dataset(slug: str, use_cache: bool = True, locale: str = "ro") -> Dataset:
-    """Download a dataset problem's public CSV files as pandas DataFrames.
-
-    Results are cached under ~/.reinfo/cache/<slug>/ for 6 hours.
-    """
+    """download a dataset problem's public csv files as pandas dataframes, cached under ~/.reinfo/cache/<slug>/ for 6 hours"""
     client = _client()
     try:
         train = _fetch_csv(client, slug, "train.csv", use_cache)
@@ -94,7 +91,7 @@ def get_dataset(slug: str, use_cache: bool = True, locale: str = "ro") -> Datase
 def submit_predictions(
     slug: str, df: pd.DataFrame, locale: str = "ro", timeout: float = 300.0
 ) -> dict:
-    """Validate df's columns/row count, submit it as CSV, and poll until judged."""
+    """validate df's columns/row count, submit it as csv, and poll until judged"""
     client = _client()
     if not client.token:
         raise DatasetError(t("not_logged_in", locale))

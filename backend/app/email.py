@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 RESEND_API_URL = "https://api.resend.com/emails"
 
-# ro is the default locale and has no path prefix (see frontend/src/i18n/routing.ts).
+# ro is the default locale, no path prefix (see frontend/src/i18n/routing.ts)
 _RESET_PASSWORD_CONTENT = {
     "ro": {
         "locale_prefix": "",

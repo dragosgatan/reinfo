@@ -80,7 +80,7 @@ async def process_expired_duels(session: AsyncSession) -> None:
     ).all()
 
     for duel in active_duels:
-        # Expire stale draw offers
+        # expire stale draw offers
         if duel.draw_offered_at is not None:
             age = (now - duel.draw_offered_at).total_seconds()
             if age > _DRAW_OFFER_TTL_SECONDS:
@@ -173,7 +173,7 @@ async def process_duel_queue(session: AsyncSession) -> None:
     """expire stale queue entries, then match waiting players by elo proximity"""
     now = datetime.now(UTC)
 
-    # Expire entries that timed out
+    # expire entries that timed out
     await session.execute(
         update(DuelQueue)
         .where(DuelQueue.status == DuelQueueStatus.waiting, DuelQueue.expires_at <= now)
@@ -181,7 +181,7 @@ async def process_duel_queue(session: AsyncSession) -> None:
     )
     await session.commit()
 
-    # Load all waiting entries with their user
+    # load all waiting entries with their user
     rows = (
         await session.scalars(
             select(DuelQueue)
@@ -191,7 +191,7 @@ async def process_duel_queue(session: AsyncSession) -> None:
         )
     ).all()
 
-    # Group by time control
+    # group by time control
     by_time: dict[int, list[DuelQueue]] = {}
     for entry in rows:
         by_time.setdefault(entry.time_limit_minutes, []).append(entry)
@@ -207,7 +207,7 @@ async def process_duel_queue(session: AsyncSession) -> None:
             if entry.id in used:
                 continue
 
-            # Find the closest-Elo unmatched opponent
+            # find closest-elo unmatched opponent
             best: DuelQueue | None = None
             best_gap = float("inf")
             for other in group:

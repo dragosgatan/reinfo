@@ -82,8 +82,8 @@ class TrackItem(Base):
     item_type: Mapped[TrackItemType] = mapped_column(
         Enum(TrackItemType, name="track_item_type"), nullable=False
     )
-    # Polymorphic reference to lessons/problems/ctf_challenges.id - no DB-level FK
-    # since the target table depends on item_type; existence is validated in the router.
+    # polymorphic reference to lessons/problems/ctf_challenges.id, no db-level fk since the
+    # target table depends on item_type; existence is validated in the router
     ref_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
     order: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     prerequisite_item_id: Mapped[uuid.UUID | None] = mapped_column(

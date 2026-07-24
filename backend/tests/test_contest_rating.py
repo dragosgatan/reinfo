@@ -86,8 +86,7 @@ class TestComputeRatingDeltas:
             )
         ]
         deltas = compute_rating_deltas(entrants)
-        # Individual deltas are rounded independently, so the sum can be off by a
-        # few integers, but never by anywhere near a full contestant's swing.
+        # deltas round independently, so the sum can be off by a few integers, never more
         assert abs(sum(deltas.values())) <= 2
 
     def test_is_deterministic_across_repeated_calls(self) -> None:
@@ -238,7 +237,7 @@ async def test_settlement_is_idempotent(client: AsyncClient, db_session: AsyncSe
     await db_session.refresh(winner)
     rating_after_first_pass = winner.contest_rating
 
-    # Simulate the worker loop ticking again after the contest is already settled.
+    # simulate the worker loop ticking again after the contest is already settled
     await process_contest_rating_settlement(db_session)
     await db_session.refresh(winner)
 

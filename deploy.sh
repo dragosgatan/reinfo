@@ -1,19 +1,13 @@
 #!/usr/bin/env bash
-# One-command production deploy.
-# Run from the repo root on the droplet: ./deploy.sh
+# one-command production deploy, run from the repo root on the droplet: ./deploy.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# ---------------------------------------------------------------------------
-# First-time TLS bootstrap (skip on subsequent runs)
-# ---------------------------------------------------------------------------
-# Before the first deploy:
-#   1. Point api.reinfo.dev DNS A record to this server's IP.
-#   2. Install certbot:  apt install -y certbot
-#   3. Temporarily expose port 80 and run:
-#        certbot certonly --standalone -d api.reinfo.dev
-#   4. Then run this script normally.
-# ---------------------------------------------------------------------------
+# first-time tls bootstrap (skip on subsequent runs):
+#   1. point api.reinfo.dev dns a record to this server's ip
+#   2. install certbot: apt install -y certbot
+#   3. temporarily expose port 80 and run: certbot certonly --standalone -d api.reinfo.dev
+#   4. then run this script normally
 
 echo "==> Pulling latest code..."
 git pull origin main

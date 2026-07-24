@@ -20,7 +20,6 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # --- enum types ---
     op.execute("CREATE TYPE userrole AS ENUM ('student', 'teacher', 'admin')")
     op.execute("CREATE TYPE visibility AS ENUM ('public', 'draft', 'private')")
     op.execute(
@@ -28,7 +27,6 @@ def upgrade() -> None:
     )
     op.execute("CREATE TYPE verdict AS ENUM ('pending', 'AC', 'WA', 'PARTIAL', 'CE', 'RE')")
 
-    # --- users ---
     op.create_table(
         "users",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -62,7 +60,6 @@ def upgrade() -> None:
         sa.UniqueConstraint("email"),
     )
 
-    # --- sessions ---
     op.create_table(
         "sessions",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -83,7 +80,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_sessions_user_id", "sessions", ["user_id"])
 
-    # --- problems ---
     op.create_table(
         "problems",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -134,7 +130,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_problems_author_id", "problems", ["author_id"])
 
-    # --- test_cases ---
     op.create_table(
         "test_cases",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -150,7 +145,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_test_cases_problem_id", "test_cases", ["problem_id"])
 
-    # --- submissions ---
     op.create_table(
         "submissions",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -182,7 +176,6 @@ def upgrade() -> None:
     op.create_index("ix_submissions_problem_id", "submissions", ["problem_id"])
     op.create_index("ix_submissions_contest_id", "submissions", ["contest_id"])
 
-    # --- submission_results ---
     op.create_table(
         "submission_results",
         sa.Column("id", sa.UUID(), nullable=False),

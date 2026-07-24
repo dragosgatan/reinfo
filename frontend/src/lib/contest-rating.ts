@@ -1,6 +1,4 @@
-/** Purely cosmetic rating tiers for the contest_rating number, loosely modeled on
- * the familiar Codeforces color-tier convention. Display-only - the backend rating
- * math (app/contest_rating.py) doesn't know or care about these labels. */
+/** purely cosmetic rating tiers for contest_rating, loosely modeled on codeforces color tiers; display-only */
 
 export interface RatingTier {
   title: string;

@@ -2,12 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 
-/**
- * FLIP-style row animation hook. Pass a stable key list (in the order they
- * appear in the DOM) and a function that returns the element for each key.
- * On every render, the hook compares the new positions to the previous ones
- * and animates each row from its old position to the new one.
- */
+/** flip-style row animation hook; pass a stable key list and a function returning each key's element, animates old position to new on every render */
 export function useFlipRows<K extends string>(
   keys: readonly K[],
   getNode: (key: K) => HTMLElement | null,

@@ -363,7 +363,7 @@ async def test_submission_isolation(client: AsyncClient, db_session: AsyncSessio
     )
     assert r.status_code == 201
 
-    # during the contest, submission should NOT appear in public profile history
+    # during the contest, submission should not appear in public profile history
     profile_r = await client.get("/api/users/student7/submissions")
     assert profile_r.status_code == 200
     assert profile_r.json()["total"] == 0

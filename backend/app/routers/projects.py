@@ -399,9 +399,8 @@ async def grade_submission(
         submission.grade.grader_id = current_user.id
         submission.grade.graded_at = now
     else:
-        # Assign via the relationship (not a bare session.add with a raw FK) so the
-        # already-loaded `submission.grade` attribute reflects the new grade in
-        # memory immediately, without needing to re-fetch from the DB.
+        # assign via the relationship (not session.add with a raw fk) so submission.grade
+        # reflects the new grade in memory immediately, without re-fetching
         submission.grade = ProjectGrade(
             grader_id=current_user.id,
             score=data.score,

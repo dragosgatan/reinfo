@@ -17,18 +17,16 @@ export interface CodeBlockRenderArgs {
   code: string;
 }
 
-/** Return a ReactNode to fully replace a fenced code block's default rendering, or
- * undefined to fall through to the default (highlighted, with a copy button). */
+/** return a reactnode to replace a fenced code block's rendering, or undefined to fall through to the default */
 export type CodeBlockRenderer = (args: CodeBlockRenderArgs) => ReactNode | undefined;
 
 interface MarkdownContentProps {
   markdown: string;
   className?: string;
-  /** "compact" is for tight spaces like chat bubbles - smaller margins, no h1/h2. */
+  /** "compact" is for tight spaces like chat bubbles, smaller margins, no h1/h2 */
   variant?: "default" | "compact";
   renderCodeBlock?: CodeBlockRenderer;
-  /** Set false for untrusted user content (e.g. bios) to render images as their alt
-   * text instead of loading them - avoids third-party tracking pixels on public pages. */
+  /** set false for untrusted content (e.g. bios) to render images as alt text, avoids tracking pixels */
   allowImages?: boolean;
 }
 
@@ -91,7 +89,7 @@ function buildComponents(
     ),
     img: allowImages
       ? ({ src, alt }: ComponentProps<"img">) => (
-          // Arbitrary external markdown image URLs can't go through next/image without a domain allowlist.
+          // arbitrary external image urls can't go through next/image without a domain allowlist
           // eslint-disable-next-line @next/next/no-img-element
           <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} className={cn(gap, "max-w-full rounded border border-border")} />
         )

@@ -1,4 +1,4 @@
-"""Tests for reinfo.dataset (get_dataset / submit_predictions)."""
+"""tests for reinfo.dataset (get_dataset / submit_predictions)"""
 
 import os
 import time

@@ -59,11 +59,11 @@ async def test_device_flow_happy_path(client: AsyncClient, db_session: AsyncSess
     assert approved_body["username"] == _USER["username"]
     assert approved_body["token"].startswith("reinfo_")
 
-    # The device request is consumed after one successful poll - replaying 404s.
+    # the device request is consumed after one successful poll, replaying 404s
     poll_again = await client.post("/api/auth/device/poll", json={"device_code": device_code})
     assert poll_again.status_code == 404
 
-    # The issued token authenticates like a normal session, via Authorization header.
+    # the issued token authenticates like a normal session, via authorization header
     token = approved_body["token"]
     me = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me.status_code == 200
@@ -143,18 +143,18 @@ async def test_token_list_and_revoke(client: AsyncClient, db_session: AsyncSessi
     assert items[0]["revoked_at"] is None
     token_id = items[0]["id"]
 
-    # Token works before revocation.
+    # token works before revocation
     r_ok = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r_ok.status_code == 200
 
     revoke = await client.delete(f"/api/auth/tokens/{token_id}")
     assert revoke.status_code == 204
 
-    # Revoking again is idempotent.
+    # revoking again is idempotent
     revoke_again = await client.delete(f"/api/auth/tokens/{token_id}")
     assert revoke_again.status_code == 204
 
-    # Revoked token no longer authenticates.
+    # revoked token no longer authenticates
     r_revoked = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r_revoked.status_code == 401
 

@@ -11,9 +11,8 @@ LANGUAGE_MAP: dict[str, str] = {lang.slug: lang.piston_language for lang in STAB
 SUPPORTED_LANGUAGES: frozenset[str] = frozenset(LANGUAGE_MAP)
 _FILE_NAMES: dict[str, str] = {lang.slug: lang.file_name for lang in STABLE_LANGUAGES}
 
-# Matches PISTON_RUN_TIMEOUT in docker-compose(.prod).yml - clamps our own request so a
-# problem's time limit combined with a slow-language multiplier can never trigger a hard
-# 400 from Piston (it would just fail the submission) instead of a graceful TLE.
+# matches PISTON_RUN_TIMEOUT in docker-compose(.prod).yml, clamps requests so a slow-language
+# multiplier can never trigger a hard 400 from piston instead of a graceful tle
 _MAX_RUN_TIMEOUT_MS = 15_000
 _COMPILE_TIMEOUT_MS = 30_000
 

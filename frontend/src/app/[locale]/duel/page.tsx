@@ -287,7 +287,7 @@ export default function DuelLobbyPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
-      {/* Header */}
+      {/* header */}
       <div className="flex items-center gap-3">
         <Swords className="w-6 h-6 text-primary" />
         <div>
@@ -296,7 +296,7 @@ export default function DuelLobbyPage() {
         </div>
       </div>
 
-      {/* Time controls */}
+      {/* time controls */}
       <div>
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
           {t("thinkingTime")}
@@ -330,7 +330,7 @@ export default function DuelLobbyPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Active duels */}
+        {/* active duels */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Clock className="w-4 h-4 text-muted-foreground" />
@@ -361,7 +361,7 @@ export default function DuelLobbyPage() {
           </div>
         </div>
 
-        {/* Recent duels */}
+        {/* recent duels */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="w-4 h-4 text-muted-foreground" />

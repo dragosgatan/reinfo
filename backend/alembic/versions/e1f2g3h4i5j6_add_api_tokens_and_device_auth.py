@@ -40,10 +40,8 @@ def upgrade() -> None:
     op.create_index("ix_api_tokens_user_id", "api_tokens", ["user_id"])
     op.create_index("ix_api_tokens_token_hash", "api_tokens", ["token_hash"])
 
-    # create_table's inline sa.Enum auto-creates the deviceauthstatus type - a
-    # separate CREATE TYPE here would collide with it (see contest/ctf migrations
-    # for the same lesson learned). downgrade() must drop the type explicitly,
-    # since drop_table does NOT do that automatically.
+    # create_table's inline sa.Enum auto-creates the deviceauthstatus type, a separate
+    # CREATE TYPE here would collide; downgrade() must drop the type explicitly
     op.create_table(
         "device_auth_requests",
         sa.Column("id", sa.UUID(), nullable=False),

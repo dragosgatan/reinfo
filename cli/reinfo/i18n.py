@@ -1,4 +1,4 @@
-"""RO/EN message catalogue for CLI output."""
+"""ro/en message catalogue for cli output"""
 
 from __future__ import annotations
 

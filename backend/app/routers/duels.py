@@ -560,7 +560,7 @@ async def get_rating_history(
 async def _build_lobby(session: AsyncSession, current_user: User | None) -> LobbyResponse:
     now = datetime.now(UTC)
 
-    # Queue counts per time control
+    # queue counts per time control
     queue_rows = await session.execute(
         select(DuelQueue.time_limit_minutes, func.count().label("n"))
         .where(DuelQueue.status == DuelQueueStatus.waiting, DuelQueue.expires_at > now)
@@ -570,7 +570,7 @@ async def _build_lobby(session: AsyncSession, current_user: User | None) -> Lobb
     for row in queue_rows:
         queue_counts[row.time_limit_minutes] = row.n
 
-    # Active duels
+    # active duels
     active_rows = (
         await session.scalars(
             select(Duel)
@@ -601,7 +601,7 @@ async def _build_lobby(session: AsyncSession, current_user: User | None) -> Lobb
             )
         )
 
-    # Recent finished duels
+    # recent finished duels
     recent_rows = (
         await session.scalars(
             select(Duel)
@@ -635,7 +635,7 @@ async def _build_lobby(session: AsyncSession, current_user: User | None) -> Lobb
         for d in recent_rows
     ]
 
-    # Current user's queue entry
+    # current user's queue entry
     your_entry: QueueEntryRead | None = None
     if current_user is not None:
         entry = await session.scalar(
@@ -679,7 +679,7 @@ async def join_queue(
 
     now = datetime.now(UTC)
 
-    # Check if already in active duel
+    # check if already in an active duel
     active = await session.scalar(
         select(Duel).where(
             and_(
@@ -691,7 +691,7 @@ async def join_queue(
     if active is not None:
         raise HTTPException(status_code=409, detail="Ești deja într-un duel activ")
 
-    # Cancel any existing queue entry
+    # cancel any existing queue entry
     existing = await session.scalar(
         select(DuelQueue).where(
             DuelQueue.user_id == current_user.id,

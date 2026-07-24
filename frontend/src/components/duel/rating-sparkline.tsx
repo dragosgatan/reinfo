@@ -6,7 +6,7 @@ interface RatingSparklineProps {
   history: { rating_after: number }[];
   currentRating: number;
   className?: string;
-  /** Falls back to the duel-specific "no recent duels" copy for backward compat. */
+  /** falls back to the duel-specific "no recent duels" copy for backward compat */
   emptyLabel?: string;
 }
 

@@ -870,8 +870,7 @@ async def leaderboard_ws(
     await hub.connect(slug, websocket)
     try:
         while True:
-            # We don't expect client → server messages, but reading keeps the
-            # socket healthy and lets us notice the disconnect promptly.
+            # no client -> server messages expected, just keeps the socket healthy
             await websocket.receive_text()
     except WebSocketDisconnect:
         pass
@@ -883,7 +882,7 @@ async def leaderboard_ws(
 
 async def dispatch_leaderboard_update(slug: str) -> None:
     """called by the notify listener, rebuilds and broadcasts a fresh snapshot"""
-    # Invalidate the REST cache so the next HTTP fetch matches what WS clients see.
+    # invalidate the rest cache so the next http fetch matches what ws clients see
     _lb_cache.pop(slug, None)
     try:
         async with async_session_factory() as session:
