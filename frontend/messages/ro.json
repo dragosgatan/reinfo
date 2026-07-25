@@ -4,13 +4,20 @@
   },
   "nav": {
     "problems": "Probleme",
+    "problemsGroup": "Probleme",
+    "allProblems": "Toate problemele",
+    "ai": "AI",
+    "ctf": "CTF",
+    "exercises": "Exerciții",
     "submissions": "Submisii",
     "contests": "Concursuri",
     "duels": "Dueluri",
     "learning": "Învățare",
+    "learnGroup": "Învățare",
     "leaderboard": "Clasament",
     "friends": "Prieteni",
     "classes": "Clase",
+    "communityGroup": "Comunitate",
     "prep": "Pregătire",
     "projects": "Proiecte",
     "search": "Caută...",
@@ -45,14 +52,18 @@
       "contests": "Concursuri"
     },
     "features": {
-      "pythonTitle": "Gândit pentru Python",
-      "pythonDesc": "Rezolvă probleme direct în Python, limbajul ideal pentru cei care abia încep drumul în informatică.",
+      "pythonTitle": "Algoritmi, în orice limbaj",
+      "pythonDesc": "Rezolvă probleme direct în C, C++, Python, Java și alte limbaje, direct din browser.",
+      "aiTitle": "Probleme AI & Dataset",
+      "aiDesc": "Antrenează modele, trimite predicții CSV și vezi scorul calculat automat pe un set de date real.",
+      "ctfTitle": "Provocări CTF",
+      "ctfDesc": "Capture the flag pe categorii variate de securitate, cu scoreboard live și first blood.",
       "duelsTitle": "Dueluri 1v1",
       "duelsDesc": "Provoacă prieteni sau adversari aleatorii la dueluri temporizate cu sistem de rating Elo.",
-      "socialTitle": "Experiență socială",
-      "socialDesc": "Profiluri, listă de prieteni, clasamente și feed de activitate pentru o competiție reală.",
-      "teachersTitle": "Unealtă pentru profesori",
-      "teachersDesc": "Creează clase, atribuie probleme și urmărește progresul elevilor dintr-un singur loc."
+      "prepTitle": "Trasee de pregătire",
+      "prepDesc": "Liste ordonate de lecții, probleme și provocări pentru ONI, ONIA, ONSC și alte concursuri.",
+      "projectsTitle": "Proiecte practice",
+      "projectsDesc": "Proiecte deschise atribuite de profesori, cu submisie prin link GitHub și feedback direct."
     }
   },
   "problems": {
@@ -816,6 +827,7 @@
       "avatarSuccess": "Fotografia de profil a fost actualizată.",
       "avatarError": "Eroare la încărcarea fotografiei.",
       "viewProfile": "Vezi profilul public",
+      "appearance": "Aspect",
       "links": "Linkuri",
       "githubUrl": "GitHub",
       "githubUrlPlaceholder": "https://github.com/utilizator",
@@ -839,7 +851,23 @@
       "revoke": "Revocă",
       "revokeSuccess": "Tokenul a fost revocat.",
       "errorGeneric": "A apărut o eroare. Încearcă din nou.",
-      "backToProfile": "← Înapoi la profil"
+      "backToProfile": "← Înapoi la profil",
+      "appearance": "Aspect"
+    },
+    "appearance": {
+      "title": "Aspect",
+      "subtitle": "Alege o temă vizuală pentru site. Se aplică imediat și se salvează pe contul tău.",
+      "viewProfile": "Vezi profilul public",
+      "errorGeneric": "A apărut o eroare. Încearcă din nou.",
+      "backToProfile": "← Înapoi la profil",
+      "options": {
+        "system": "Sistem",
+        "light": "Deschisă",
+        "dark": "Întunecată",
+        "ocean": "Ocean",
+        "teal": "Turcoaz",
+        "highContrast": "Contrast ridicat"
+      }
     }
   },
   "cliAuth": {

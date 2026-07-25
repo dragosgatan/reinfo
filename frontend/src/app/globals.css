@@ -76,6 +76,114 @@
     --input: 0 0% 20%;
     --ring: 0 0% 97%;
   }
+
+  .ocean {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+
+    --primary: 217 91% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 28%;
+
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 44%;
+
+    --accent: 217 91% 35%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 82% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 58% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 25 82% 48%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
+    --ring: 217 91% 35%;
+  }
+
+  .teal {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+
+    --primary: 175 70% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 28%;
+
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 44%;
+
+    --accent: 175 70% 25%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 82% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 58% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 25 82% 48%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
+    --ring: 175 70% 25%;
+  }
+
+  .high-contrast {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 60 100% 50%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 80%;
+
+    --accent: 60 100% 50%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 100% 63%;
+    --destructive-foreground: 0 0% 0%;
+
+    --success: 120 100% 40%;
+    --success-foreground: 0 0% 0%;
+
+    --warning: 45 100% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+    --ring: 60 100% 50%;
+  }
 }
 
 @layer base {

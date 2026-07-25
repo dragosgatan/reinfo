@@ -47,6 +47,7 @@ frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
 npm-debug.log*
+frontend/.lighthouseci/
 yarn-debug.log*
 .claude/
 yarn-error.log*

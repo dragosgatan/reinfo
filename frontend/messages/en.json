@@ -4,13 +4,20 @@
   },
   "nav": {
     "problems": "Problems",
+    "problemsGroup": "Problems",
+    "allProblems": "All problems",
+    "ai": "AI",
+    "ctf": "CTF",
+    "exercises": "Exercises",
     "submissions": "Submissions",
     "contests": "Contests",
     "duels": "Duels",
     "learning": "Learning",
+    "learnGroup": "Learning",
     "leaderboard": "Leaderboard",
     "friends": "Friends",
     "classes": "Classes",
+    "communityGroup": "Community",
     "prep": "Prep",
     "projects": "Projects",
     "search": "Search...",
@@ -45,14 +52,18 @@
       "contests": "Contests"
     },
     "features": {
-      "pythonTitle": "Built for Python",
-      "pythonDesc": "Solve problems directly in Python, the ideal language for those just starting their journey in computer science.",
+      "pythonTitle": "Algorithms, in any language",
+      "pythonDesc": "Solve problems directly in C, C++, Python, Java, and more, right from your browser.",
+      "aiTitle": "AI & dataset problems",
+      "aiDesc": "Train models, submit CSV predictions, and get an automatically computed score on a real dataset.",
+      "ctfTitle": "CTF challenges",
+      "ctfDesc": "Capture the flag across varied security categories, with a live scoreboard and first blood.",
       "duelsTitle": "1v1 Duels",
       "duelsDesc": "Challenge friends or random opponents to timed duels with an Elo rating system.",
-      "socialTitle": "Social experience",
-      "socialDesc": "Profiles, friends list, leaderboards, and activity feed for real competition.",
-      "teachersTitle": "Tool for teachers",
-      "teachersDesc": "Create classes, assign problems, and track student progress from one place."
+      "prepTitle": "Prep tracks",
+      "prepDesc": "Ordered lists of lessons, problems, and challenges for ONI, ONIA, ONSC, and more.",
+      "projectsTitle": "Hands-on projects",
+      "projectsDesc": "Open-ended projects assigned by teachers, submitted via GitHub link with direct feedback."
     }
   },
   "problems": {
@@ -814,6 +825,7 @@
       "avatarSuccess": "Profile picture updated.",
       "avatarError": "Error uploading picture.",
       "viewProfile": "View public profile",
+      "appearance": "Appearance",
       "links": "Links",
       "githubUrl": "GitHub",
       "githubUrlPlaceholder": "https://github.com/username",
@@ -837,7 +849,23 @@
       "revoke": "Revoke",
       "revokeSuccess": "Token revoked.",
       "errorGeneric": "An error occurred. Try again.",
-      "backToProfile": "← Back to profile"
+      "backToProfile": "← Back to profile",
+      "appearance": "Appearance"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Pick a visual theme for the site. Applies immediately and is saved to your account.",
+      "viewProfile": "View public profile",
+      "errorGeneric": "An error occurred. Try again.",
+      "backToProfile": "← Back to profile",
+      "options": {
+        "system": "System",
+        "light": "Light",
+        "dark": "Dark",
+        "ocean": "Ocean",
+        "teal": "Teal",
+        "highContrast": "High contrast"
+      }
     }
   },
   "cliAuth": {

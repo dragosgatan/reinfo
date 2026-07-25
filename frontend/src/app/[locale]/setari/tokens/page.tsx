@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { KeyRound, Terminal, Trash2 } from "lucide-react";
+import { KeyRound, Palette, Terminal, Trash2 } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
@@ -109,9 +109,17 @@ export default function ApiTokensPage() {
         </div>
       )}
 
-      <p className="mt-6 text-xs text-muted-foreground">
+      <p className="mt-6 flex items-center gap-1 text-xs text-muted-foreground">
         <Link href="/setari/profil" className="hover:text-foreground hover:underline">
           {t("backToProfile")}
+        </Link>
+        <span aria-hidden="true">·</span>
+        <Link
+          href="/setari/aspect"
+          className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
+        >
+          <Palette className="h-3 w-3" />
+          {t("appearance")}
         </Link>
       </p>
     </div>

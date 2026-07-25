@@ -4,13 +4,20 @@
   },
   "nav": {
     "problems": "Feladatok",
+    "problemsGroup": "Feladatok",
+    "allProblems": "Összes feladat",
+    "ai": "AI",
+    "ctf": "CTF",
+    "exercises": "Gyakorlatok",
     "submissions": "Beküldések",
     "contests": "Versenyek",
     "duels": "Párbajok",
     "learning": "Tanulás",
+    "learnGroup": "Tanulás",
     "leaderboard": "Rangsor",
     "friends": "Barátok",
     "classes": "Osztályok",
+    "communityGroup": "Közösség",
     "prep": "Felkészülés",
     "projects": "Projektek",
     "search": "Keresés...",
@@ -45,14 +52,18 @@
       "contests": "Versenyek"
     },
     "features": {
-      "pythonTitle": "Python-ra tervezve",
-      "pythonDesc": "Old meg a feladatokat közvetlenül Python-ban, az informatika útját épp elkezdők számára ideális nyelvben.",
+      "pythonTitle": "Algoritmusok, bármilyen nyelven",
+      "pythonDesc": "Old meg a feladatokat közvetlenül C, C++, Python, Java és más nyelveken, a böngészőből.",
+      "aiTitle": "AI és dataset feladatok",
+      "aiDesc": "Taníts modelleket, küldj be CSV predikciókat, és kapj automatikusan számított pontszámot egy valós adathalmazon.",
+      "ctfTitle": "CTF kihívások",
+      "ctfDesc": "Capture the flag változatos biztonsági kategóriákban, élő ranglistával és first blood-dal.",
       "duelsTitle": "1v1 Párbajok",
       "duelsDesc": "Kihívd barátaid vagy véletlenszerű ellenfeleid időzített párbajokra Elo-értékelő rendszerrel.",
-      "socialTitle": "Közösségi élmény",
-      "socialDesc": "Profilok, baráti lista, rangsorok és aktivitási hírfolyam az igazi versenyzési élményért.",
-      "teachersTitle": "Tanároknak készített eszköz",
-      "teachersDesc": "Hozz létre osztályokat, adj ki feladatokat, és kövesd a tanulók fejlődését egy helyről."
+      "prepTitle": "Felkészülési útvonalak",
+      "prepDesc": "Rendezett lecke-, feladat- és kihívás-listák az ONI, ONIA, ONSC és más versenyekhez.",
+      "projectsTitle": "Gyakorlati projektek",
+      "projectsDesc": "Tanárok által kiadott nyílt projektek, GitHub linkkel beküldve, közvetlen visszajelzéssel."
     }
   },
   "problems": {
@@ -816,6 +827,7 @@
       "avatarSuccess": "Profilkép frissítve.",
       "avatarError": "Hiba a kép feltöltésekor.",
       "viewProfile": "Nyilvános profil megtekintése",
+      "appearance": "Megjelenés",
       "links": "Hivatkozások",
       "githubUrl": "GitHub",
       "githubUrlPlaceholder": "https://github.com/felhasznalonev",
@@ -839,7 +851,23 @@
       "revoke": "Visszavonás",
       "revokeSuccess": "A token visszavonva.",
       "errorGeneric": "Hiba történt. Próbáld újra.",
-      "backToProfile": "← Vissza a profilhoz"
+      "backToProfile": "← Vissza a profilhoz",
+      "appearance": "Megjelenés"
+    },
+    "appearance": {
+      "title": "Megjelenés",
+      "subtitle": "Válassz vizuális témát az oldalhoz. Azonnal alkalmazódik, és mentésre kerül a fiókodhoz.",
+      "viewProfile": "Nyilvános profil megtekintése",
+      "errorGeneric": "Hiba történt. Próbáld újra.",
+      "backToProfile": "← Vissza a profilhoz",
+      "options": {
+        "system": "Rendszer",
+        "light": "Világos",
+        "dark": "Sötét",
+        "ocean": "Óceán",
+        "teal": "Türkiz",
+        "highContrast": "Nagy kontraszt"
+      }
     }
   },
   "cliAuth": {

@@ -14,6 +14,7 @@ export const UserSchema = z.object({
   display_name: z.string().optional(),
   bio: z.string().nullable().optional(),
   language: z.string().optional(),
+  theme: z.string().nullable().optional(),
   privacy_show_email: z.boolean().optional(),
   privacy_show_activity: z.boolean().optional(),
   privacy_show_solved: z.boolean().optional(),

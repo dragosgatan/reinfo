@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyIndicator, getDifficultyLabel } from "@/components/problems/difficulty-indicator";
-import { ArrowRight, Code2, Trophy, Users, GraduationCap } from "lucide-react";
+import { ArrowRight, Bot, Code2, Flag, FolderGit2, ListChecks, Swords } from "lucide-react";
 import { ProblemListResponseSchema } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -32,7 +32,7 @@ function difficultyVariant(d: number): "success" | "warning" | "destructive" {
   return "destructive";
 }
 
-const FEATURE_ICONS = [Code2, Trophy, Users, GraduationCap] as const;
+const FEATURE_ICONS = [Code2, Bot, Flag, Swords, ListChecks, FolderGit2] as const;
 
 export default async function HomePage() {
   const [t, tCommon, tProblems, problems] = await Promise.all([
@@ -43,13 +43,41 @@ export default async function HomePage() {
   ]);
 
   const features = [
-    { icon: FEATURE_ICONS[0], title: t("features.pythonTitle"), desc: t("features.pythonDesc") },
-    { icon: FEATURE_ICONS[1], title: t("features.duelsTitle"), desc: t("features.duelsDesc") },
-    { icon: FEATURE_ICONS[2], title: t("features.socialTitle"), desc: t("features.socialDesc") },
+    {
+      icon: FEATURE_ICONS[0],
+      title: t("features.pythonTitle"),
+      desc: t("features.pythonDesc"),
+      href: "/probleme",
+    },
+    {
+      icon: FEATURE_ICONS[1],
+      title: t("features.aiTitle"),
+      desc: t("features.aiDesc"),
+      href: "/probleme?tab=ai",
+    },
+    {
+      icon: FEATURE_ICONS[2],
+      title: t("features.ctfTitle"),
+      desc: t("features.ctfDesc"),
+      href: "/probleme?tab=ctf",
+    },
     {
       icon: FEATURE_ICONS[3],
-      title: t("features.teachersTitle"),
-      desc: t("features.teachersDesc"),
+      title: t("features.duelsTitle"),
+      desc: t("features.duelsDesc"),
+      href: "/duel",
+    },
+    {
+      icon: FEATURE_ICONS[4],
+      title: t("features.prepTitle"),
+      desc: t("features.prepDesc"),
+      href: "/pregatire",
+    },
+    {
+      icon: FEATURE_ICONS[5],
+      title: t("features.projectsTitle"),
+      desc: t("features.projectsDesc"),
+      href: "/proiecte",
     },
   ];
 
@@ -104,18 +132,24 @@ export default async function HomePage() {
       </section>
 
       <div className="border-b border-border py-10">
-        <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map(({ icon: Icon, title, desc }, i) => (
-            <div key={title} className="flex flex-col gap-2 border-l border-border pl-4">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map(({ icon: Icon, title, desc, href }, i) => (
+            <Link
+              key={title}
+              href={href as Parameters<typeof Link>[0]["href"]}
+              className="group flex flex-col gap-2 border-l border-border pl-4 transition-colors hover:border-foreground/40"
+            >
               <div className="flex items-center gap-2.5">
                 <span className="font-mono text-[10px] font-medium tabular-nums text-muted-foreground/50">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span className="text-sm font-medium leading-snug">{title}</span>
+                <span className="text-sm font-medium leading-snug group-hover:text-foreground">
+                  {title}
+                </span>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

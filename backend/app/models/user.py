@@ -40,6 +40,7 @@ class User(Base, TimestampMixin):
         DateTime(timezone=True), server_default=text("now()"), nullable=False
     )
     language: Mapped[str] = mapped_column(String(8), server_default=text("'ro'"), nullable=False)
+    theme: Mapped[str | None] = mapped_column(String(32), nullable=True)
     duel_rating: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("800"))
     duel_wins: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     duel_losses: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))

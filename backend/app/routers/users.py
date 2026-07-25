@@ -166,6 +166,8 @@ async def update_profile(
         user.bio = data.bio or None
     if data.language is not None:
         user.language = data.language
+    if "theme" in data.model_fields_set:
+        user.theme = data.theme
     if data.privacy_show_email is not None:
         user.privacy_show_email = data.privacy_show_email
     if data.privacy_show_activity is not None:

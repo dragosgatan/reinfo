@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -7,6 +8,8 @@ from app.models.user import UserRole
 
 _USERNAME_PATTERN = r"^[a-zA-Z0-9_]+$"
 _EMAIL_PATTERN = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
+AppTheme = Literal["light", "dark", "ocean", "teal", "high-contrast"]
 
 
 class UserCreate(BaseModel):
@@ -44,6 +47,7 @@ class UserProfileUpdate(BaseModel):
     display_name: str | None = Field(default=None, min_length=1, max_length=128)
     bio: str | None = Field(default=None, max_length=2000)
     language: str | None = Field(default=None, max_length=8)
+    theme: AppTheme | None = None
     privacy_show_email: bool | None = None
     privacy_show_activity: bool | None = None
     privacy_show_solved: bool | None = None
@@ -66,6 +70,7 @@ class UserRead(BaseModel):
     created_at: datetime
     last_active_at: datetime
     language: str
+    theme: str | None
     privacy_show_email: bool
     privacy_show_activity: bool
     privacy_show_solved: bool

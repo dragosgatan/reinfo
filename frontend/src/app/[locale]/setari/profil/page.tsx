@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Link } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, ExternalLink, Github, Link as LinkIcon, Terminal } from "lucide-react";
+import { Camera, ExternalLink, Github, Link as LinkIcon, Palette, Terminal } from "lucide-react";
 import { MarkdownContent } from "@/components/shared/markdown-content";
 
 function Toggle({
@@ -163,6 +163,12 @@ export default function ProfileSettingsPage() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-lg font-bold tracking-tight">{t("title")}</h1>
         <div className="flex items-center gap-1">
+          <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+            <Link href="/setari/aspect">
+              <Palette className="h-3.5 w-3.5" />
+              {t("appearance")}
+            </Link>
+          </Button>
           <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
             <Link href="/setari/tokens">
               <Terminal className="h-3.5 w-3.5" />
