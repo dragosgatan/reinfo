@@ -8,16 +8,7 @@ export type NavEntry =
   | { type: "group"; key: string; items: NavLink[] };
 
 export const NAV_ENTRIES: NavEntry[] = [
-  {
-    type: "group",
-    key: "problemsGroup",
-    items: [
-      { href: "/probleme", key: "allProblems" },
-      { href: "/probleme?tab=ai", key: "ai" },
-      { href: "/probleme?tab=ctf", key: "ctf" },
-      { href: "/probleme?tab=exercitii", key: "exercises" },
-    ],
-  },
+  { type: "link", href: "/probleme", key: "problems" },
   { type: "link", href: "/concursuri", key: "contests" },
   { type: "link", href: "/duel", key: "duels" },
   { type: "link", href: "/submisii", key: "submissions" },
