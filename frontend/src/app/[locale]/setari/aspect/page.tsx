@@ -11,6 +11,8 @@ import { useRouter } from "@/i18n/navigation";
 import { useAuth, type User } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { useFluidMode } from "@/lib/use-fluid-mode";
 import { cn } from "@/lib/utils";
 
 const THEME_OPTIONS = [
@@ -52,6 +54,7 @@ export default function AppearanceSettingsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
+  const { fluid, setFluid } = useFluidMode();
   const [saving, setSaving] = useState<string | null>(null);
   const syncedFromServer = useRef(false);
 
@@ -152,6 +155,14 @@ export default function AppearanceSettingsPage() {
             </button>
           );
         })}
+      </div>
+
+      <div className="mt-8 flex items-center justify-between gap-4 border-t border-border pt-6">
+        <div>
+          <p className="text-sm font-medium">{t("fluidMode")}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("fluidModeDesc")}</p>
+        </div>
+        <ToggleSwitch id="fluid-mode" checked={fluid} onChange={setFluid} />
       </div>
 
       <p className="mt-6 text-xs text-muted-foreground">

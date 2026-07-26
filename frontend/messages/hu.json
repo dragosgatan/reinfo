@@ -860,6 +860,8 @@
       "viewProfile": "Nyilvános profil megtekintése",
       "errorGeneric": "Hiba történt. Próbáld újra.",
       "backToProfile": "← Vissza a profilhoz",
+      "fluidMode": "Folyékony mód",
+      "fluidModeDesc": "Lassabb, rugalmasabb animációk navigáláskor és interakciók során. Alapértelmezetten kikapcsolva.",
       "options": {
         "system": "Rendszer",
         "light": "Világos",

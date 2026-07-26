@@ -860,6 +860,8 @@
       "viewProfile": "Vezi profilul public",
       "errorGeneric": "A apărut o eroare. Încearcă din nou.",
       "backToProfile": "← Înapoi la profil",
+      "fluidMode": "Mod fluid",
+      "fluidModeDesc": "Animații mai lente și mai elastice la navigare și interacțiuni. Dezactivat implicit.",
       "options": {
         "system": "Sistem",
         "light": "Deschisă",

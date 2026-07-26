@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { useState } from "react";
 import { Toaster } from "sonner";
+import { FluidModeProvider } from "@/lib/use-fluid-mode";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -31,8 +32,10 @@ export function Providers({ children }: ProvidersProps) {
         disableTransitionOnChange
         themes={["light", "dark", "ocean", "teal", "high-contrast"]}
       >
-        {children}
-        <Toaster position="bottom-right" richColors />
+        <FluidModeProvider>
+          {children}
+          <Toaster position="bottom-right" richColors />
+        </FluidModeProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

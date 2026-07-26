@@ -5,6 +5,7 @@ import { routing } from "@/i18n/routing";
 import { Providers } from "@/providers";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { PageTransition } from "@/components/layout/page-transition";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface LocaleLayoutProps {
@@ -33,7 +34,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
           </a>
           <Header />
           <main id="main-content" className="flex-1">
-            {children}
+            <PageTransition>{children}</PageTransition>
           </main>
           <Footer />
         </TooltipProvider>

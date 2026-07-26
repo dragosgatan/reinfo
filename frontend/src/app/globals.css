@@ -225,6 +225,48 @@
   }
 }
 
+/* Fluid mode: opt-in, toggled via /setari/aspect - never the default. */
+@keyframes fluid-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fluid {
+  scroll-behavior: smooth;
+}
+
+.fluid button,
+.fluid a,
+.fluid [role="button"],
+.fluid [role="tab"] {
+  transition-duration: 320ms;
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fluid .page-transition.page-transition-play {
+  animation: fluid-page-enter 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fluid button,
+  .fluid a,
+  .fluid [role="button"],
+  .fluid [role="tab"] {
+    transition-duration: 150ms;
+    transition-timing-function: ease;
+  }
+
+  .fluid .page-transition.page-transition-play {
+    animation: none;
+  }
+}
+
 .hljs {
   background: transparent !important;
   color: inherit !important;

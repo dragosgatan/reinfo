@@ -858,6 +858,8 @@
       "viewProfile": "View public profile",
       "errorGeneric": "An error occurred. Try again.",
       "backToProfile": "← Back to profile",
+      "fluidMode": "Fluid mode",
+      "fluidModeDesc": "Slower, springier animations on navigation and interactions. Off by default.",
       "options": {
         "system": "System",
         "light": "Light",
