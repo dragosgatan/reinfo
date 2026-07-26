@@ -7,10 +7,10 @@ problems from your terminal or notebook.
 ## Install
 
 ```
-pip install reinfo
+pip install reinfo-cli
 
 # for the dataset helper (get_dataset / submit_predictions), which needs pandas:
-pip install reinfo[dataset]
+pip install reinfo-cli[dataset]
 ```
 
 ## Usage

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "reinfo"
+name = "reinfo-cli"
 version = "0.1.0"
 description = "Command-line client and Python helper for ReInfo (reinfo.ro) - submit solutions, check status, scaffold problems, and work with AI/dataset problems from your terminal or notebook."
 readme = "README.md"
