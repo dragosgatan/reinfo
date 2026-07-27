@@ -1246,7 +1246,12 @@
     "pageOf": "{page} / {total}",
     "roleSuperuser": "Superuser",
     "superuserProtected": "protejat",
-    "tabSuperusers": "Superuseri"
+    "tabSuperusers": "Superuseri",
+    "backToAdmin": "← Panou de administrare",
+    "importTitle": "Import în masă",
+    "importSubtitle": "Adaugă probleme și lecții în masă din CSV sau JSON.",
+    "importTabProblems": "Probleme",
+    "importTabLessons": "Lecții"
   },
   "roadmaps": {
     "title": "Hărți de parcurs",

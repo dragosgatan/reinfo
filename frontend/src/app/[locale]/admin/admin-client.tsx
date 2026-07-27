@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { Upload } from "lucide-react";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
@@ -291,9 +292,17 @@ export function AdminClient() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <div className="mb-6 border-b border-border pb-4">
-        <h1 className="text-xl font-bold tracking-tight">{t("title")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{t("subtitle")}</p>
+      <div className="mb-6 flex items-start justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">{t("subtitle")}</p>
+        </div>
+        <Button asChild variant="outline" size="sm" className="shrink-0 gap-1.5">
+          <Link href="/admin/import">
+            <Upload className="h-3.5 w-3.5" />
+            {t("importTitle")}
+          </Link>
+        </Button>
       </div>
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">

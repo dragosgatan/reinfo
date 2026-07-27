@@ -1246,7 +1246,12 @@
     "pageOf": "{page} / {total}",
     "roleSuperuser": "Superfelhasználó",
     "superuserProtected": "védett",
-    "tabSuperusers": "Superfelhasználók"
+    "tabSuperusers": "Superfelhasználók",
+    "backToAdmin": "← Adminisztrátor panel",
+    "importTitle": "Tömeges importálás",
+    "importSubtitle": "Feladatok és leckék tömeges hozzáadása CSV-ből vagy JSON-ból.",
+    "importTabProblems": "Feladatok",
+    "importTabLessons": "Leckék"
   },
   "roadmaps": {
     "title": "Tanulási térképek",

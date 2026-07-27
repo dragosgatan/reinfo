@@ -1246,7 +1246,12 @@
     "pageOf": "{page} / {total}",
     "roleSuperuser": "Superuser",
     "superuserProtected": "protected",
-    "tabSuperusers": "Superusers"
+    "tabSuperusers": "Superusers",
+    "backToAdmin": "← Admin panel",
+    "importTitle": "Bulk import",
+    "importSubtitle": "Add problems and lessons in bulk from CSV or JSON.",
+    "importTabProblems": "Problems",
+    "importTabLessons": "Lessons"
   },
   "roadmaps": {
     "title": "Roadmaps",
