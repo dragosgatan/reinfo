@@ -71,7 +71,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <a
-                  href="https://infoeducatie.ro"
+                  href="https://community.infoeducatie.ro/t/reinfo-educational-maramures-lucrari-2026-nationala/6630"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-foreground transition-colors"
