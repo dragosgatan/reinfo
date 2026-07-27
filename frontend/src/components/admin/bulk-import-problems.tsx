@@ -249,7 +249,7 @@ export function BulkImportProblems() {
 
       <p className="text-xs text-muted-foreground">
         CSV: coloane <code className="rounded bg-muted px-1">slug,title,statement_md,input_format,output_format,difficulty,tags,visibility,time_limit_ms,memory_limit_kb,problem_type</code>{" "}
-        (tags separate prin <code className="rounded bg-muted px-1">;</code>, fără cazuri de test — se adaugă
+        (tags separate prin <code className="rounded bg-muted px-1">;</code>, fără cazuri de test - se adaugă
         ulterior din pagina problemei). JSON permite și <code className="rounded bg-muted px-1">test_cases</code>{" "}
         și <code className="rounded bg-muted px-1">quiz_options</code> incluse direct.
       </p>
@@ -280,10 +280,10 @@ export function BulkImportProblems() {
                     <td className="px-2 py-1.5">
                       <RowStatusIcon status={row.status} />
                     </td>
-                    <td className="px-2 py-1.5 font-mono">{row.data?.slug ?? "—"}</td>
-                    <td className="px-2 py-1.5">{row.data?.title ?? "—"}</td>
-                    <td className="px-2 py-1.5">{row.data?.problem_type ?? "—"}</td>
-                    <td className="px-2 py-1.5">{row.data?.difficulty ?? "—"}</td>
+                    <td className="px-2 py-1.5 font-mono">{row.data?.slug ?? "-"}</td>
+                    <td className="px-2 py-1.5">{row.data?.title ?? "-"}</td>
+                    <td className="px-2 py-1.5">{row.data?.problem_type ?? "-"}</td>
+                    <td className="px-2 py-1.5">{row.data?.difficulty ?? "-"}</td>
                     <td className="px-2 py-1.5 text-destructive">
                       {row.validationErrors.join("; ")}
                       {row.resultError}

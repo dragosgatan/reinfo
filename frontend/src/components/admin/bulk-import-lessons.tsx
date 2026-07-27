@@ -191,7 +191,7 @@ export function BulkImportLessons() {
 
       <p className="text-xs text-muted-foreground">
         CSV: coloane <code className="rounded bg-muted px-1">slug,title,category,level,content_md,ordinal,published</code>{" "}
-        (fără quiz-uri — se pot adăuga ulterior din editor). category:{" "}
+        (fără quiz-uri - se pot adăuga ulterior din editor). category:{" "}
         <code className="rounded bg-muted px-1">{LESSON_CATEGORIES.join(", ")}</code>, level:{" "}
         <code className="rounded bg-muted px-1">{LESSON_LEVELS.join(", ")}</code>. JSON permite și{" "}
         <code className="rounded bg-muted px-1">quizzes</code> incluse direct.
@@ -223,10 +223,10 @@ export function BulkImportLessons() {
                     <td className="px-2 py-1.5">
                       <RowStatusIcon status={row.status} />
                     </td>
-                    <td className="px-2 py-1.5 font-mono">{row.data?.slug ?? "—"}</td>
-                    <td className="px-2 py-1.5">{row.data?.title ?? "—"}</td>
-                    <td className="px-2 py-1.5">{row.data?.category ?? "—"}</td>
-                    <td className="px-2 py-1.5">{row.data?.level ?? "—"}</td>
+                    <td className="px-2 py-1.5 font-mono">{row.data?.slug ?? "-"}</td>
+                    <td className="px-2 py-1.5">{row.data?.title ?? "-"}</td>
+                    <td className="px-2 py-1.5">{row.data?.category ?? "-"}</td>
+                    <td className="px-2 py-1.5">{row.data?.level ?? "-"}</td>
                     <td className="px-2 py-1.5 text-destructive">
                       {row.validationErrors.join("; ")}
                       {row.resultError}

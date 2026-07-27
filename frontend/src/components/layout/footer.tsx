@@ -3,7 +3,6 @@ import { Link } from "@/i18n/navigation";
 import { Separator } from "@/components/ui/separator";
 
 export function Footer() {
-  const tNav = useTranslations("nav");
   const tAuth = useTranslations("auth");
   const t = useTranslations("footer");
 
@@ -18,29 +17,19 @@ export function Footer() {
             <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{t("tagline")}</p>
           </div>
 
-          <nav aria-label={t("sectionPlatform")}>
+          <nav aria-label={t("sectionLegal")}>
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("sectionPlatform")}
+              {t("sectionLegal")}
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/probleme" className="hover:text-foreground transition-colors">
-                  {tNav("problems")}
+                <Link href="/confidentialitate" className="hover:text-foreground transition-colors">
+                  {t("privacyPolicy")}
                 </Link>
               </li>
               <li>
-                <Link href="/concursuri" className="hover:text-foreground transition-colors">
-                  {tNav("contests")}
-                </Link>
-              </li>
-              <li>
-                <Link href="/invatare" className="hover:text-foreground transition-colors">
-                  {tNav("learning")}
-                </Link>
-              </li>
-              <li>
-                <Link href="/clasament" className="hover:text-foreground transition-colors">
-                  {tNav("leaderboard")}
+                <Link href="/termeni" className="hover:text-foreground transition-colors">
+                  {t("termsOfService")}
                 </Link>
               </li>
             </ul>

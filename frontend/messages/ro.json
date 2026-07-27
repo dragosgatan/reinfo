@@ -1082,8 +1082,10 @@
   },
   "footer": {
     "tagline": "Platformă modernă de programare competitivă pentru elevi din România.",
-    "sectionPlatform": "Platformă",
     "sectionAccount": "Cont",
+    "sectionLegal": "Legal",
+    "privacyPolicy": "Politica de Confidențialitate",
+    "termsOfService": "Termeni și Condiții",
     "sectionProject": "Proiect",
     "copyright": "© {year} ReInfo. Toate drepturile rezervate.",
     "infoeducatie": "Proiect InfoEducație - Secțiunea Software Educațional"

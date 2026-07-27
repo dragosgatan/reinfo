@@ -1082,8 +1082,10 @@
   },
   "footer": {
     "tagline": "Modern versenyszerű programozási platform román diákok számára.",
-    "sectionPlatform": "Platform",
     "sectionAccount": "Fiók",
+    "sectionLegal": "Jogi",
+    "privacyPolicy": "Adatvédelmi irányelvek",
+    "termsOfService": "Felhasználási feltételek",
     "sectionProject": "Projekt",
     "copyright": "© {year} ReInfo. Minden jog fenntartva.",
     "infoeducatie": "InfoEducație projekt - Oktatási szoftver szekció"

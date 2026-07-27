@@ -1082,8 +1082,10 @@
   },
   "footer": {
     "tagline": "Modern competitive programming platform for Romanian students.",
-    "sectionPlatform": "Platform",
     "sectionAccount": "Account",
+    "sectionLegal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
     "sectionProject": "Project",
     "copyright": "© {year} ReInfo. All rights reserved.",
     "infoeducatie": "InfoEducație project - Educational Software section"
