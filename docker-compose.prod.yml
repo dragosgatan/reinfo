@@ -55,6 +55,8 @@ services:
       - /piston/jobs
     volumes:
       - piston_packages:/piston/packages
+      # raises piston's hardcoded 100kb request body limit, see piston/index.js
+      - ./piston/index.js:/piston_api/src/index.js:ro
 
   nginx:
     image: nginx:alpine
