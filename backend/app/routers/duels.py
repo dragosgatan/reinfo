@@ -22,7 +22,7 @@ from app.models.duel import (
     DuelStatus,
 )
 from app.models.judging_job import JudgingJob
-from app.models.problem import Problem, Visibility
+from app.models.problem import Problem, ProblemType, Visibility
 from app.models.submission import Submission, Verdict
 from app.models.user import User
 from app.piston import SUPPORTED_LANGUAGES
@@ -320,6 +320,7 @@ async def accept_duel_request(
         .where(
             and_(
                 Problem.visibility == Visibility.public,
+                Problem.problem_type == ProblemType.standard,
                 Problem.difficulty >= req.difficulty_min,
                 Problem.difficulty <= req.difficulty_max,
             )

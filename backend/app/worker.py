@@ -16,7 +16,7 @@ from app.models.classroom import Class as _Class  # noqa: F401
 from app.models.contest import Contest, ContestRatingHistory
 from app.models.duel import Duel, DuelQueue, DuelQueueStatus, DuelRatingHistory, DuelStatus
 from app.models.judging_job import JobStatus, JudgingJob
-from app.models.problem import Problem, Visibility
+from app.models.problem import Problem, ProblemType, Visibility
 from app.models.user import User
 from app.realtime import publish_duel_update
 
@@ -228,6 +228,7 @@ async def process_duel_queue(session: AsyncSession) -> None:
                 select(Problem)
                 .where(
                     Problem.visibility == Visibility.public,
+                    Problem.problem_type == ProblemType.standard,
                     Problem.difficulty >= diff_min,
                     Problem.difficulty <= diff_max,
                 )
@@ -237,7 +238,10 @@ async def process_duel_queue(session: AsyncSession) -> None:
             if problem is None:
                 problem = await session.scalar(
                     select(Problem)
-                    .where(Problem.visibility == Visibility.public)
+                    .where(
+                        Problem.visibility == Visibility.public,
+                        Problem.problem_type == ProblemType.standard,
+                    )
                     .order_by(func.random())
                     .limit(1)
                 )
