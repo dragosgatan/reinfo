@@ -487,7 +487,13 @@
     "submittedAt": "Submitted at",
     "scoreLabel": "Score",
     "feedbackPlaceholder": "Feedback (Markdown)",
-    "grade": "Grade"
+    "grade": "Grade",
+    "editProject": "Edit project",
+    "briefLabel": "Description",
+    "deadlineLabel": "Deadline",
+    "publishedLabel": "Published",
+    "save": "Save",
+    "editSuccess": "Project updated"
   },
   "submissions": {
     "title": "Submissions",

@@ -487,7 +487,13 @@
     "submittedAt": "Beküldve",
     "scoreLabel": "Pontszám",
     "feedbackPlaceholder": "Visszajelzés (Markdown)",
-    "grade": "Értékelés"
+    "grade": "Értékelés",
+    "editProject": "Projekt szerkesztése",
+    "briefLabel": "Leírás",
+    "deadlineLabel": "Határidő",
+    "publishedLabel": "Közzétéve",
+    "save": "Mentés",
+    "editSuccess": "Projekt frissítve"
   },
   "submissions": {
     "title": "Beküldések",

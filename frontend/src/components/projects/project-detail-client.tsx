@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Github,
   Loader2,
+  Pencil,
   Send,
   Star,
   Users,
@@ -17,12 +18,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { MarkdownContent } from "@/components/shared/markdown-content";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { ProjectDetailSchema, ProjectSubmissionListResponseSchema } from "@/lib/types";
-import type { ProjectSubmission } from "@/lib/types";
+import {
+  ProjectDetailSchema,
+  ProjectSubmissionListResponseSchema,
+} from "@/lib/types";
+import type { ProjectDetail, ProjectSubmission } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -33,6 +45,7 @@ export function ProjectDetailClient({ slug }: Props) {
   const t = useTranslations("projects");
   const locale = useLocale();
   const { user, isAuthenticated } = useAuth();
+  const [showEdit, setShowEdit] = useState(false);
 
   const {
     data: project,
@@ -71,7 +84,18 @@ export function ProjectDetailClient({ slug }: Props) {
       </Link>
 
       <div className="mb-2">
-        <h1 className="text-xl font-bold tracking-tight">{project.title}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-xl font-bold tracking-tight">{project.title}</h1>
+          {canEdit && (
+            <button
+              onClick={() => setShowEdit(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+              {t("editProject")}
+            </button>
+          )}
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {project.class_name ? (
             <span className="flex items-center gap-1">
@@ -81,6 +105,7 @@ export function ProjectDetailClient({ slug }: Props) {
           ) : (
             <Badge variant="muted">{t("publicProject")}</Badge>
           )}
+          {canEdit && !project.published && <Badge variant="muted">{t("draft")}</Badge>}
           {project.deadline && (
             <span className={cn(deadlinePassed && "text-destructive")}>
               {t("deadline")}: {new Date(project.deadline).toLocaleString(locale)}
@@ -105,7 +130,120 @@ export function ProjectDetailClient({ slug }: Props) {
           isAuthenticated={isAuthenticated}
         />
       )}
+
+      {canEdit && (
+        <EditProjectDialog
+          slug={slug}
+          project={project}
+          open={showEdit}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
     </div>
+  );
+}
+
+function toDatetimeLocalValue(iso: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const offsetMs = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function EditProjectDialog({
+  slug,
+  project,
+  open,
+  onClose,
+}: {
+  slug: string;
+  project: ProjectDetail;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const t = useTranslations("projects");
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState(project.title);
+  const [briefMd, setBriefMd] = useState(project.brief_md);
+  const [deadline, setDeadline] = useState(toDatetimeLocalValue(project.deadline));
+  const [published, setPublished] = useState(project.published);
+  const [saving, setSaving] = useState(false);
+
+  function resetAndClose() {
+    setTitle(project.title);
+    setBriefMd(project.brief_md);
+    setDeadline(toDatetimeLocalValue(project.deadline));
+    setPublished(project.published);
+    onClose();
+  }
+
+  async function handleSave() {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      await api.patch(`/api/projects/${slug}`, {
+        title,
+        brief_md: briefMd,
+        deadline: deadline ? new Date(deadline).toISOString() : null,
+        published,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["project", slug] });
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success(t("editSuccess"));
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t("errorGeneric"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && resetAndClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("editProject")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-project-title">{t("titleLabel")}</Label>
+            <Input id="edit-project-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-project-brief">{t("briefLabel")}</Label>
+            <textarea
+              id="edit-project-brief"
+              value={briefMd}
+              onChange={(e) => setBriefMd(e.target.value)}
+              rows={8}
+              className="w-full rounded border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-project-deadline">{t("deadlineLabel")}</Label>
+            <Input
+              id="edit-project-deadline"
+              type="datetime-local"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="edit-project-published">{t("publishedLabel")}</Label>
+            <ToggleSwitch id="edit-project-published" checked={published} onChange={setPublished} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={resetAndClose}>
+            {t("cancel")}
+          </Button>
+          <Button type="button" onClick={handleSave} disabled={saving || !title.trim()}>
+            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            {t("save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

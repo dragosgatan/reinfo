@@ -487,7 +487,13 @@
     "submittedAt": "Trimis la",
     "scoreLabel": "Scor",
     "feedbackPlaceholder": "Feedback (Markdown)",
-    "grade": "Notează"
+    "grade": "Notează",
+    "editProject": "Editează proiectul",
+    "briefLabel": "Descriere",
+    "deadlineLabel": "Termen limită",
+    "publishedLabel": "Publicat",
+    "save": "Salvează",
+    "editSuccess": "Proiect actualizat"
   },
   "submissions": {
     "title": "Submisii",
