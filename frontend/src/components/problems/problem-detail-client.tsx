@@ -29,7 +29,10 @@ function StatementLangToggle({
   markdownEn: string;
   markdownHu?: string | null;
 }) {
-  const [lang, setLang] = useState<"ro" | "en" | "hu">("ro");
+  const locale = useLocale();
+  const defaultLang: "ro" | "en" | "hu" =
+    locale === "en" && markdownEn ? "en" : locale === "hu" && markdownHu ? "hu" : "ro";
+  const [lang, setLang] = useState<"ro" | "en" | "hu">(defaultLang);
   const activeMarkdown =
     lang === "en" ? markdownEn : lang === "hu" && markdownHu ? markdownHu : markdown;
   return (
