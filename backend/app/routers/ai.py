@@ -129,6 +129,12 @@ async def lesson_chat(
     current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
     """stream a tutoring response for the last user message, grounded in the lesson"""
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Trebuie să confirmi adresa de email pentru a folosi asistentul AI",
+        )
+
     last_message = next((m.content for m in reversed(data.messages) if m.role == "user"), None)
     if not data.messages or not last_message or not data.lesson_title or not data.lesson_content:
         raise HTTPException(status_code=400, detail="Missing fields")

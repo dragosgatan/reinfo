@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import {
   BookOpen,
@@ -244,11 +245,26 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 
 function LessonChat({ lesson }: { lesson: LessonRead }) {
   const t = useTranslations("learning");
+  const { user } = useAuth();
+  const isUnverified = !!user && user.is_verified === false;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const resendVerification = useCallback(async () => {
+    setResending(true);
+    try {
+      await api.post("/api/auth/resend-verification", {});
+      toast.success(t("aiChatResendSuccess"));
+    } catch {
+      toast.error(t("aiChatResendError"));
+    } finally {
+      setResending(false);
+    }
+  }, [t]);
 
   useEffect(() => {
     const el = messagesRef.current;
@@ -257,7 +273,7 @@ function LessonChat({ lesson }: { lesson: LessonRead }) {
 
   const send = useCallback(async () => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || isUnverified) return;
 
     const newMessages: ChatMessage[] = [...messages, { role: "user", content: text }];
     setMessages(newMessages);
@@ -326,7 +342,7 @@ function LessonChat({ lesson }: { lesson: LessonRead }) {
       setLoading(false);
       inputRef.current?.focus();
     }
-  }, [input, loading, messages, lesson.slug, lesson.title, lesson.content_md, t]);
+  }, [input, loading, isUnverified, messages, lesson.slug, lesson.title, lesson.content_md, t]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -378,6 +394,18 @@ function LessonChat({ lesson }: { lesson: LessonRead }) {
       </div>
 
       <div className="border-t border-border p-3">
+        {isUnverified && (
+          <div className="mb-3 rounded-md border border-amber-400/40 bg-amber-50/50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+            <p className="mb-1.5">{t("aiChatUnverifiedMessage")}</p>
+            <button
+              onClick={() => void resendVerification()}
+              disabled={resending}
+              className="font-medium underline underline-offset-2 hover:no-underline disabled:opacity-50"
+            >
+              {t("aiChatResendButton")}
+            </button>
+          </div>
+        )}
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
@@ -386,11 +414,12 @@ function LessonChat({ lesson }: { lesson: LessonRead }) {
             onKeyDown={handleKeyDown}
             placeholder={t("aiChatPlaceholder")}
             rows={2}
-            className="flex-1 resize-none rounded-md border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            disabled={isUnverified}
+            className="flex-1 resize-none rounded-md border border-border bg-muted/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           />
           <button
             onClick={() => void send()}
-            disabled={loading || !input.trim()}
+            disabled={loading || !input.trim() || isUnverified}
             aria-label={t("aiChatSend")}
             className="rounded-md bg-primary p-2 text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >

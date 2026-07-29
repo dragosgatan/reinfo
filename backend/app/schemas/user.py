@@ -34,6 +34,10 @@ class ResetPasswordRequest(BaseModel):
     password: str = Field(min_length=8)
 
 
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
 class UserUpdate(BaseModel):
     display_name: str | None = Field(default=None, max_length=128)
     avatar_url: str | None = Field(default=None, max_length=512)
@@ -71,6 +75,7 @@ class UserRead(BaseModel):
     last_active_at: datetime
     language: str
     theme: str | None
+    is_verified: bool
     privacy_show_email: bool
     privacy_show_activity: bool
     privacy_show_solved: bool

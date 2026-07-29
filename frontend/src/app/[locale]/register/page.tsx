@@ -58,7 +58,7 @@ export default function RegisterPage() {
         language: locale,
       });
       router.push("/login");
-      toast.success(t("submit"));
+      toast.success(t("success"));
     } catch (err) {
       const message =
         err instanceof ApiError && err.status === 409

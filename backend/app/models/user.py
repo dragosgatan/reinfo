@@ -49,6 +49,7 @@ class User(Base, TimestampMixin):
         Integer, nullable=False, server_default=text("1500")
     )
     is_banned: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
     privacy_show_email: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
@@ -119,6 +120,20 @@ class Session(Base, TimestampMixin):
 
 class PasswordResetToken(Base, TimestampMixin):
     __tablename__ = "password_reset_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    token: Mapped[str] = mapped_column(String(256), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped["User"] = relationship("User")
+
+
+class EmailVerificationToken(Base, TimestampMixin):
+    __tablename__ = "email_verification_tokens"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_uuid)
     user_id: Mapped[uuid.UUID] = mapped_column(

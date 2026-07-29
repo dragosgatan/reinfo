@@ -8,10 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_session
 from app.dependencies import SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS, get_current_user
-from app.email import send_password_reset_email
+from app.email import send_password_reset_email, send_verification_email
 from app.limiter import limiter
 from app.models.api_token import ApiToken
-from app.models.user import PasswordResetToken, User
+from app.models.user import EmailVerificationToken, PasswordResetToken, User
 from app.models.user import Session as DbSession
 from app.schemas.device_auth import ApiTokenRead
 from app.schemas.user import (
@@ -21,6 +21,7 @@ from app.schemas.user import (
     UserCreate,
     UserProfileRead,
     UserRead,
+    VerifyEmailRequest,
 )
 from app.security import generate_token, hash_password, verify_password
 
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 _COOKIE_MAX_AGE = SESSION_EXPIRY_DAYS * 24 * 3600
 _RESET_TOKEN_EXPIRY_HOURS = 1
+_VERIFY_TOKEN_EXPIRY_HOURS = 24
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -54,10 +56,22 @@ async def register(
         password_hash=hash_password(data.password),
         display_name=data.display_name,
         language=data.language,
+        is_verified=False,
     )
     session.add(user)
     await session.commit()
     await session.refresh(user)
+
+    token = generate_token()
+    verification_token = EmailVerificationToken(
+        user_id=user.id,
+        token=token,
+        expires_at=datetime.now(UTC) + timedelta(hours=_VERIFY_TOKEN_EXPIRY_HOURS),
+    )
+    session.add(verification_token)
+    await session.commit()
+    await send_verification_email(user.email, token, user.language)
+
     return UserRead.model_validate(user)
 
 
@@ -183,6 +197,63 @@ async def reset_password(
     await session.execute(delete(DbSession).where(DbSession.user_id == user.id))
     await session.commit()
     return {"message": "Parola a fost resetată cu succes"}
+
+
+@router.post("/verify-email")
+@limiter.limit("10/minute")
+async def verify_email(
+    request: Request,
+    data: VerifyEmailRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """confirm a user's email using a valid, unexpired, unused token"""
+    verification_token = await session.scalar(
+        select(EmailVerificationToken).where(
+            EmailVerificationToken.token == data.token,
+            EmailVerificationToken.used_at.is_(None),
+            EmailVerificationToken.expires_at > datetime.now(UTC),
+        )
+    )
+    if verification_token is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Link de confirmare invalid sau expirat",
+        )
+
+    user = await session.get(User, verification_token.user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Link de confirmare invalid sau expirat",
+        )
+
+    user.is_verified = True
+    verification_token.used_at = datetime.now(UTC)
+    await session.commit()
+    return {"message": "Adresa de email a fost confirmată cu succes"}
+
+
+@router.post("/resend-verification")
+@limiter.limit("3/minute")
+async def resend_verification(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """send a new verification email to the current user, if not already verified"""
+    if current_user.is_verified:
+        return {"message": "Contul este deja confirmat"}
+
+    token = generate_token()
+    verification_token = EmailVerificationToken(
+        user_id=current_user.id,
+        token=token,
+        expires_at=datetime.now(UTC) + timedelta(hours=_VERIFY_TOKEN_EXPIRY_HOURS),
+    )
+    session.add(verification_token)
+    await session.commit()
+    await send_verification_email(current_user.email, token, current_user.language)
+    return {"message": "Am retrimis emailul de confirmare"}
 
 
 @router.get("/me")

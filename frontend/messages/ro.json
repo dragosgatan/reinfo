@@ -757,7 +757,11 @@
       "graphs": "Grafuri",
       "dp": "Programare dinamică",
       "math": "Matematică"
-    }
+    },
+    "aiChatUnverifiedMessage": "Trebuie să confirmi adresa de email pentru a folosi asistentul AI.",
+    "aiChatResendButton": "Retrimite emailul de confirmare",
+    "aiChatResendSuccess": "Am retrimis emailul de confirmare.",
+    "aiChatResendError": "Nu am putut retrimite emailul. Încearcă din nou."
   },
   "leaderboard": {
     "title": "Clasament",
@@ -922,7 +926,8 @@
     "login": "Autentifică-te",
     "terms": "Prin înregistrare, accepți termenii și condițiile.",
     "errorConflict": "Utilizatorul sau emailul există deja.",
-    "errorGeneric": "A apărut o eroare. Încearcă din nou."
+    "errorGeneric": "A apărut o eroare. Încearcă din nou.",
+    "success": "Cont creat! Verifică-ți emailul pentru a-ți activa contul."
   },
   "forgotPassword": {
     "title": "Ai uitat parola?",
@@ -1326,5 +1331,13 @@
         "delete": "Șterge"
       }
     }
+  },
+  "verifyEmail": {
+    "title": "Confirmă emailul",
+    "subtitle": "Confirmăm adresa ta de email...",
+    "success": "Adresa de email a fost confirmată cu succes.",
+    "errorInvalidToken": "Linkul de confirmare este invalid sau a expirat.",
+    "errorGeneric": "A apărut o eroare. Încearcă din nou.",
+    "backToLogin": "Mergi la autentificare"
   }
 }

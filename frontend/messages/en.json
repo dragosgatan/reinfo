@@ -755,7 +755,11 @@
       "graphs": "Graphs",
       "dp": "Dynamic programming",
       "math": "Mathematics"
-    }
+    },
+    "aiChatUnverifiedMessage": "You need to confirm your email address to use the AI assistant.",
+    "aiChatResendButton": "Resend confirmation email",
+    "aiChatResendSuccess": "We've resent the confirmation email.",
+    "aiChatResendError": "Couldn't resend the email. Try again."
   },
   "leaderboard": {
     "title": "Leaderboard",
@@ -922,7 +926,8 @@
     "login": "Sign in",
     "terms": "By registering, you agree to our terms and conditions.",
     "errorConflict": "Username or email already in use.",
-    "errorGeneric": "An error occurred. Try again."
+    "errorGeneric": "An error occurred. Try again.",
+    "success": "Account created! Check your email to activate your account."
   },
   "forgotPassword": {
     "title": "Forgot your password?",
@@ -1326,5 +1331,13 @@
         "delete": "Delete"
       }
     }
+  },
+  "verifyEmail": {
+    "title": "Confirm your email",
+    "subtitle": "Confirming your email address...",
+    "success": "Your email has been confirmed successfully.",
+    "errorInvalidToken": "This confirmation link is invalid or has expired.",
+    "errorGeneric": "An error occurred. Try again.",
+    "backToLogin": "Go to sign in"
   }
 }

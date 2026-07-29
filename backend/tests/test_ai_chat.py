@@ -16,13 +16,19 @@ from app.security import hash_password
 _PASSWORD = "testpassword1"
 
 
-async def _make_user(db: AsyncSession, username: str, role: UserRole = UserRole.student) -> User:
+async def _make_user(
+    db: AsyncSession,
+    username: str,
+    role: UserRole = UserRole.student,
+    is_verified: bool = True,
+) -> User:
     user = User(
         username=username,
         email=f"{username}@example.com",
         password_hash=hash_password(_PASSWORD),
         display_name=username,
         role=role,
+        is_verified=is_verified,
     )
     db.add(user)
     await db.commit()
@@ -256,6 +262,16 @@ async def test_missing_openrouter_key_returns_503(
 async def test_requires_login(client: AsyncClient, db_session: AsyncSession) -> None:
     r = await client.post("/api/ai/lesson-chat", json=_chat_body("orice"))
     assert r.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_unverified_user_is_blocked(client: AsyncClient, db_session: AsyncSession) -> None:
+    await _make_user(db_session, "chat-unverified", is_verified=False)
+    await _login(client, "chat-unverified")
+
+    r = await client.post("/api/ai/lesson-chat", json=_chat_body("orice"))
+    assert r.status_code == 403
+    assert "confirmi adresa de email" in r.json()["detail"]
 
 
 @pytest.mark.asyncio

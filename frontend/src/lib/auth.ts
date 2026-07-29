@@ -10,6 +10,7 @@ export const UserSchema = z.object({
   email: z.string(),
   role: z.enum(["student", "teacher", "admin", "superuser"]),
   created_at: z.string(),
+  is_verified: z.boolean().optional(),
   avatar_url: z.string().nullable().optional(),
   display_name: z.string().optional(),
   bio: z.string().nullable().optional(),

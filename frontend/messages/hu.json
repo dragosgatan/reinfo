@@ -757,7 +757,11 @@
       "graphs": "Gráfok",
       "dp": "Dinamikus programozás",
       "math": "Matematika"
-    }
+    },
+    "aiChatUnverifiedMessage": "Az AI asszisztens használatához meg kell erősítened az e-mail címedet.",
+    "aiChatResendButton": "Megerősítő email újraküldése",
+    "aiChatResendSuccess": "Újraküldtük a megerősítő emailt.",
+    "aiChatResendError": "Nem sikerült újraküldeni az emailt. Próbáld újra."
   },
   "leaderboard": {
     "title": "Rangsor",
@@ -922,7 +926,8 @@
     "login": "Bejelentkezés",
     "terms": "A regisztrációval elfogadod az általános szerződési feltételeket.",
     "errorConflict": "A felhasználónév vagy e-mail már foglalt.",
-    "errorGeneric": "Hiba történt. Próbáld újra."
+    "errorGeneric": "Hiba történt. Próbáld újra.",
+    "success": "Fiók létrehozva! Ellenőrizd az e-mailedet a fiók aktiválásához."
   },
   "forgotPassword": {
     "title": "Elfelejtette a jelszavát?",
@@ -1326,5 +1331,13 @@
         "delete": "Törlés"
       }
     }
+  },
+  "verifyEmail": {
+    "title": "Email megerősítése",
+    "subtitle": "Az email címed megerősítése folyamatban...",
+    "success": "Az email címedet sikeresen megerősítettük.",
+    "errorInvalidToken": "A megerősítő link érvénytelen vagy lejárt.",
+    "errorGeneric": "Hiba történt. Próbáld újra.",
+    "backToLogin": "Ugrás a bejelentkezéshez"
   }
 }

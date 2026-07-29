@@ -8,7 +8,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import PasswordResetToken, User
+from app.models.user import EmailVerificationToken, PasswordResetToken, User
 from app.models.user import Session as DbSession
 
 _USER: dict = {
@@ -338,3 +338,117 @@ async def test_reset_password_short_password(client: AsyncClient, db_session: As
         json={"token": token_row.token, "password": "short"},
     )
     assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_register_creates_unverified_user_with_token(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+
+    user = await db_session.get(User, user_id)
+    assert user is not None
+    assert user.is_verified is False
+
+    token_row = await db_session.scalar(
+        select(EmailVerificationToken).where(EmailVerificationToken.user_id == user_id)
+    )
+    assert token_row is not None
+    assert token_row.used_at is None
+    assert token_row.expires_at > datetime.now(UTC)
+
+
+@pytest.mark.asyncio
+async def test_verify_email_success(client: AsyncClient, db_session: AsyncSession) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+    token_row = await db_session.scalar(
+        select(EmailVerificationToken).where(EmailVerificationToken.user_id == user_id)
+    )
+    assert token_row is not None
+
+    r = await client.post("/api/auth/verify-email", json={"token": token_row.token})
+    assert r.status_code == 200
+
+    user = await db_session.get(User, user_id)
+    await db_session.refresh(user)
+    assert user.is_verified is True
+
+
+@pytest.mark.asyncio
+async def test_verify_email_invalid_token(client: AsyncClient) -> None:
+    r = await client.post("/api/auth/verify-email", json={"token": "not-a-real-token"})
+    assert r.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_verify_email_expired_token(client: AsyncClient, db_session: AsyncSession) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+
+    expired = EmailVerificationToken(
+        user_id=user_id,
+        token="expired-verify-token-xyz",
+        expires_at=datetime.now(UTC) - timedelta(hours=1),
+    )
+    db_session.add(expired)
+    await db_session.commit()
+
+    r = await client.post("/api/auth/verify-email", json={"token": "expired-verify-token-xyz"})
+    assert r.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_verify_email_token_reuse(client: AsyncClient, db_session: AsyncSession) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+    token_row = await db_session.scalar(
+        select(EmailVerificationToken).where(EmailVerificationToken.user_id == user_id)
+    )
+    assert token_row is not None
+
+    r1 = await client.post("/api/auth/verify-email", json={"token": token_row.token})
+    assert r1.status_code == 200
+
+    r2 = await client.post("/api/auth/verify-email", json={"token": token_row.token})
+    assert r2.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_resend_verification_sends_new_token(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    await _register(client)
+    await _login(client)
+
+    r = await client.post("/api/auth/resend-verification")
+    assert r.status_code == 200
+
+    count = await db_session.scalar(
+        select(EmailVerificationToken).where(EmailVerificationToken.user_id.isnot(None))
+    )
+    assert count is not None
+
+
+@pytest.mark.asyncio
+async def test_resend_verification_already_verified(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    reg = await _register(client)
+    user_id = uuid.UUID(reg.json()["id"])
+    token_row = await db_session.scalar(
+        select(EmailVerificationToken).where(EmailVerificationToken.user_id == user_id)
+    )
+    await client.post("/api/auth/verify-email", json={"token": token_row.token})
+    await _login(client)
+
+    r = await client.post("/api/auth/resend-verification")
+    assert r.status_code == 200
+    assert "deja" in r.json()["message"]
+
+
+@pytest.mark.asyncio
+async def test_resend_verification_requires_login(client: AsyncClient) -> None:
+    r = await client.post("/api/auth/resend-verification")
+    assert r.status_code == 401
