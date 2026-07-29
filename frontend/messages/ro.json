@@ -211,7 +211,12 @@
       "vectori": "Vectori",
       "siruri": "Șiruri",
       "combinatorica": "Combinatorică",
-      "divide-cucereste": "Divide și cucerește"
+      "divide-cucereste": "Divide și cucerește",
+      "ai": "Inteligență artificială",
+      "incepatori": "Începători",
+      "conversie": "Conversie",
+      "regresie": "Regresie",
+      "numeric": "Date numerice"
     },
     "titleLabel": "Titlu",
     "slugLabel": "Slug",

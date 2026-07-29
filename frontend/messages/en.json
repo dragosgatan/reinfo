@@ -211,7 +211,12 @@
       "vectori": "Arrays",
       "siruri": "Strings",
       "combinatorica": "Combinatorics",
-      "divide-cucereste": "Divide and Conquer"
+      "divide-cucereste": "Divide and Conquer",
+      "ai": "Artificial Intelligence",
+      "incepatori": "Beginners",
+      "conversie": "Conversion",
+      "regresie": "Regression",
+      "numeric": "Numeric Data"
     },
     "titleLabel": "Title",
     "slugLabel": "Slug",

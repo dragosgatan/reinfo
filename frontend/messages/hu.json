@@ -211,7 +211,12 @@
       "vectori": "Tömbök",
       "siruri": "Karakterláncok",
       "combinatorica": "Kombinatorika",
-      "divide-cucereste": "Oszd meg és uralkodj"
+      "divide-cucereste": "Oszd meg és uralkodj",
+      "ai": "Mesterséges intelligencia",
+      "incepatori": "Kezdőknek",
+      "conversie": "Átalakítás",
+      "regresie": "Regresszió",
+      "numeric": "Numerikus adatok"
     },
     "titleLabel": "Cím",
     "slugLabel": "Slug",
