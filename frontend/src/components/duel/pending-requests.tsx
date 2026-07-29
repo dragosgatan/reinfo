@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ export function PendingDuelRequests() {
   const tCommon = useTranslations("common");
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const locale = useLocale();
   const [requests, setRequests] = useState<DuelRequestRead[]>([]);
 
   const poll = useCallback(async () => {
@@ -51,7 +52,7 @@ export function PendingDuelRequests() {
       );
       toast.success(t("duelStarted"));
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
-      router.push(`/duel/${duel.id}`);
+      router.push(`/${locale}/duel/${duel.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tCommon("error"));
     }

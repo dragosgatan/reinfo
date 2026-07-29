@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { DUEL_QUEUE_JOINED_EVENT } from "@/components/duel/duel-queue-watcher";
 import {
   LobbyResponse,
   LobbyResponseSchema,
@@ -260,6 +261,7 @@ export default function DuelLobbyPage() {
     setJoining(true);
     try {
       await api.post("/api/duels/queue/join", { time_limit_minutes: minutes });
+      window.dispatchEvent(new Event(DUEL_QUEUE_JOINED_EVENT));
       await fetchLobby();
     } catch {
       // swallow
