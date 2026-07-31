@@ -80,6 +80,11 @@ Cross-process sync uses **PostgreSQL `NOTIFY/LISTEN`**.
 | AI | OpenRouter (DeepSeek), per-user rate limiting + email verification + ip rate limiting + response caching  |
 | CLI | Click (Python); PyPI package
 
+## Note
+
+For now, the backend is no longer hosted due to costs, the frontend is still up, though I might shut it down.
+
+All data is backed up and I might host it on my own server again in the future.
 
 ## License
 

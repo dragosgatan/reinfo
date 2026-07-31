@@ -4,7 +4,6 @@ docs/
 
 
 
-# data directory (problem assets, test files)
 data/
 
 # Python
@@ -64,6 +63,9 @@ Thumbs.db
 docker-compose.override.yml
 .env.prod
 nginx/certbot-webroot/
+
+prod_backup/
+scripts/pull_prod_data.sh
 	
 # Alembic
 backend/alembic/versions/*.pyc
