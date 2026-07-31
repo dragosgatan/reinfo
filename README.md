@@ -5,6 +5,12 @@
 
 Platformă modernă de programare competitivă pentru elevi și profesori din România. Construită pentru **InfoEducație 2026** (Secțiunea Software Educațional).
 
+## Note
+
+For now, the backend is no longer hosted due to costs, the frontend is still up, though I might shut it down.
+
+All data is backed up and I might host it on my own server again in the future.
+
 ### Funcționalități
 
 - **Probleme** - catalog cu filtrare, editor Monaco, judecată automată prin Piston, verdicte detaliate per test
@@ -79,12 +85,6 @@ Cross-process sync uses **PostgreSQL `NOTIFY/LISTEN`**.
 | i18n | next-intl |
 | AI | OpenRouter (DeepSeek), per-user rate limiting + email verification + ip rate limiting + response caching  |
 | CLI | Click (Python); PyPI package
-
-## Note
-
-For now, the backend is no longer hosted due to costs, the frontend is still up, though I might shut it down.
-
-All data is backed up and I might host it on my own server again in the future.
 
 ## License
 
